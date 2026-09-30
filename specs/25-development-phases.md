@@ -223,8 +223,9 @@ Tests:
 ## 4. Spec bundle per task
 
 Which specs to put in context for each phase task. **Core** is required; **Plus** is the supporting
-detail. The four always-in-context files ([README](README.md), [05](05-architecture.md),
-[19](19-module-structure.md), [04](04-roles-and-permissions.md)) are assumed and not repeated.
+detail. The three always-in-context files ([README](README.md), [05](05-architecture.md),
+[19](19-module-structure.md)) are assumed and not repeated; [04](04-roles-and-permissions.md) is added
+whenever the task adds or changes a write path, policy or role.
 
 Every task additionally pulls: the `FR-*` rows it satisfies from [02](02-functional-requirements.md),
 its domain's rows from [23](23-edge-cases.md), and [11](11-security.md) whenever the surface takes

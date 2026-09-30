@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Tool-agnostic pre-commit: protects paths and runs fast checks for humans, Claude Code and Codex alike.
+# Enable once per clone:  git config core.hooksPath .githooks
+set -uo pipefail
+root="$(git rev-parse --show-toplevel)"
+
+staged=()
+while IFS= read -r f; do staged+=("$f"); done < <(git diff --cached --name-only --diff-filter=ACMR)
+[ ${#staged[@]} -eq 0 ] && exit 0
+
+# Generated TS files and vendored skills may be committed (regenerated/updated by tools), so only guard the rest.
+ALLOW_GENERATED=1 ALLOW_VENDORED=1 "$root/scripts/guard-paths.sh" "${staged[@]}" || exit 1
+
+if printf '%s\n' "${staged[@]}" | grep -q '^src/'; then
+  "$root/scripts/check.sh" --fast || { echo "pre-commit: checks failed (bypass only with --no-verify and a reason)." >&2; exit 1; }
+fi
+exit 0

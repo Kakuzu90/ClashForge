@@ -46,13 +46,13 @@ task** — load by what you are building.
 | [README.md](README.md) | Locked decisions |
 | [05-architecture.md](05-architecture.md) | Module boundaries, event seam, where code goes |
 | [19-module-structure.md](19-module-structure.md) | Folder layout, naming, dependency rules |
-| [04-roles-and-permissions.md](04-roles-and-permissions.md) | Every write surface needs a policy |
 
 ### Per task
 
 | Building | Load |
 |---|---|
 | Any migration / model | [07](07-database-schema.md), [08](08-entity-relationships.md) |
+| Any write path, policy, role or authorization change | [04](04-roles-and-permissions.md) |
 | Auth, registration, sessions | [04](04-roles-and-permissions.md), [11](11-security.md) |
 | CoC attach / verify / dispute | [13](13-claiming-workflow.md), [09](09-coc-api-integration.md), [07](07-database-schema.md) |
 | Account sync, API client | [09](09-coc-api-integration.md), [20](20-jobs-and-scheduling.md) |
