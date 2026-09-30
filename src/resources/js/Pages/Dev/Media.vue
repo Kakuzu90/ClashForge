@@ -3,16 +3,19 @@ import UiButton from '@/Components/ui/UiButton.vue';
 import UiCard from '@/Components/ui/UiCard.vue';
 import UiEmptyState from '@/Components/ui/UiEmptyState.vue';
 import UiProgress from '@/Components/ui/UiProgress.vue';
+import UiSelect, { type SelectOption } from '@/Components/ui/UiSelect.vue';
 import { useUpload } from '@/Composables/useUpload';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { computed, ref, useId } from 'vue';
+import { computed, ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
 
 const props = defineProps<{ collections: App.Domain.Media.Data.UploadCollectionData[] }>();
 
-const selectId = useId();
-const collection = ref<App.Domain.Media.Enums.MediaCollection>(props.collections[0]?.value ?? 'base_screenshot');
+type Collection = App.Domain.Media.Enums.MediaCollection;
+
+const collection = ref<Collection | null>(props.collections[0]?.value ?? null);
+const options = computed<SelectOption<Collection>[]>(() => props.collections.map((c) => ({ value: c.value, label: c.label })));
 const selected = computed(() => props.collections.find((c) => c.value === collection.value));
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -26,7 +29,7 @@ function megabytes(bytes: number): string {
 function onFile(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file) {
+    if (file && collection.value) {
         upload(file, collection.value);
     }
     // Picking the same file twice should start a new upload.
@@ -46,18 +49,15 @@ function onFile(event: Event) {
         </header>
 
         <UiCard variant="flat" class="flex flex-col gap-4 p-4 sm:flex-row sm:items-end">
-            <div class="flex flex-col gap-1 sm:w-64">
-                <label :for="selectId" class="text-sm font-medium text-fg-secondary">Collection</label>
-                <select
-                    :id="selectId"
-                    v-model="collection"
-                    :disabled="busy"
-                    class="h-11 rounded-sm border border-control bg-surface px-3 text-body text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60 sm:h-10"
-                >
-                    <option v-for="option in collections" :key="option.value" :value="option.value">{{ option.label }}</option>
-                </select>
-                <p v-if="selected" class="text-sm text-fg-muted">{{ selected.typesLabel }}, up to {{ megabytes(selected.maxBytes) }}</p>
-            </div>
+            <UiSelect
+                v-model="collection"
+                label="Collection"
+                searchable
+                :options="options"
+                :disabled="busy"
+                :hint="selected ? `${selected.typesLabel}, up to ${megabytes(selected.maxBytes)}` : undefined"
+                class="sm:w-72"
+            />
             <div>
                 <input ref="fileInput" type="file" class="sr-only" tabindex="-1" aria-hidden="true" :accept="selected?.accept" @change="onFile" />
                 <UiButton :loading="busy" @click="fileInput?.click()">Choose image</UiButton>

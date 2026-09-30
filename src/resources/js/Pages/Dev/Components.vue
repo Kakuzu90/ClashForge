@@ -8,6 +8,7 @@ import UiInput from '@/Components/ui/UiInput.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
 import UiPill, { type PillTone } from '@/Components/ui/UiPill.vue';
 import UiProgress from '@/Components/ui/UiProgress.vue';
+import UiSelect, { type SelectOption } from '@/Components/ui/UiSelect.vue';
 import UiSkeleton from '@/Components/ui/UiSkeleton.vue';
 import UiTextarea from '@/Components/ui/UiTextarea.vue';
 import UiToast from '@/Components/ui/UiToast.vue';
@@ -25,6 +26,14 @@ const thTones: PillTone[] = ['th-1', 'th-2', 'th-3', 'th-4', 'th-5', 'th-6', 'th
 const avatarSizes = [24, 32, 48, 64, 96, 128] as const;
 
 const text = ref('');
+const townHalls: SelectOption[] = Array.from({ length: 17 }, (_, i) => ({ value: `th${17 - i}`, label: `Town Hall ${17 - i}` }));
+const categories: SelectOption[] = [
+    { value: 'war', label: 'War', hint: 'Built to stop three-star attacks' },
+    { value: 'farming', label: 'Farming', hint: 'Protects storages' },
+    { value: 'trophy', label: 'Trophy pushing', hint: 'Protects the Town Hall' },
+];
+const pickedTownHall = ref<string | null>('th16');
+const pickedCategory = ref<string | null>(null);
 const bio = ref('');
 const selected = ref(false);
 const modalOpen = ref(false);
@@ -86,6 +95,23 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiInput label="Disabled" model-value="Cannot edit" disabled />
                     <UiInput label="Read only" model-value="Read only value" readonly />
                     <UiTextarea v-model="bio" label="Textarea with counter" :maxlength="160" counter class="sm:col-span-2" />
+                    <UiSelect v-model="pickedCategory" label="Select (native)" :options="categories" placeholder="Choose a category" />
+                    <UiSelect
+                        v-model="pickedTownHall"
+                        label="Select (searchable)"
+                        :options="townHalls"
+                        searchable
+                        hint="Type to filter, arrows to move, Enter to pick."
+                    />
+                    <UiSelect
+                        v-model="pickedCategory"
+                        label="Searchable with hints"
+                        :options="categories"
+                        searchable
+                        placeholder="Search categories"
+                    />
+                    <UiSelect label="Select error" :options="categories" searchable error="Choose a category." />
+                    <UiSelect label="Select disabled" :options="categories" model-value="war" searchable disabled />
                 </div>
             </section>
 
