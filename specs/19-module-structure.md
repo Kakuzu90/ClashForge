@@ -99,8 +99,10 @@ On the frontend, `resources/js` may import only its own modules plus generated t
 ESLint `no-restricted-imports`/`no-restricted-syntax` ban direct `axios`/`fetch` to app routes
 outside the upload composable, and game-asset paths in `.vue` files.
 
-Implemented with Deptrac (`deptrac.yaml`) as a CI job. A violation fails the build with the exact
-file and line. Exceptions require an entry in a `deptrac.allowlist` file with a comment explaining
+Layering (Http / Domain / Support) is implemented with Deptrac (`deptrac.yaml`); the per-module rules
+(no cross-module `Models` or internals, isolated edge/leaf modules) are Pest arch tests that discover
+`app/Domain/*` automatically. Both run in `scripts/check.sh`; a violation fails with the exact file
+and line. Exceptions require an entry in a `deptrac.allowlist` file with a comment explaining
 why — visible, reviewable debt rather than silent erosion.
 
 ## 3. Naming conventions

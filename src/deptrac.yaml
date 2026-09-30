@@ -1,21 +1,23 @@
-# Module boundaries from specs/19 §2. A violation fails scripts/check.sh with file and line.
+# Layering from specs/19 §2. A violation fails scripts/check.sh with file and line.
 # Exceptions need an entry in deptrac.allowlist with a comment (specs/19 §2).
-# Per-module isolation (Domain X must not use Domain Y Models; edge/leaf modules) is added in P0-02,
-# one layer per module, once app/Domain exists.
+# Per-module rules (no cross-module Models, edge/leaf isolation) are Pest arch tests in
+# tests/Architecture/ModuleBoundariesTest.php, which discover modules automatically.
 deptrac:
   paths:
     - ./app
-  exclude_files:
-    - '#.*test.*#i'
   layers:
     - name: Http
       collectors:
         - type: classLike
           value: ^App\\Http\\.*
-    - name: DomainServices
+    - name: DomainPublic
       collectors:
         - type: classLike
-          value: ^App\\Domain\\[^\\]+\\(Services|Actions|Queries|Data|Enums|Contracts|Events|Exceptions|Support)\\.*
+          value: ^App\\Domain\\[^\\]+\\(Services|Actions|Queries|Data|Enums|Contracts)\\.*
+    - name: DomainEvents
+      collectors:
+        - type: classLike
+          value: ^App\\Domain\\[^\\]+\\Events\\.*
     - name: DomainModels
       collectors:
         - type: classLike
@@ -23,25 +25,33 @@ deptrac:
     - name: DomainInternal
       collectors:
         - type: classLike
-          value: ^App\\Domain\\[^\\]+\\(Jobs|Listeners|Notifications|Policies)\\.*
+          value: ^App\\Domain\\[^\\]+\\(Exceptions|Jobs|Listeners|Notifications|Policies|Support)\\.*
     - name: Support
       collectors:
         - type: classLike
           value: ^App\\Support\\.*
   ruleset:
     Http:
-      - DomainServices
+      - DomainPublic
       - Support
-    DomainServices:
-      - DomainServices
+    DomainPublic:
+      - DomainPublic
+      - DomainEvents
+      - DomainModels
+      - DomainInternal
+      - Support
+    DomainEvents:
+      - DomainPublic
       - DomainModels
       - Support
     DomainModels:
+      - DomainPublic
       - DomainModels
-      - DomainServices
+      - DomainInternal
       - Support
     DomainInternal:
-      - DomainServices
+      - DomainPublic
+      - DomainEvents
       - DomainModels
       - DomainInternal
       - Support

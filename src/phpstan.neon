@@ -8,4 +8,6 @@ parameters:
         - config
         - routes
         - database
+        # Test fixtures exercise Support primitives (e.g. EnumHelpers) before any module uses them.
+        - tests/Support
     tmpDir: storage/framework/cache/phpstan
