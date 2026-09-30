@@ -16,7 +16,8 @@ const variants: Record<CardVariant, string> = {
 
 const classes = computed(() => [
     variants[props.variant],
-    'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
+    // Only a card that acts as one control rings as a whole; form cards leave the ring to the field.
+    props.variant === 'interactive' ? 'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus' : '',
     props.selected ? 'ring-2 ring-brand' : '',
 ]);
 </script>

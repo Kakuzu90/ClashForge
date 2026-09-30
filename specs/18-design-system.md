@@ -260,7 +260,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 | **Pill / Tag** | neutral, category (per-category hue), th, status, removable | default, hover, selected |
 | **Badge** | verified (gold check), featured (purple star), role (mod/admin), rarity | — |
 | **Avatar** | 24/32/48/64/96/128, with verified ring | image, initials fallback, loading |
-| **Card** | flat, raised, interactive (hover lift), feature | default, hover, focus-within, selected |
+| **Card** | flat, raised, interactive (hover lift), feature | default, hover, focus-within (interactive only), selected |
 | **Modal / Sheet** | centered modal (desktop), bottom sheet (mobile) | open, closing; focus-trapped |
 | **Toast** | info, success, danger, **reward** (gold, animated) | enter, idle, exit |
 | **Tooltip** | top/bottom/left/right | — |
