@@ -33,21 +33,37 @@ mechanism and the test that proves it.
 - **Test:** feature tests assert that `?sort=id;DROP` yields a validation error, not a query.
 
 ### XSS
-- Blade `{{ }}` escaping everywhere; `{!! !!}` is banned outside a single sanitised-markdown helper.
+- Vue `{{ }}` interpolation escaping everywhere (client and SSR); `v-html` is banned outside a
+  single `<SanitizedMarkdown>` component, enforced by the `vue/no-v-html` ESLint rule. The root
+  Blade view uses `{{ }}` only; `{!! !!}` is banned.
 - If markdown is ever enabled for descriptions, it goes through an HTML sanitiser with a strict
   allowlist — no raw HTML pass-through.
 - User URLs are validated to `http/https`, rendered with `rel="nofollow ugc noopener"` and
   `target="_blank"`. `javascript:`/`data:` schemes rejected at validation.
 - CSP: `default-src 'self'; script-src 'self' 'nonce-...'; object-src 'none'; base-uri 'self';
   frame-ancestors 'none'; img-src 'self' https://cdn.<domain> data:; media-src 'self' https://cdn.<domain>`.
-  No `unsafe-inline` for scripts; Alpine is used in a CSP-compatible way or with nonced inline
-  blocks. Report-only first, enforced before launch.
+  No `unsafe-inline` and no `unsafe-eval` for scripts: SFC templates are precompiled (runtime-only
+  Vue build), Vite tags carry the request nonce (`Vite::useCspNonce()`), and the Inertia page object
+  is embedded as JSON data, never as executable script. Report-only first, enforced before launch.
 - SVG uploads rejected ([10](10-media-storage.md)); media served from a separate origin.
+- **Test:** the SSR smoke test runs the stored-XSS payloads through server-rendered pages too.
+
+### Data exposure via page props
+- Every Inertia prop is visible in page source and in the XHR JSON response. Props are built only
+  from `Data` DTOs with explicit fields; passing an Eloquent model, a model collection or
+  `->toArray()` to `Inertia::render()` is banned (Pest arch test).
+- Shared props (`HandleInertiaRequests::share`) are limited to: the auth user summary (username,
+  avatar, role, verification flags), flash messages, unread-notification count, the `can` map and
+  client-safe feature flags. Never email, IP data, 2FA state or anything from `coc_accounts` beyond
+  public fields.
+- Lazy/deferred props are authorised exactly like the page that declares them.
 - **Test:** a stored-XSS test posts `<img src=x onerror=...>` into every text field and asserts the
   rendered output is escaped.
 
 ### CSRF
-- Laravel's VerifyCsrfToken on every state-changing route; Livewire carries the token automatically.
+- Laravel's VerifyCsrfToken on every state-changing route; Inertia's HTTP client sends the
+  `XSRF-TOKEN` cookie back as `X-XSRF-TOKEN` automatically. A 419 triggers a full reload, not a
+  silent retry.
 - `SameSite=Lax` session cookies; `Secure` and `HttpOnly` set.
 - No route is exempted. If a webhook ever needs exemption, it authenticates by signature instead.
 - Sensitive actions (email change, password change, account deletion, ownership transfer) require
@@ -58,7 +74,7 @@ mechanism and the test that proves it.
 - Owned resources are fetched with an ownership-scoped query, so a foreign id 404s before policy
   evaluation.
 - Nested routes use scoped bindings (`/bases/{base}/comments/{comment}`).
-- Every controller/Livewire action calls `authorize()`; a test helper enumerates routes and fails
+- Every controller action calls `authorize()`; a test helper enumerates routes and fails
   the build if a state-changing route has no authorization call.
 - Signed media URLs are short-lived and bound to the object key.
 - **Test:** for each owned resource, a test asserts user B gets 403/404 on user A's object.
@@ -69,7 +85,7 @@ mechanism and the test that proves it.
   (b) requires 2FA on the target account for staff roles, (c) writes an audit log, (d) cannot be
   invoked from a web form that takes the role from the request without an explicit allowlist.
 - `users.role` is **guarded** against mass assignment and is not in `$fillable`.
-- Admin routes sit behind a role middleware **and** a Gate check in each component.
+- Admin routes sit behind a role middleware **and** a Gate check in each controller action.
 - No impersonation feature exists.
 - **Test:** a matrix test iterates every role × every admin ability and asserts the permission
   matrix in [04](04-roles-and-permissions.md) exactly.
@@ -115,8 +131,9 @@ an interface.
 - Turnstile on registration, password reset and (conditionally, on reputation signals) on
   base publishing and reporting.
 - Pagination is capped (max 50 per page) and deep pagination beyond page 100 requires auth.
-- No public JSON endpoints in the MVP; Livewire endpoints require a valid session and a component
-  checksum.
+- No public JSON API in the MVP. Inertia XHR responses (`X-Inertia` requests) return the same props
+  as the HTML response and pass through the same middleware, policies, rate limiters and Cloudflare
+  rules — they are not a separate surface.
 - `robots.txt` allows indexing of content pages, disallows search, filter and pagination URLs.
 - Scraping detection: per-IP request-rate anomaly job flags candidates for Cloudflare rules.
 - **Accepted reality:** public content is scrapable by a determined actor. The controls target

@@ -13,7 +13,7 @@ development tasks for an agentic coding workflow.
 | 03 | [03-non-functional-requirements.md](03-non-functional-requirements.md) | Performance, availability, cost, compliance, observability budgets |
 | 04 | [04-roles-and-permissions.md](04-roles-and-permissions.md) | Roles, permission matrix, authentication/authorization strategy |
 | 05 | [05-architecture.md](05-architecture.md) | Modular monolith design, module boundaries, request/event flow |
-| 06 | [06-tech-stack.md](06-tech-stack.md) | Stack evaluation, Livewire vs Inertia vs split API, Redis trigger points |
+| 06 | [06-tech-stack.md](06-tech-stack.md) | Stack evaluation, Inertia vs Livewire vs split API, Redis trigger points |
 | 07 | [07-database-schema.md](07-database-schema.md) | Table-by-table schema, constraints, indexes |
 | 08 | [08-entity-relationships.md](08-entity-relationships.md) | ER diagram, cardinalities, ownership/cascade rules |
 | 09 | [09-coc-api-integration.md](09-coc-api-integration.md) | CoC API layer, rate limits, sync, failure handling |
@@ -90,7 +90,7 @@ Read [25](25-development-phases.md) once when starting a phase to pick and shape
 These are settled; changing one means revisiting the affected specs.
 
 1. **Modular monolith**, Laravel 12 / PHP 8.3, one deployable. No microservices before Stage 3 traffic.
-2. **Laravel + Livewire 3 + Tailwind + Alpine.** Not Inertia, not a split SPA. Rationale in [06](06-tech-stack.md).
+2. **Laravel + Inertia 2 + Vue 3 (TypeScript) + Tailwind**, SSR on public pages. Not Livewire, not a split SPA. Rationale in [06](06-tech-stack.md).
 3. **PostgreSQL 16** as the only datastore for MVP, including cache, queue and session tables.
 4. **No Redis at launch.** All code goes through `Cache`/`Queue` facades. Switch triggers in [21](21-caching-strategy.md).
 5. **Cloudflare R2 + CDN** for all media. Nothing binary in the database.

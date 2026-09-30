@@ -3,7 +3,7 @@
 ## 1. Principle
 
 The application never talks to `api.clashofclans.com` directly. It talks to a `CocApiClient`
-interface. Everything downstream — services, jobs, Livewire components, tests — depends on that
+interface. Everything downstream — services, jobs, controllers, tests — depends on that
 interface and on our own DTOs, never on the API's JSON shape.
 
 ```

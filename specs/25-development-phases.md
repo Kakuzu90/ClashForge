@@ -27,13 +27,13 @@ Double them for a part-time effort.
 
 | Workstream | Deliverables |
 |---|---|
-| Project setup | Laravel 12 in `src/`, PHP 8.3, docker compose running, Pint, PHPStan L6, Pest, Deptrac, CI green on SQLite + Postgres |
+| Project setup | Laravel 12 in `src/`, PHP 8.3, Inertia 2 + Vue 3 + TypeScript (client + SSR entries), docker compose running (incl. `node`, `ssr`), Pint, PHPStan L6, Pest, Deptrac, ESLint + `vue-tsc` + Vitest, TS type + Wayfinder generation, CI green on SQLite + Postgres |
 | Domain skeleton | `app/Domain/*` module folders, service provider wiring, `Support` primitives (enums, value objects, casts) |
-| Design system | Tokens in Tailwind `@theme`, fonts self-hosted, `x-ui.*` primitives (button, input, card, pill, badge, avatar, modal, toast, skeleton, empty-state), component gallery at `/dev/components` |
-| Asset policy | `GameAssets` module: `GameAssetResolver` + `<x-game.asset>` (fallback, accessible name, kill switch), `assets:publish-pack` / `assets:verify-pack`, `game/` CDN binding with resizing disabled, reconcile-job prefix allowlist + its test, fan-content disclaimer in the global footer, lint rule banning game-asset paths in templates ([18 §2](18-design-system.md), [10 §11](10-media-storage.md)) |
-| App shell | Layouts (public, app, admin), mobile bottom nav, desktop sidebar, global search stub, dark theme |
+| Design system | Tokens in Tailwind `@theme`, fonts self-hosted, `Ui*` Vue primitives (button, input, card, pill, badge, avatar, modal, toast, skeleton, empty-state), component gallery at `/dev/components` |
+| Asset policy | `GameAssets` module: `GameAssetResolver` + `<GameAsset>` (fallback, accessible name, kill switch), `assets:publish-pack` / `assets:verify-pack`, `game/` CDN binding with resizing disabled, reconcile-job prefix allowlist + its test, fan-content disclaimer in the global footer, lint rule banning game-asset paths in templates ([18 §2](18-design-system.md), [10 §11](10-media-storage.md)) |
+| App shell | Persistent Inertia layouts (public, app, admin), root Blade view with meta/OG, shared props, mobile bottom nav, desktop sidebar, global search stub, dark theme |
 | Media pipeline | `media` + `media_variants` tables, presigned intent/complete endpoints, `ProcessMediaJob` with image validation + variants, orphan sweeper, storage wiring against **MinIO locally** ([10 §2.1](10-media-storage.md)); R2 + CDN domain swapped in by env when the account exists |
-| Ops | Health endpoint, Sentry, structured logging, queue workers + scheduler running, backup verified, staging deployed |
+| Ops | Health endpoint, Sentry, structured logging, queue workers + scheduler + SSR renderer running, backup verified, staging deployed |
 
 **Exit:** a styled page that uploads an image to object storage, processes it, and renders the
 variants — end to end against MinIO locally, with tests. Re-verify the same flow against R2 + CDN
@@ -195,8 +195,8 @@ Spec refs: <spec file(s) + section>
 Scope:
   - Migrations / models / factories
   - Domain: enums, value objects, services/actions, events
-  - Policy + form request / Livewire validation
-  - UI: Livewire page or component + design-system components used
+  - Policy + form request
+  - UI: controller + Inertia Vue page/components + design-system components used
   - Jobs / listeners / schedule entries
   - Config keys added
 Out of scope: <explicit, to stop drift>
@@ -236,7 +236,7 @@ user input, files, or crosses a trust boundary.
 |---|---|---|
 | Project setup, CI, static analysis | [19](19-module-structure.md) | [06](06-tech-stack.md) |
 | Domain skeleton + `Support` primitives | [05](05-architecture.md), [19](19-module-structure.md) | — |
-| Design tokens + `x-ui.*` primitives | [18 §3–4](18-design-system.md) | [03 §8](03-non-functional-requirements.md) |
+| Design tokens + `Ui*` Vue primitives | [18 §3–4](18-design-system.md) | [03 §8](03-non-functional-requirements.md) |
 | App shell, layouts, navigation | [18 §5](18-design-system.md) | [04](04-roles-and-permissions.md) |
 | Media pipeline (tables, intent/complete, processing, sweeper) | [10](10-media-storage.md), [07](07-database-schema.md) (media) | [20](20-jobs-and-scheduling.md), [11](11-security.md) |
 | GameAssets module + asset policy plumbing | [18 §2](18-design-system.md), [10 §11](10-media-storage.md) | [19](19-module-structure.md) |

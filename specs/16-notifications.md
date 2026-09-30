@@ -112,8 +112,8 @@ Digest options: `none` (default), `daily`, `weekly` — a single email summarisi
 - Grouped notifications show avatars of up to 3 actors plus a count.
 - Notifications link directly to the target anchor (e.g. the specific comment).
 - Deleted or hidden targets render as "this content is no longer available" rather than 404ing.
-- Polling: the bell refreshes on navigation and via a 60-second `wire:poll` **only when the tab is
-  visible**. This is the deliberate low-cost substitute for websockets; revisit with Redis + Reverb
+- Polling: the bell refreshes on navigation (shared prop) and via a 60-second Inertia `usePoll`
+  partial reload (`only: ['unreadCount']`), **stopped while the tab is hidden**. This is the deliberate low-cost substitute for websockets; revisit with Redis + Reverb
   if real-time becomes a requirement.
 
 ## 7. Retention and volume control

@@ -341,6 +341,6 @@ stored API URL for clan badges. Callers do not know or care which.
   `X-Content-Type-Options: nosniff` and sandbox CSP headers.
 - Long-cached and versioned, so the asset pack contributes effectively nothing to bandwidth cost
   after the first request per edge.
-- Every `<x-game.asset>` renders with explicit `width`/`height`, `loading="lazy"` below the fold,
+- Every `<GameAsset>` renders with explicit `width`/`height`, `loading="lazy"` below the fold,
   and an accessible name — a progression grid of 60 units must not cost layout shift or 60
   render-blocking requests.

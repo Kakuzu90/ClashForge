@@ -6,9 +6,9 @@ Postgres does the MVP. A dedicated engine is a Phase 7 migration with explicit t
 `SearchService` interface exists from day one so the migration touches one package.
 
 ```
-Livewire search UI ─▶ SearchService (interface)
-                          ├── PostgresSearchDriver   (MVP)
-                          └── MeilisearchDriver      (Phase 7, if triggered)
+Vue search page ─▶ SearchController ─▶ SearchService (interface)
+ (Inertia partial                         ├── PostgresSearchDriver   (MVP)
+  reloads)                                └── MeilisearchDriver      (Phase 7, if triggered)
 ```
 
 `SearchService::search(SearchQuery $q): SearchResults` — `SearchQuery` is a typed object
@@ -126,7 +126,7 @@ excluded from the score (but still shown as counts, to avoid tipping off manipul
 | Related bases | Same TH ±1, same category, excluding the same author, ordered by trending | cached 15 min |
 | Recruitment browse (P2) | Bumped order with filters | cached 60 s |
 
-**SEO requirements:** every discovery surface is server-rendered with a unique title and meta
+**SEO requirements:** every discovery surface is server-rendered (Inertia SSR) with a unique title and meta
 description, canonical URLs, `ItemList`/`VideoObject`/`Person` JSON-LD where applicable, Open Graph
 images (the base screenshot), an XML sitemap regenerated nightly for public bases and profiles, and
 `robots.txt` disallowing `/search`, filter permutations and deep pagination.
