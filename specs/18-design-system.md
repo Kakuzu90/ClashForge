@@ -154,6 +154,18 @@ colour is referenced through a semantic token, never a raw hex, anywhere in a co
 --badge-verified, --badge-featured
 ```
 
+Added during implementation (P0-03): `--border-control` (form control outlines, `--clr-text-muted`,
+≥3:1 on every surface per WCAG 1.4.11; `--border-strong` is 1.8:1 and stays decorative),
+`--text-on-gold`, `--accent-shadow`, `--state-success-shadow` / `--state-danger-shadow` (button depth
+borders) and `--state-success-text` / `--state-danger-text` (the 400 shades, for state text on
+surfaces). Buttons on danger/success fills use `--text-on-gold` (≥5.6:1); white fails AA there.
+
+**Tailwind names** (`resources/css/app.css`; Tailwind's default palette is removed, so only these
+exist): `page`, `surface`, `surface-raised`, `surface-hover`, `scrim` · `line-subtle`, `line`,
+`line-strong`, `control`, `focus` · `fg`, `fg-secondary`, `fg-muted`, `fg-inverse`, `fg-on-gold` ·
+`brand`(`-hover`/`-press`/`-shadow`), `accent`(`-hover`/`-shadow`) · `success`, `danger`
+(`-shadow`, `-fg`), `warning`, `info` · `verified`, `featured` · `th-1`…`th-7`.
+
 **Contrast commitments (WCAG AA verified, not assumed):**
 - `--text-primary` on `--bg-page` ≈ 15.8:1
 - `--text-muted` on `--bg-surface` ≥ 4.5:1 — muted text is never used below 14px
@@ -188,7 +200,7 @@ Display font is never used below 16px (it loses legibility) and never for paragr
 ### Spacing, radius, elevation, motion
 
 ```css
---space-1..12: 4 8 12 16 20 24 32 40 48 64 80 96 (px)
+--space-1..12: 4 8 12 16 20 24 32 40 48 64 80 96 (px)   /* = Tailwind's 4px step: 1 2 3 4 5 6 8 10 12 16 20 24 */
 
 --radius-sm: 8px;    /* inputs, pills */
 --radius-md: 10px;   /* buttons */
@@ -451,7 +463,9 @@ tint. This is implemented once in the base stylesheet, not per component.
   `aria-live="polite"`.
 - Forms: every input has a `<label>`, errors are linked via `aria-describedby`, and the first error
   receives focus on failed submit.
-- Touch targets ≥44×44 with ≥8px separation.
+- Touch targets ≥44×44 with ≥8px separation. Controls whose §4 visual size is smaller keep it and get
+  an invisible 44×44 hit area (`.hit-target`); text inputs are 44px tall below `sm` (owner decision in
+  `DESIGN.md`).
 - Tested with keyboard only and with VoiceOver/NVDA on the five main flows before each phase ships.
 
 ## 9. Implementation notes
@@ -460,7 +474,7 @@ tint. This is implemented once in the base stylesheet, not per component.
   in templates — a lint rule enforces token usage.
 - Vue SFC components under `resources/js/Components/{ui,game,admin}/` (`UiButton`, `GamePlayerCard`,
   `AdminTable` …), with a living component
-  gallery at `/dev/components` (non-production only) showing every variant and state. This page is
+  gallery at `/dev/components` (404 in production) showing every variant and state. This page is
   the design system's actual source of truth and must be updated with each new variant.
 - Vue handles local interactivity (menus, sheets, tabs, optimistic like animation). Anything that
   touches server state goes through an Inertia visit, partial reload or `useForm` — never a
