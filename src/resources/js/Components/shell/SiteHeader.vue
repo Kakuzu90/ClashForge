@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import AccountControls from './AccountControls.vue';
 import Wordmark from './Wordmark.vue';
 
-// Sticky top bar (specs/18 §5). Search, bell and user menu slot into `actions` once they exist.
+// Sticky top bar (specs/18 §5). Search and the bell slot into `actions` once they exist; the account
+// controls always sit last.
 defineProps<{ hideWordmarkOnDesktop?: boolean }>();
 </script>
 
@@ -13,6 +15,7 @@ defineProps<{ hideWordmarkOnDesktop?: boolean }>();
             </div>
             <div class="flex items-center gap-2">
                 <slot name="actions" />
+                <AccountControls />
             </div>
         </div>
         <slot name="below" />

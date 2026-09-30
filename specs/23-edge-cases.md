@@ -11,7 +11,7 @@ Grouped by domain. Each has a defined behaviour; anything marked **decide** is a
 | User never verifies their email | Can log in, cannot write. Reminder at day 3; account purged after 30 days with a final warning email |
 | Email provider bounces permanently | Address marked `bouncing`, all non-security email stops, an in-app banner asks for a new address. Writes still allowed — we do not punish the user for a dead mailbox they may still be able to change |
 | Password reset requested for a non-existent account | Identical response and timing; no email sent |
-| Reset link used twice | Second use fails with "this link has already been used" |
+| Reset link used twice | Second use fails with "This link has already been used or has expired. Ask for a new one." (the same message for an expired or mismatched link) |
 | User changes email to one already registered | Rejected with a generic error; both addresses notified |
 | Username released and immediately re-registered by someone else | Blocked for 90 days via `username_history`; old profile URLs redirect until then, and afterwards return 404 rather than the new person's profile |
 | User deletes their account, then registers again with the same email | Allowed after the 30-day window; no data is restored |

@@ -66,6 +66,12 @@ for a full temp volume does not.
 | `DetectDuplicateLayoutJob` | `BasePublished` | Cross-author hash match → Low-priority moderation case |
 | `IndexSearchDocumentJob` | `BasePublished`, profile/account updates, moderation actions | No-op on the Postgres driver (generated columns handle it); real work once a search engine exists |
 
+### Auth (`high`)
+
+| Job | Trigger | Notes |
+|---|---|---|
+| `SendPasswordResetLinkJob` | `POST /forgot-password`, for every well-formed email | Broker lookup + token + reset email off the request path, so the answer's timing says nothing ([11](11-security.md)); the broker's 1-per-minute throttle applies inside it |
+
 ### Notifications (`high` / `low`)
 
 | Job | Trigger | Notes |

@@ -113,8 +113,9 @@ Domain events published by modules and consumed elsewhere:
 | `RecruitmentApplicationSubmitted` | Recruitment | Notifications |
 | `OrderStatusChanged` | Marketplace | Notifications, Audit |
 
-All listeners that do I/O are queued. Synchronous listeners are limited to in-memory cache
-invalidation.
+All listeners that do I/O are queued. The one exception is Auth's `RecordLogin`, which stamps
+`last_login_at` and the hashed IP in the request because the IP is only known there. Otherwise,
+synchronous listeners are limited to in-memory cache invalidation.
 
 ## 3. Layering inside a module
 

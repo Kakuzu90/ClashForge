@@ -36,7 +36,7 @@ src/
 │   │   ├── Middleware/              # incl. HandleInertiaRequests (shared props, root view, SSR toggle)
 │   │   ├── Requests/                # form requests grouped by domain
 │   │   └── Resources/               # only if a JSON API appears (Phase 7)
-│   ├── Models/                      # thin re-export shims ONLY if needed for conventions
+│   ├── Models/                      # User only (the shared authenticatable; writes via Domain/Auth)
 │   ├── Policies/                    # registered centrally; implementations may live in Domain
 │   ├── Providers/
 │   ├── Support/                     # framework-adjacent helpers shared by all modules
@@ -82,6 +82,11 @@ app/Domain/Bases/
 Models living inside modules rather than `app/Models` is the one convention break from stock
 Laravel. It is worth it: it makes the ownership boundary visible in the file path, and
 `App\Domain\Bases\Models\BaseLayout` reads better than a flat namespace of 40 models.
+
+The one exception is `App\Models\User` (owner decision, P1-01). Every module's policies type-hint
+the authenticatable user, so it cannot be an Auth-internal model without making each of them a
+cross-module `Models` use. It holds relationships and casts only; every write to `users` goes
+through `Domain/Auth` services.
 
 ## 2. Dependency rules (enforced in CI)
 
@@ -178,7 +183,7 @@ config/
 ├── moderation.php # reason codes, priority weights, auto-action rules, SLA targets
 ├── bases.php      # categories, TH range, trending weights, publish quotas
 ├── recruitment.php# activity levels, war preferences, expiry and bump windows
-├── platform.php   # feature flags defaults, trust-ramp thresholds, reserved usernames
+├── platform.php   # feature flags defaults, trust-ramp thresholds, reserved usernames, auth limiters, IP-hash key
 ├── assets.php     # pack_version, manifest path, CDN base, enabled flag, placeholder + fallback rules
 ```
 

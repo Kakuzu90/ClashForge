@@ -249,7 +249,8 @@ user input, files, or crosses a trust boundary.
 
 | Task | Core | Plus |
 |---|---|---|
-| Registration, login, verification, reset | [04 §4](04-roles-and-permissions.md), [11](11-security.md), [07](07-database-schema.md) (auth) | [16](16-notifications.md), [18](18-design-system.md) |
+| Login, logout, remember-me, reset (P1-01) | [04 §4](04-roles-and-permissions.md), [11](11-security.md), [07](07-database-schema.md) (auth) | [16](16-notifications.md), [18](18-design-system.md) |
+| Registration + email verification (P1-08) | [04 §4](04-roles-and-permissions.md), [11](11-security.md), [07](07-database-schema.md) (auth) | [16](16-notifications.md), [18](18-design-system.md) |
 | Roles, status, policy scaffold | [04](04-roles-and-permissions.md), [11](11-security.md) | [19](19-module-structure.md) |
 | Profiles + avatar upload | [07](07-database-schema.md) (users), [10](10-media-storage.md), [18](18-design-system.md) | [04](04-roles-and-permissions.md) |
 | Privacy settings + public profile | [04](04-roles-and-permissions.md), [18 §6](18-design-system.md) | [17 §6](17-search-and-discovery.md) (SEO) |

@@ -34,13 +34,14 @@ Authentication identity and platform-level status. Deliberately thin — profile
 | email | citext | |
 | email_verified_at | timestamptz null | required for writes |
 | password | varchar(255) | bcrypt/argon2id |
+| remember_token | varchar(100) null | remember-me recaller; cycled on logout and password reset |
 | role | varchar(20) | `user`\|`moderator`\|`admin`\|`super_admin`, default `user` |
 | status | varchar(20) | `active`\|`restricted`\|`suspended`\|`banned`\|`pending_deletion` |
 | status_reason | varchar(255) null | user-visible sanction reason |
 | status_expires_at | timestamptz null | timed restriction/suspension |
 | featured_coc_account_id | bigint null FK → coc_accounts | `ON DELETE SET NULL`, deferrable (circular with coc_accounts) |
 | verified_accounts_count | int default 0 | denormalised, drives the verified badge |
-| last_login_at / last_login_ip_hash | timestamptz / varchar(64) null | IP stored hashed |
+| last_login_at / last_login_ip_hash | timestamptz / varchar(64) null | IP stored as HMAC-SHA256 keyed by `IP_HASH_SALT` (`App\Support\Privacy\IpHash`) |
 | username_changed_at | timestamptz null | enforces the 30-day rule |
 | two_factor_secret / two_factor_recovery_codes / two_factor_confirmed_at | text null (encrypted) / text null (encrypted) / timestamptz null | [P2] |
 | deletion_requested_at | timestamptz null | starts the 30-day window |

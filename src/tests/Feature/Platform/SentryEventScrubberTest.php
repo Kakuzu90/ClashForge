@@ -27,7 +27,7 @@ it('drops cookies, bodies, auth headers, query strings and personal user fields'
     $request = $scrubbed->getRequest();
 
     expect($request)->not->toHaveKeys(['cookies', 'data'])
-        ->and($request['url'])->toBe('https://clash.test/reset-password/abc')
+        ->and($request['url'])->toBe('https://clash.test/reset-password/[filtered]')
         ->and($request['query_string'])->toBe('[filtered]')
         ->and(array_keys($request['headers']))->toBe(['User-Agent'])
         ->and($scrubbed->getUser()?->getId())->toBe(7)

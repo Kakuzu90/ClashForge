@@ -100,8 +100,16 @@ mechanism and the test that proves it.
 
 ### Authentication attacks
 - Rate limits per [04 §4](04-roles-and-permissions.md).
-- Identical responses and timing for unknown-email vs wrong-password; the same generic message on
-  password reset ("if an account exists, we've sent a link").
+- Identical responses and timing for unknown-email vs wrong-password (an unknown email is checked
+  against a cached hash at the current cost); the same generic message on password reset ("if an
+  account uses that email, a link is on its way").
+- The reset-link request only validates the email and queues `SendPasswordResetLinkJob`, so the
+  lookup and the token hash happen off the request path. Broker calls sit in a 700 ms timebox
+  (`auth.timebox_duration`), above the bcrypt check of a stored token.
+- Accepted risk: the ip + email and per-ip limits do not cap guessing one account from many IPs (a
+  per-email cap would let anyone lock the owner out). Failed sign-ins are logged with the account
+  ULID, which feeds the alerts in §3; 2FA for staff and the compromised-password check limit the
+  damage.
 - Registration rejects existing emails with the same generic behaviour — the account-existence
   signal is delivered by email, not by the form.
 - Session fixation prevented by regeneration on login and privilege change.
@@ -204,7 +212,8 @@ rate-limit breaches, upload quarantines, CSP violation reports.
 
 Security events go to the `security` log channel (JSON, 90 days). Errors go to Sentry with
 personal data stripped before sending: stack-frame arguments (`zend.exception_ignore_args`), request
-bodies, cookies, auth/XSRF headers, client-IP headers, query strings and user fields other than the
+bodies, cookies, auth/XSRF headers, client-IP headers, query strings, the token segment of
+`/reset-password/{token}` paths, and user fields other than the
 id; database errors keep only SQLSTATE and the placeholder SQL, in Sentry and in the JSON logs.
 
 **Alerts:** >50 failed logins from one IP in 10 min; any role change; any ownership transfer;

@@ -14,4 +14,5 @@ Route::get('/dev/layouts/{layout}', LayoutPreviewController::class)
     ->name('dev.layouts');
 Route::get('/dev/media', MediaPreviewController::class)->name('dev.media');
 
+require __DIR__.'/web/auth.php';
 require __DIR__.'/web/uploads.php';

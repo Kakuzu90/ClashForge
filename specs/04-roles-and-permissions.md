@@ -119,7 +119,10 @@ Three middlewares, applied in order, each with a dedicated denial page:
 - No API tokens or Sanctum in the MVP — there is no public API and no separate frontend. When a
   public read API arrives (Phase 7), it will be Sanctum-issued, scoped, per-user tokens with their
   own rate limits.
-- Remember-me is enabled with a rotating recaller token.
+- Remember-me is enabled. The recaller cookie lasts 30 days (the absolute cap below), and its token is
+  cycled on logout and on password reset.
+- Backend: Laravel Fortify's controllers and actions, behind our own Inertia pages, copy and routes
+  (`routes/web/auth.php`). The reset-link request is ours (a queued job, see [11](11-security.md)).
 
 ### Registration
 Email + username + password + Turnstile. Disposable-domain blocklist. Email verification required
@@ -128,7 +131,8 @@ before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`,
 ### Password policy
 - Minimum 10 characters, no composition rules (they harm more than help).
 - Rejected if present in the Have-I-Been-Pwned range API (`Password::uncompromised()`), checked
-  asynchronously with a fail-open-but-logged behaviour if the service is unreachable.
+  synchronously inside validation with a 2 s timeout. If the service cannot be reached the password
+  is accepted and `auth.hibp_unavailable` is logged (fail-open, never silent).
 - Hash: bcrypt cost 12, rehash on login when the cost changes.
 
 ### Session security
@@ -141,9 +145,9 @@ before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`,
 
 | Limiter | Limit | Key |
 |---|---|---|
-| `login` | 5 / min, then 20 / hour | ip + email |
+| `login` | 5 / min, then 20 / hour; 30 / min per ip | ip + email; ip |
 | `register` | 3 / hour | ip |
-| `password-reset` | 3 / hour | ip + email |
+| `password-reset` | 3 / hour; 20 / hour per ip (link requests only) | ip + email; ip |
 | `verify-email-resend` | 3 / hour | user |
 | `coc-attach` | 5 / hour | user |
 | `coc-refresh` | 1 / 10 min | user + account |
@@ -154,7 +158,11 @@ before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`,
 | `search` | 60 / min | ip |
 | `global-write` | 120 / min | user |
 
-All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged.
+All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their
+numbers are config keys (`config/platform.php` `auth.*` for the auth limiters). On an Inertia form
+a breach comes back as a field error with the wait time, not a bare 429, and is logged to the
+`security` channel. The new-password form (`POST /reset-password`) has no limiter: its single-use
+token already stops guessing, and counting typos would lock people out of the link they were sent.
 
 ### Two-factor (Phase 2, mandatory for staff)
 TOTP with 8 single-use recovery codes. Moderator+ accounts cannot be granted a staff role until 2FA

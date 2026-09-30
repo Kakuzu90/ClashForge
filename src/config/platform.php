@@ -21,6 +21,30 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Auth
+    |--------------------------------------------------------------------------
+    |
+    | Named limiters from specs/04 §4, keyed on ip + email. The HIBP range lookup behind
+    | Password::uncompromised() fails open after `hibp_timeout` seconds.
+    |
+    */
+
+    'auth' => [
+        'login_per_minute' => 5,
+        'login_per_hour' => 20,
+        'password_reset_per_hour' => 3,
+        // Per-IP ceilings, so rotating the email cannot turn one client into unlimited hash work.
+        'login_per_ip_per_minute' => 30,
+        'password_reset_per_ip_per_hour' => 20,
+        'min_password_length' => 10,
+        'hibp_timeout' => 2,
+    ],
+
+    // Key for hashing IPs before they are stored (last_login_ip_hash, later session ip_hash).
+    'ip_hash_salt' => env('IP_HASH_SALT') ?: env('APP_KEY'),
+
     'health' => [
         'required' => ['database', 'queue', 'storage', 'scheduler'],
         // Oldest pending job per queue before the queue reads as degraded, in seconds (specs/20 §6).

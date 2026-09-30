@@ -41,6 +41,8 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+            // Remember-me cookies last 30 days, the absolute cap in specs/04 §4 (the default is 400).
+            'remember' => 43200,
         ],
     ],
 
@@ -96,7 +98,10 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            // Single-use and valid for 60 minutes (FR-AUTH-6).
             'expire' => 60,
+            // One email per account per minute. The request always gets the same answer (the link
+            // is sent from a queued job), so this cap cannot confirm that an account exists.
             'throttle' => 60,
         ],
     ],
@@ -111,6 +116,10 @@ return [
     | confirmation screen. By default, the timeout lasts for three hours.
     |
     */
+
+    // Floor for password-broker calls, in microseconds. Above the slowest real path (checking a
+    // stored reset token costs one bcrypt-12 hash, ~250 ms) so every answer takes the same time.
+    'timebox_duration' => (int) env('AUTH_TIMEBOX_DURATION', 700000),
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 

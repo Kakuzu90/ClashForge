@@ -45,9 +45,11 @@ final class SentryEventScrubber
 
         unset($request['cookies'], $request['data'], $request['env']);
 
-        // Query strings carry reset tokens, signatures and emails: keep the path only.
+        // Query strings carry signatures and emails: keep the path only. The reset token sits in the
+        // path itself, so that segment is filtered too.
         if (isset($request['url']) && is_string($request['url'])) {
-            $request['url'] = strtok($request['url'], '?') ?: $request['url'];
+            $path = strtok($request['url'], '?') ?: $request['url'];
+            $request['url'] = (string) preg_replace('#/reset-password/[^/]+#', '/reset-password/[filtered]', $path);
         }
 
         if (isset($request['query_string'])) {

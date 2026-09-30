@@ -80,6 +80,18 @@ error: string | null,
 unreadCount: number | null,
 features: Record<string, boolean>,
 };
+namespace Auth {
+export type ForgotPasswordPageData = {
+status: string | null,
+};
+export type LoginPageData = {
+status: string | null,
+};
+export type ResetPasswordPageData = {
+token: string,
+email: string,
+};
+}
 }
 }
 namespace Support {

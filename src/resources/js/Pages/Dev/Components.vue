@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
+import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiBadge from '@/Components/ui/UiBadge.vue';
 import UiButton, { type ButtonSize, type ButtonVariant } from '@/Components/ui/UiButton.vue';
 import UiCard from '@/Components/ui/UiCard.vue';
+import UiCheckbox from '@/Components/ui/UiCheckbox.vue';
 import UiEmptyState from '@/Components/ui/UiEmptyState.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
@@ -53,6 +55,8 @@ const pickedTownHall = ref<string | null>('th16');
 const pickedCategory = ref<string | null>(null);
 const bio = ref('');
 const selected = ref(false);
+const remember = ref(false);
+const agreed = ref(true);
 const removableShown = ref(true);
 const modalOpen = ref(false);
 const { push } = useToast();
@@ -63,12 +67,14 @@ const clicked = (name: string) => push(`${name} clicked`);
 const sections = [
     'Buttons',
     'Inputs',
+    'Checkboxes',
     'Cards',
     'Pills',
     'Badges',
     'Avatars',
     'Modal',
     'Toasts',
+    'Alerts',
     'Skeletons',
     'Progress',
     'Game assets',
@@ -148,6 +154,17 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     />
                     <UiSelect label="Select error" :options="categories" searchable error="Choose a category." />
                     <UiSelect label="Select disabled" :options="categories" model-value="war" searchable disabled />
+                </div>
+            </section>
+
+            <section :id="anchor('Checkboxes')" aria-labelledby="h-checkboxes">
+                <h2 id="h-checkboxes" class="font-display text-h1">Checkboxes</h2>
+                <div class="mt-4 grid gap-2 sm:grid-cols-2">
+                    <UiCheckbox v-model="remember" label="Default" hint="The whole row is the touch target." />
+                    <UiCheckbox v-model="agreed" label="Checked" />
+                    <UiCheckbox :model-value="false" indeterminate label="Indeterminate" />
+                    <UiCheckbox :model-value="false" label="Error" error="Tick this to continue." />
+                    <UiCheckbox :model-value="true" disabled label="Disabled" />
                 </div>
             </section>
 
@@ -233,6 +250,17 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiButton size="sm" variant="secondary" @click="push('Saved', { kind: 'success' })">Push success</UiButton>
                     <UiButton size="sm" variant="secondary" @click="push('Something failed', { kind: 'danger' })">Push danger</UiButton>
                     <UiButton size="sm" variant="secondary" @click="push('Reward unlocked', { kind: 'reward' })">Push reward</UiButton>
+                </div>
+            </section>
+
+            <section :id="anchor('Alerts')" aria-labelledby="h-alerts">
+                <h2 id="h-alerts" class="font-display text-h1">Alerts</h2>
+                <p class="mt-2 text-sm text-fg-secondary">In-flow messages that stay on the page. Danger uses role alert, the rest role status.</p>
+                <div class="mt-4 flex max-w-2xl flex-col gap-3">
+                    <UiAlert kind="info">Info alert with body text only.</UiAlert>
+                    <UiAlert kind="success" title="Success alert">With a title and supporting text.</UiAlert>
+                    <UiAlert kind="warning" title="Warning alert">Something needs attention soon.</UiAlert>
+                    <UiAlert kind="danger" title="Danger alert">Something went wrong and needs action.</UiAlert>
                 </div>
             </section>
 

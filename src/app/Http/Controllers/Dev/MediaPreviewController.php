@@ -45,7 +45,7 @@ class MediaPreviewController extends Controller
 
         if (! $user->exists) {
             $user->forceFill([
-                'name' => 'Media dev',
+                'username' => 'media_dev',
                 'password' => Str::password(32),
                 'email_verified_at' => Date::now(),
             ])->save();
