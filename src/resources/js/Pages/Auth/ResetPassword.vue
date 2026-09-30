@@ -34,13 +34,14 @@ function submit() {
 
         <UiCard class="p-5 sm:p-6">
             <form ref="formEl" class="flex flex-col gap-4" novalidate @submit.prevent="submit">
-                <UiInput v-model="form.email" label="Email" type="email" autocomplete="email" required :error="form.errors.email" />
+                <UiInput v-model="form.email" label="Email" type="email" autocomplete="username" readonly :error="form.errors.email" />
                 <UiInput
                     v-model="form.password"
                     label="New password"
                     type="password"
                     autocomplete="new-password"
                     required
+                    autofocus
                     :error="form.errors.password"
                 />
                 <UiInput

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useAttrs, useId } from 'vue';
+import { computed, onMounted, ref, useAttrs, useId } from 'vue';
 
 // class/style go to the wrapper, every other attribute to the <input>.
 defineOptions({ inheritAttrs: false });
@@ -18,6 +18,8 @@ const props = withDefaults(
         disabled?: boolean;
         readonly?: boolean;
         required?: boolean;
+        /** Focuses the field on mount; native `autofocus` alone is skipped on Inertia visits. */
+        autofocus?: boolean;
         id?: string;
     }>(),
     { type: 'text' },
@@ -30,6 +32,11 @@ const wrapperAttrs = computed(() => ({ class: attrs.class, style: attrs.style })
 const controlAttrs = computed(() => {
     const { class: _class, style: _style, ...rest } = attrs;
     return rest;
+});
+
+const inputEl = ref<HTMLInputElement | null>(null);
+onMounted(() => {
+    if (props.autofocus) inputEl.value?.focus();
 });
 
 const generatedId = useId();
@@ -70,12 +77,14 @@ const describedBy = computed(
             <span v-if="prefix" :id="ids.prefix" class="pl-3 text-sm text-fg-muted">{{ prefix }}</span>
             <input
                 :id="inputId"
+                ref="inputEl"
                 v-model="model"
                 :type="type"
                 :maxlength="maxlength"
                 :disabled="disabled"
                 :readonly="readonly"
                 :required="required"
+                :autofocus="autofocus"
                 :aria-invalid="error ? 'true' : undefined"
                 :aria-describedby="describedBy"
                 class="h-full w-full min-w-0 bg-transparent px-3 text-body text-fg outline-none placeholder:text-fg-muted disabled:cursor-not-allowed"

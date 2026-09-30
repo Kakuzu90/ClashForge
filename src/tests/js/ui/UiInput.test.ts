@@ -17,6 +17,18 @@ describe('UiInput', () => {
         expect(wrapper.get('#u-error').text()).toBe('Taken');
     });
 
+    it('focuses the input on mount when autofocus is set', () => {
+        const wrapper = mount(UiInput, { props: { label: 'Email', id: 'e', autofocus: true }, attachTo: document.body });
+        expect(document.activeElement).toBe(wrapper.get('input').element);
+        wrapper.unmount();
+    });
+
+    it('does not take focus without autofocus', () => {
+        const wrapper = mount(UiInput, { props: { label: 'Email', id: 'e' }, attachTo: document.body });
+        expect(document.activeElement).not.toBe(wrapper.get('input').element);
+        wrapper.unmount();
+    });
+
     it('counts characters against maxlength', async () => {
         const wrapper = mount(UiInput, { props: { label: 'Bio', id: 'b', maxlength: 10, counter: true, modelValue: 'abc' } });
         expect(wrapper.get('#b-counter').text()).toBe('3/10');
