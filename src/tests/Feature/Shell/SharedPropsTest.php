@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('shares only the allowlisted props with guests', function () {
@@ -24,3 +25,17 @@ it('never exposes private keys in shared props', function () {
     expect(array_keys($props))->toEqualCanonicalizing(['errors', 'auth', 'flash', 'unreadCount', 'features', 'meta'])
         ->and(json_encode($props))->not->toContain('email', 'password', 'ip', 'role', 'token');
 });
+
+it('shares the admin flag for staff only, never the role', function (string $state, bool $expected) {
+    $user = User::factory()->{$state}()->create();
+
+    $response = $this->actingAs($user)->get('/');
+    $response->assertInertia(fn (Assert $page) => $page->where('auth.can', ['accessAdmin' => $expected]));
+
+    expect(json_encode($response->viewData('page')['props']['auth']))->not->toContain('role', $user->role->value === 'user' ? 'moderator' : $user->role->value);
+})->with([
+    'user' => ['unverified', false],
+    'moderator' => ['moderator', true],
+    'admin' => ['admin', true],
+    'super admin' => ['superAdmin', true],
+]);

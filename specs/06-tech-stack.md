@@ -53,8 +53,8 @@
   beside PHP-FPM. That is a deliberate exception to "no daemons we don't need"
   ([01](01-product-overview.md)) — it is the price of SEO. It runs in its own container, is
   stateless, is health-checked and auto-restarted, and pages degrade to client-side rendering if it
-  dies. SSR is disabled for `/admin/*`, `/settings/*`, `/dashboard` and `/notifications`, which
-  need no crawlability.
+  dies. SSR is disabled for `/admin/*`, `/settings/*`, `/dashboard`, `/notifications` and
+  `/account/*`, which need no crawlability.
 - **Two languages, two toolchains.** PHP + TypeScript, Pest + Vitest, PHPStan + `vue-tsc`/ESLint.
   Mitigated by keeping Vue components presentational: business rules, authorization and validation
   stay in PHP.

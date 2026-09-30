@@ -46,3 +46,12 @@ it('checks the policy after the owner-scoped lookup in the status service', func
 
     app(UploadStatusService::class)->forOwner(User::query()->findOrFail($media->user_id), $media->ulid);
 })->throws(AuthorizationException::class);
+
+it('refuses uploads from accounts that may not write content', function (string $state) {
+    $user = User::factory()->{$state}()->create();
+    $media = Media::factory()->create(['user_id' => $user->id]);
+
+    expect(Gate::forUser($user)->allows('create', Media::class))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('complete', $media))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('view', $media))->toBeTrue();
+})->with(['restricted', 'suspended', 'pendingDeletion']);

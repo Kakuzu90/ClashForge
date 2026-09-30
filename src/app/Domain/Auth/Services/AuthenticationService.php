@@ -2,6 +2,7 @@
 
 namespace App\Domain\Auth\Services;
 
+use App\Domain\Auth\Exceptions\AccountBanned;
 use App\Models\User;
 use App\Support\Privacy\IpHash;
 use Illuminate\Support\Facades\Cache;
@@ -13,12 +14,16 @@ use Illuminate\Support\Str;
 /**
  * Credential checks for Fortify's login pipeline (specs/04 §4, specs/11 "Authentication attacks").
  * An unknown email costs one password hash check, the same as a known one, so response time does
- * not reveal which addresses have accounts.
+ * not reveal which addresses have accounts. A banned account is refused only once the password
+ * matched, so its status is never shown to someone guessing (specs/04 §1).
  */
 class AuthenticationService
 {
     private const TIMING_HASH_KEY = 'auth.timing_hash';
 
+    /**
+     * @throws AccountBanned
+     */
     public function attempt(string $email, string $password): ?User
     {
         $user = User::query()->where('email', $email)->first();
@@ -34,6 +39,15 @@ class AuthenticationService
             $this->logFailure($user);
 
             return null;
+        }
+
+        if (! $user->effectiveStatus()->canLogIn()) {
+            Log::channel('security')->warning('auth.login_blocked', [
+                'user' => $user->ulid,
+                'ip_hash' => IpHash::of(request()->ip()),
+            ]);
+
+            throw new AccountBanned($user->status_reason);
         }
 
         // Keeps stored hashes at the configured cost (bcrypt 12) as it changes.

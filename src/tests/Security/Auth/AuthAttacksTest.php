@@ -176,7 +176,7 @@ it('refuses privileged fields on mass assignment', function (string $field, mixe
 
     // Production discards instead of throwing; either way the value never lands.
     Model::preventSilentlyDiscardingAttributes(false);
-    expect((new User([$field => $value]))->getAttributes())->not->toHaveKey($field);
+    expect((new User([$field => $value]))->getAttributes()[$field] ?? null)->not->toBe($value);
     Model::preventSilentlyDiscardingAttributes();
 })->with([
     'email_verified_at' => ['email_verified_at', '2026-01-01 00:00:00'],
@@ -184,4 +184,8 @@ it('refuses privileged fields on mass assignment', function (string $field, mixe
     'last_login_at' => ['last_login_at', '2026-01-01 00:00:00'],
     'last_login_ip_hash' => ['last_login_ip_hash', 'forged'],
     'ulid' => ['ulid', '01j000000000000000000000aa'],
+    'role' => ['role', 'super_admin'],
+    'status' => ['status', 'restricted'],
+    'status_reason' => ['status_reason', 'forged'],
+    'status_expires_at' => ['status_expires_at', '2026-01-01 00:00:00'],
 ]);

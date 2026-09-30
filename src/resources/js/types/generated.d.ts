@@ -1,5 +1,12 @@
 declare namespace App {
 namespace Domain {
+namespace Auth {
+namespace Enums {
+export type Role = 'user' | 'moderator' | 'admin' | 'super_admin';
+export type StaffAbility = 'access-admin' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
+export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pending_deletion';
+}
+}
 namespace GameAssets {
 namespace Data {
 export type GameAssetData = {
@@ -80,6 +87,13 @@ error: string | null,
 unreadCount: number | null,
 features: Record<string, boolean>,
 };
+namespace Account {
+export type AccountStatusPageData = {
+status: App.Domain.Auth.Enums.UserStatus,
+reason: string | null,
+endsAt: string | null,
+};
+}
 namespace Auth {
 export type ForgotPasswordPageData = {
 status: string | null,

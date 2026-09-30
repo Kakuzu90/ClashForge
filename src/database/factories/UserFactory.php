@@ -2,7 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Domain\Auth\Enums\Role;
+use App\Domain\Auth\Enums\UserStatus;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -32,6 +35,8 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'role' => Role::User,
+            'status' => UserStatus::Active,
         ];
     }
 
@@ -42,6 +47,50 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function moderator(): static
+    {
+        return $this->state(['role' => Role::Moderator]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(['role' => Role::Admin]);
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->state(['role' => Role::SuperAdmin]);
+    }
+
+    public function restricted(?CarbonInterface $until = null, string $reason = 'Spam in comments'): static
+    {
+        return $this->withStatus(UserStatus::Restricted, $reason, $until ?? now()->addDays(3));
+    }
+
+    public function suspended(?CarbonInterface $until = null, string $reason = 'Harassment'): static
+    {
+        return $this->withStatus(UserStatus::Suspended, $reason, $until ?? now()->addDays(14));
+    }
+
+    public function banned(string $reason = 'Account trading'): static
+    {
+        return $this->withStatus(UserStatus::Banned, $reason, null);
+    }
+
+    public function pendingDeletion(): static
+    {
+        return $this->withStatus(UserStatus::PendingDeletion, null, null);
+    }
+
+    private function withStatus(UserStatus $status, ?string $reason, ?CarbonInterface $until): static
+    {
+        return $this->state([
+            'status' => $status,
+            'status_reason' => $reason,
+            'status_expires_at' => $until,
         ]);
     }
 }

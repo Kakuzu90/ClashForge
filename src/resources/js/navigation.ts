@@ -1,4 +1,5 @@
 import { home } from '@/routes';
+import { dashboard as adminDashboard } from '@/routes/admin';
 
 export type NavIconName = 'home' | 'bases' | 'recruit' | 'search' | 'market' | 'profile';
 
@@ -21,6 +22,21 @@ export const primaryNav: NavItem[] = [
     { key: 'search', label: 'Search', icon: 'search' },
     { key: 'profile', label: 'Profile', icon: 'profile' },
 ];
+
+export interface HeaderLink {
+    key: string;
+    label: string;
+    href: () => string;
+    /** Shared `auth.can` ability required to see the link. */
+    can: string;
+}
+
+// Account-area links in the top bar, next to the account controls.
+export const headerLinks: HeaderLink[] = [{ key: 'admin', label: 'Admin', href: () => adminDashboard().url, can: 'accessAdmin' }];
+
+export function visibleHeaderLinks(links: HeaderLink[], can: Record<string, boolean>): (HeaderLink & { url: string })[] {
+    return links.filter((link) => can[link.can] === true).map((link) => ({ ...link, url: link.href() }));
+}
 
 export interface ResolvedNavItem extends NavItem {
     url: string;

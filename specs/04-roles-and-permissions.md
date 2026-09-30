@@ -25,7 +25,7 @@ says otherwise (e.g. moderators cannot suspend users; admins cannot change roles
 |---|---|---|---|---|
 | `active` | yes | yes | yes | Normal |
 | `restricted` | yes | yes | no publishing/commenting/messaging | Soft sanction, time-boxed |
-| `suspended` | yes | own data only | no | Sees a suspension notice with end date and appeal link |
+| `suspended` | yes | own data only | no | Every page except the notice, logout, `/settings/*` and `/notifications` redirects to a suspension notice with reason and end date; the appeal link is added with appeals (P5-02) |
 | `banned` | no | no | no | Content hidden, tags released after 30 days |
 | `pending_deletion` | yes (cancels deletion) | yes | no | 30-day window |
 
@@ -69,7 +69,9 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 | Impersonate a user | – | – | – | – (never) |
 
 **Two structural rules:**
-1. A moderator can never act on another moderator-or-above's content or account. Escalation only.
+1. A staff member can act only on content or accounts of someone they strictly outrank: a moderator
+   never acts on a moderator-or-above, an admin never on another admin. Same-level cases escalate;
+   super admins are changed only through the console command.
 2. Every row above `Report content` requires the actor to record a reason; the reason is mandatory
    at the service layer, not merely in the form.
 
@@ -91,9 +93,16 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
   policies (e.g. `base.can = { update, delete, report }`) and a global `auth.can` map via shared
   props; components use them only to show or hide UI. The server re-checks on action. Hiding a
   button is not authorization.
-- Admin-only abilities live in Gates: `access-admin`, `manage-roles`, `resolve-disputes`,
-  `view-audit-log`.
-- `Gate::before` grants super admin everything except the explicitly denied (`impersonate`).
+- Staff abilities live in Gates, one per staff row of §2 (`App\Domain\Auth\Enums\StaffAbility`,
+  registered in `App\Providers\AuthorizationServiceProvider`), including `access-admin`
+  (moderator+), `manage-roles`, `resolve-disputes` and `view-audit-log`.
+- Super admin holds every staff ability through the role hierarchy, except `impersonate`, which no
+  role holds. There is no `Gate::before` hook, so ownership policies (the `○` rows above) and rule 1
+  still apply to super admins and the matrix holds exactly.
+- A staff ability also needs the account's status to allow it: the read abilities (`access-admin`,
+  `view-report-queue`, `view-moderation-log`, `view-audit-log`) stay open to restricted and
+  pending-deletion staff, every other staff ability needs an active account, and a suspended
+  account has none. A timed sanction stops counting once `status_expires_at` passes.
 
 ### IDOR prevention
 
@@ -108,7 +117,10 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 
 Three middlewares, applied in order, each with a dedicated denial page:
 1. `EnsureEmailIsVerified` — blocks all writes.
-2. `EnsureAccountIsActive` — blocks `restricted`, `suspended`, `banned`, `pending_deletion` writes.
+2. `EnsureAccountIsActive` — `account.active` blocks `suspended`, `banned` and `pending_deletion`
+   writes; `account.active:content` also blocks `restricted` on content writes (uploads, publishing,
+   commenting, applying, messaging). Profile and settings writes stay open to restricted users.
+   Reads (GET/HEAD) pass, so the gate can sit on a whole route group such as `/admin`.
 3. `EnsureHasVerifiedCocAccount` — blocks publishing, recruiting and selling.
 
 ## 4. Authentication strategy
@@ -165,7 +177,8 @@ a breach comes back as a field error with the wait time, not a bare 429, and is 
 token already stops guessing, and counting typos would lock people out of the link they were sent.
 
 ### Two-factor (Phase 2, mandatory for staff)
-TOTP with 8 single-use recovery codes. Moderator+ accounts cannot be granted a staff role until 2FA
+TOTP with 8 single-use recovery codes. Until 2FA ships, staff roles are granted without it (P1-02);
+from Phase 2, moderator+ accounts cannot be granted a staff role until 2FA
 is enabled — enforced in the role-assignment service.
 
 ### Account recovery

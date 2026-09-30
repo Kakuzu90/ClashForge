@@ -80,10 +80,14 @@ mechanism and the test that proves it.
 - **Test:** for each owned resource, a test asserts user B gets 403/404 on user A's object.
 
 ### Broken authorization / privilege escalation
-- Policies and Gates only ([04](04-roles-and-permissions.md)); `Gate::before` limited to super admin.
+- Policies and Gates only ([04](04-roles-and-permissions.md)); no `Gate::before` hook. Super admin
+  gets staff abilities through the role hierarchy, so ownership policies and the rank rule still
+  apply.
 - Role changes are only possible through a dedicated service that (a) requires super admin,
   (b) requires 2FA on the target account for staff roles, (c) writes an audit log, (d) cannot be
   invoked from a web form that takes the role from the request without an explicit allowlist.
+  Until P1-06 and Phase 2 land, (c) is a `security` log entry (`auth.role_changed`) and (b) is not
+  yet enforced; each task adds its check.
 - `users.role` is **guarded** against mass assignment and is not in `$fillable`.
 - Admin routes sit behind a role middleware **and** a Gate check in each controller action.
 - No impersonation feature exists.
@@ -210,7 +214,9 @@ failed and successful logins, password/email changes, 2FA changes, role changes,
 CoC claim attempts and verification failures, ownership transfers, sanctions, admin data access,
 rate-limit breaches, upload quarantines, CSP violation reports.
 
-Security events go to the `security` log channel (JSON, 90 days). Errors go to Sentry with
+Security events go to the `security` log channel (JSON, 90 days). Permission denials
+(`auth.permission_denied`) are capped per account (or IP) and route at
+`platform.security_log.denials_per_minute` (20), so looping a forbidden request cannot flood it. Errors go to Sentry with
 personal data stripped before sending: stack-frame arguments (`zend.exception_ignore_args`), request
 bodies, cookies, auth/XSRF headers, client-IP headers, query strings, the token segment of
 `/reset-password/{token}` paths, and user fields other than the

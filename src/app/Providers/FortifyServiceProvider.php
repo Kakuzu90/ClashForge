@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Domain\Auth\Exceptions\AccountBanned;
 use App\Domain\Auth\Services\AuthenticationService;
 use App\Domain\Auth\Services\PasswordResetService;
 use App\Http\Data\Auth\ForgotPasswordPageData;
@@ -12,6 +13,7 @@ use App\Http\Responses\Auth\PasswordResetFailedResponse;
 use App\Support\Seo\PageMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\ValidationException;
 use Inertia\Response;
 use Laravel\Fortify\Contracts\FailedPasswordResetResponse;
 use Laravel\Fortify\Contracts\PasswordResetResponse;
@@ -33,10 +35,18 @@ class FortifyServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Fortify::authenticateUsing(fn (Request $request) => app(AuthenticationService::class)->attempt(
-            $request->string('email')->toString(),
-            $request->string('password')->toString(),
-        ));
+        Fortify::authenticateUsing(function (Request $request) {
+            try {
+                return app(AuthenticationService::class)->attempt(
+                    $request->string('email')->toString(),
+                    $request->string('password')->toString(),
+                );
+            } catch (AccountBanned $e) {
+                throw ValidationException::withMessages([
+                    'email' => $e->reason === null ? __('auth.banned') : __('auth.banned_reason', ['reason' => $e->reason]),
+                ]);
+            }
+        });
 
         Fortify::resetUserPasswordsUsing(PasswordResetService::class);
 

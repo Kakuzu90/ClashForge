@@ -166,6 +166,7 @@ require __DIR__.'/web/accounts.php';
 | `/market` `/market/{slug}` `/market/orders/{ulid}` | marketplace |
 | `/search` | search |
 | `/notifications` `/settings/*` `/dashboard` | authenticated |
+| `/account/suspended` | suspension notice (a suspended account is sent here, [04 §1](04-roles-and-permissions.md)) |
 | `/admin/*` | staff |
 | `/uploads/intent` `/uploads/{ulid}/complete` `/uploads/{ulid}` | presigned upload flow (JSON, owner only, [10 §3](10-media-storage.md)) |
 | `/health` `/sitemap.xml` `/robots.txt` | infrastructure; `/health` sits outside the `web` group (no session, no cookies) and replaces the framework's `/up` |
@@ -217,6 +218,7 @@ php artisan coc:sync-clans
 php artisan coc:rotate-keys
 php artisan coc:check-health             # CoC key pool ready (P2-01)
 php artisan platform:check-health        # external dependencies → /health state (every 5 min)
+php artisan platform:assign-role {username} {role}  # the only way to set super_admin; ends the account's sessions
 php artisan platform:heartbeat           # scheduler liveness marker (every minute, no summary line)
 php artisan media:sweep-orphans
 php artisan media:retry-failed
@@ -246,7 +248,9 @@ it deletes anything.
 3. Migration + model + factory.
 4. Enums and value objects for the new invariants.
 5. Service/Action with its transaction boundary, dispatching domain events.
-6. Policy, registered in `AuthServiceProvider`.
+6. Policy, registered in the module's service provider (e.g. `MediaServiceProvider`); policies and
+   Gates outside a module, such as `UserPolicy` and the staff Gates, in
+   `App\Providers\AuthorizationServiceProvider`.
 7. Form Request.
 8. Controller returning `Inertia::render()` with DTO props + Vue page using existing design-system
    components; regenerate TS types and Wayfinder routes.

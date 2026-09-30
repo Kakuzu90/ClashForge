@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Domain\Auth\Enums\Role;
+use App\Domain\Auth\Enums\UserStatus;
 use App\Domain\Auth\Notifications\ResetPasswordNotification;
+use App\Support\Auth\HasAccountStanding;
 use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -24,19 +27,36 @@ use Illuminate\Notifications\Notifiable;
  * @property CarbonImmutable|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
+ * @property Role $role
+ * @property UserStatus $status
+ * @property string|null $status_reason
+ * @property CarbonImmutable|null $status_expires_at
  * @property CarbonImmutable|null $last_login_at
  * @property string|null $last_login_ip_hash
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  * @property CarbonImmutable|null $deleted_at
  */
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements HasAccountStanding, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasUlids, Notifiable, SoftDeletes;
 
     /**
-     * Verification, login tracking and the remember token are set by Auth services only.
+     * Matches the column defaults, so a model is complete before it is refreshed.
+     *
+     * @var array<string, string|null>
+     */
+    protected $attributes = [
+        'role' => 'user',
+        'status' => 'active',
+        'status_reason' => null,
+        'status_expires_at' => null,
+    ];
+
+    /**
+     * Verification, login tracking, the remember token, role and status are set by Auth services
+     * only (specs/11 "Mass assignment").
      *
      * @var list<string>
      */
@@ -66,6 +86,24 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The stored status, with a passed `status_expires_at` counting as active (specs/23 §7).
+     */
+    public function effectiveStatus(): UserStatus
+    {
+        return $this->status->effective($this->status_expires_at);
+    }
+
+    public function allowsAccountWrites(): bool
+    {
+        return $this->effectiveStatus()->allowsAccountWrites();
+    }
+
+    public function allowsContentWrites(): bool
+    {
+        return $this->effectiveStatus()->allowsContentWrites();
+    }
+
+    /**
      * Queued on `high`, with our copy (specs/16 §1, specs/20 §1).
      *
      * @param  string  $token
@@ -81,6 +119,9 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'immutable_datetime',
             'last_login_at' => 'immutable_datetime',
             'password' => 'hashed',
+            'role' => Role::class,
+            'status' => UserStatus::class,
+            'status_expires_at' => 'immutable_datetime',
         ];
     }
 }

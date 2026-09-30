@@ -60,7 +60,7 @@ talks to it through **(a)** its public service classes, **(b)** its read-model/D
 
 | Module | Owns (tables) | Public surface | Depends on |
 |---|---|---|---|
-| **Auth** | `users`, `sessions`, `password_reset_tokens`, `two_factor_*` | `RegistrationService`, `EmailVerificationService`, `SessionService`, `UserStatusService` | — |
+| **Auth** | `users`, `sessions`, `password_reset_tokens`, `two_factor_*` | `RegistrationService`, `EmailVerificationService`, `SessionService`, `UserStatusService`, `RoleAssignmentService` | — |
 | **Users** | `profiles`, `privacy_settings`, `user_stats`, `follows` | `ProfileService`, `PrivacyPolicyResolver`, `PublicProfileReadModel` | Auth, Media |
 | **CocIntegration** | `coc_api_requests` (log), cache entries | `CocApiClient` (interface), `PlayerLookup`, `ClanLookup`, `TokenVerifier`, `CocApiStatus` | — (edge module, no domain deps) |
 | **PlayerAccounts** | `coc_accounts`, `coc_account_claims`, `coc_account_snapshots`, `coc_account_disputes` | `AttachAccountService`, `VerifyOwnershipService`, `DisputeService`, `AccountSyncService`, `AccountReadModel` | CocIntegration, Users, Media, Notifications |

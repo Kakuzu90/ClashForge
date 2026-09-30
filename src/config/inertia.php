@@ -30,7 +30,7 @@ return [
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
         // Authenticated and staff areas need no crawlability, so they skip SSR (specs/06 §2).
-        'except' => ['admin', 'admin/*', 'settings', 'settings/*', 'dashboard', 'notifications'],
+        'except' => ['admin', 'admin/*', 'settings', 'settings/*', 'dashboard', 'notifications', 'account/*'],
 
     ],
 

@@ -145,7 +145,7 @@ below 70% precision is tuned or disabled. Rules live in config, not code.
 |---|---|---|---|
 | Warning | Moderator+ | — | Notification + record; three warnings in 90 days auto-suggests a restriction |
 | Restriction | Moderator+ (≤7 days), Admin+ (longer) | 1–30 days | No publishing, commenting, applying or messaging. Reading and existing content unaffected |
-| Suspension | Admin+ | 1–90 days | Login permitted, everything hidden, content hidden, suspension notice with appeal link |
+| Suspension | Admin+ | 1–90 days | Login permitted, everything hidden, content hidden, suspension notice (appeal link from P5-02) |
 | Ban | Admin+ | Permanent | No login. Content hidden. CoC tags released after 30 days. Email + IP hash recorded for evasion detection |
 
 - All sanctions write `user_sanctions` + `moderation_actions` + `audit_logs`.

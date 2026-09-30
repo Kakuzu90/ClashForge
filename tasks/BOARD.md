@@ -24,11 +24,11 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
 | P1-01 | Login, logout, remember-me, password reset; `users` table in its specs/07 shape (registration + verification split to P1-08) | done | P0-* (P0-09 waived by owner, 2026-09-30) | tasks/phase-1/P1-01-login-and-password-reset.md |
-| P1-02 | Roles, status, policy scaffold | todo | P1-01 | |
-| P1-03 | Profiles + avatar upload | todo | P1-02, P0-05 | |
+| P1-02 | Roles, status, policy scaffold | done | P1-01 | tasks/phase-1/P1-02-roles-status-policy-scaffold.md |
+| P1-03 | Profiles + avatar upload (avatar uploads must stay open to restricted accounts: make `account.active:content` on `uploads/*` collection-aware, from P1-02) | todo | P1-02, P0-05 | |
 | P1-04 | Privacy settings + public profile | todo | P1-03 | |
 | P1-05 | Settings area incl. sessions, deletion (+ new-device sign-in email, from P1-01) | todo | P1-02 | |
-| P1-06 | Admin v1 + audit log | todo | P1-02 | |
+| P1-06 | Admin v1 + audit log (incl. the `audit_logs` entry for role changes from `RoleAssignmentService`, from P1-02) | todo | P1-02 | |
 | P1-07 | Notifications v1 | todo | P1-01 | |
 | P1-08 | Registration + email verification: username rules + reserved list, disposable-email blocklist, HIBP, Turnstile (register and `/forgot-password`, specs/11), honeypot + min fill time, existing-email notice, signed 60-min link, resend limiter, `UserRegistered`/`EmailVerified` (split from P1-01) | todo | P1-01 | |
 

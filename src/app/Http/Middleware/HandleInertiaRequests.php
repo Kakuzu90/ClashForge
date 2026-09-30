@@ -2,11 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Auth\Enums\StaffAbility;
 use App\Http\Data\AuthData;
 use App\Http\Data\AuthUserData;
 use App\Http\Data\SharedPropsData;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Middleware;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -60,7 +62,10 @@ class HandleInertiaRequests extends Middleware
                     avatarUrl: null, // profiles and avatars land in P1-03
                     emailVerified: $user->hasVerifiedEmail(),
                 ),
-                can: [],
+                // Show/hide flags only; the server re-checks every action (specs/04 §3).
+                can: $user === null ? [] : [
+                    'accessAdmin' => Gate::forUser($user)->allows(StaffAbility::AccessAdmin->value),
+                ],
             ),
             flash: [
                 'success' => $request->session()->get('success'),
