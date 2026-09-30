@@ -277,6 +277,20 @@
         -webkit-font-smoothing: antialiased;
     }
 
+    /* Tailwind 4's preflight resets buttons to the default cursor; clickable controls get the hand. */
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    select:not(:disabled),
+    summary,
+    label[for] {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    [role='button'][aria-disabled='true'] {
+        cursor: not-allowed;
+    }
+
     :focus-visible {
         outline: 2px solid var(--border-focus);
         outline-offset: 2px;

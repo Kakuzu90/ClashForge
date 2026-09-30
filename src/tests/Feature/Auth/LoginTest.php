@@ -120,3 +120,13 @@ it('shares the signed-in user without private fields', function () {
         ->missing('auth.user.id')
         ->missing('auth.user.last_login_ip_hash'));
 });
+
+it('asks for a valid email before checking any account', function (string $email) {
+    Hash::shouldReceive('check')->never();
+
+    $this->from('/login')->post('/login', ['email' => $email, 'password' => 'a-long-password'])
+        ->assertRedirect('/login')
+        ->assertSessionHasErrors(['email' => 'Enter a valid email address.']);
+
+    $this->assertGuest();
+})->with(['chief', 'chief@', '@example.com', 'chief example.com']);

@@ -8,6 +8,7 @@ use App\Domain\Auth\Services\PasswordResetService;
 use App\Http\Data\Auth\ForgotPasswordPageData;
 use App\Http\Data\Auth\LoginPageData;
 use App\Http\Data\Auth\ResetPasswordPageData;
+use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Responses\Auth\PasswordResetDoneResponse;
 use App\Http\Responses\Auth\PasswordResetFailedResponse;
 use App\Support\Seo\PageMeta;
@@ -18,6 +19,7 @@ use Inertia\Response;
 use Laravel\Fortify\Contracts\FailedPasswordResetResponse;
 use Laravel\Fortify\Contracts\PasswordResetResponse;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Http\Requests\LoginRequest as FortifyLoginRequest;
 
 /**
  * Fortify runs the auth backend; the pages, copy and routes are ours (specs/06 "Auth scaffolding").
@@ -28,6 +30,9 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         Fortify::ignoreRoutes();
+
+        // Fortify's controller type-hints its own request; ours adds the email format check.
+        $this->app->bind(FortifyLoginRequest::class, LoginRequest::class);
 
         $this->app->bind(FailedPasswordResetResponse::class, PasswordResetFailedResponse::class);
         $this->app->bind(PasswordResetResponse::class, PasswordResetDoneResponse::class);
