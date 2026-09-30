@@ -53,8 +53,12 @@ const pickedTownHall = ref<string | null>('th16');
 const pickedCategory = ref<string | null>(null);
 const bio = ref('');
 const selected = ref(false);
+const removableShown = ref(true);
 const modalOpen = ref(false);
 const { push } = useToast();
+
+// Specimens report their click, so the gallery also proves each variant's handler fires.
+const clicked = (name: string) => push(`${name} clicked`);
 
 const sections = [
     'Buttons',
@@ -101,18 +105,20 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
             <section :id="anchor('Buttons')" aria-labelledby="h-buttons">
                 <h2 id="h-buttons" class="font-display text-h1">Buttons</h2>
                 <div v-for="size in buttonSizes" :key="size" class="mt-4 flex flex-wrap items-center gap-3">
-                    <UiButton v-for="variant in buttonVariants" :key="variant" :variant="variant" :size="size">{{ variant }} {{ size }}</UiButton>
+                    <UiButton v-for="variant in buttonVariants" :key="variant" :variant="variant" :size="size" @click="clicked(`${variant} ${size}`)">
+                        {{ variant }} {{ size }}
+                    </UiButton>
                 </div>
                 <div class="mt-4 flex flex-wrap items-center gap-3">
                     <UiButton disabled>Disabled</UiButton>
                     <UiButton loading>Loading</UiButton>
-                    <UiButton variant="secondary" icon-only aria-label="Close">
+                    <UiButton variant="secondary" icon-only aria-label="Close" @click="clicked('Close')">
                         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
                             <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                         </svg>
                     </UiButton>
                 </div>
-                <div class="mt-4 max-w-sm"><UiButton block>Block</UiButton></div>
+                <div class="mt-4 max-w-sm"><UiButton block @click="clicked('Block')">Block</UiButton></div>
             </section>
 
             <section :id="anchor('Inputs')" aria-labelledby="h-inputs">
@@ -168,7 +174,8 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                 </div>
                 <div class="mt-3 flex flex-wrap gap-2">
                     <UiPill label="Selectable" selectable :selected="selected" @toggle="selected = !selected" />
-                    <UiPill label="Removable" removable />
+                    <UiPill v-if="removableShown" label="Removable" removable @remove="removableShown = false" />
+                    <UiButton v-else size="sm" variant="ghost" @click="removableShown = true">Show the removable pill again</UiButton>
                 </div>
             </section>
 
@@ -289,7 +296,7 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                             </svg>
                         </template>
                         <template #action>
-                            <UiButton>Primary action</UiButton>
+                            <UiButton @click="clicked('Primary action')">Primary action</UiButton>
                         </template>
                     </UiEmptyState>
                 </UiCard>
