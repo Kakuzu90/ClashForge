@@ -105,6 +105,8 @@ rarely — and because it should be trivially cacheable as one small row.
 `user_id (PK, FK → users)`, `profile_visibility (public|members|private)`,
 `show_coc_accounts (bool)`, `show_clan (bool)`, `show_activity (bool)`,
 `allow_recruitment_contact (bool)`, `allow_marketplace_contact (bool)`, `searchable (bool)`.
+Defaults: `public`; `show_coc_accounts`, `show_clan`, `show_activity`, `allow_recruitment_contact`
+and `searchable` true; `allow_marketplace_contact` false.
 
 ### `user_stats` [M]
 Denormalised counters so profile pages are a single row read.

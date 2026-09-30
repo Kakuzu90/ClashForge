@@ -126,8 +126,8 @@ mechanism and the test that proves it.
 ### Account enumeration
 - Generic messages on login, register, reset and email change.
 - Username availability check is rate-limited (10/min) and returns only a boolean.
-- Profile visibility settings respected in search and in direct URL access (`private` → 404, not
-  403, so existence is not confirmed).
+- Profile visibility settings respected in search and in direct URL access (`private`, and
+  `members` for a guest, → 404, not 403, so existence is not confirmed).
 
 ### File upload attacks
 Fully specified in [10-media-storage.md](10-media-storage.md). Summary of controls:

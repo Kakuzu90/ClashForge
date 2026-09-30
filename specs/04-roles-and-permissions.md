@@ -26,8 +26,8 @@ says otherwise (e.g. moderators cannot suspend users; admins cannot change roles
 | `active` | yes | yes | yes | Normal |
 | `restricted` | yes | yes | no publishing/commenting/messaging | Soft sanction, time-boxed |
 | `suspended` | yes | own data only | no | Every page except the notice, logout, `/settings/*` and `/notifications` redirects to a suspension notice with reason and end date; the appeal link is added with appeals (P5-02) |
-| `banned` | no | no | no | Content hidden, tags released after 30 days |
-| `pending_deletion` | yes (cancels deletion) | yes | no | 30-day window |
+| `banned` | no | no | no | Content hidden (the public profile 404s), tags released after 30 days |
+| `pending_deletion` | yes (cancels deletion) | yes | no | 30-day window; the public profile 404s |
 
 Additional flags gating capabilities: `email_verified_at` (required for any write),
 `has_verified_coc_account` (required to publish bases, recruit, or sell).
@@ -93,6 +93,8 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
   policies (e.g. `base.can = { update, delete, report }`) and a global `auth.can` map via shared
   props; components use them only to show or hide UI. The server re-checks on action. Hiding a
   button is not authorization.
+- Profile visibility has no staff bypass: `/u/{username}` applies the same rules to staff, who see
+  hidden accounts through the admin user detail instead.
 - Staff abilities live in Gates, one per staff row of §2 (`App\Domain\Auth\Enums\StaffAbility`,
   registered in `App\Providers\AuthorizationServiceProvider`), including `access-admin`
   (moderator+), `manage-roles`, `resolve-disputes` and `view-audit-log`.

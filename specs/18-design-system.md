@@ -379,7 +379,9 @@ copies, war stars across accounts) → tabs: Accounts · Bases · Activity (P2) 
 *Empty (no accounts):* prompt to attach an account (own profile) / "no public accounts" (others).
 *Empty (no bases):* own → "publish your first base" CTA; others → muted message.
 *Loading:* cover + avatar skeleton, then tab content skeletons.
-*Error (private profile):* "This profile is private" card, nothing else disclosed.
+*Error (hidden profile):* a `private` profile (to anyone but the owner), a `members` profile (to a
+guest) and a banned or pending-deletion owner render the same 404 as an unknown username, so the
+page never confirms the account exists ([11](11-security.md)).
 
 ### CoC account detail (`/accounts/{ulid}`)
 PlayerCard hero → verification status banner → stat blocks with deltas → hero/troop/spell/equipment
