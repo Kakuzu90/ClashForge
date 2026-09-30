@@ -168,7 +168,7 @@ before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`,
 | `report` | 20 / day | user |
 | `upload-intent` | 30 / hour | user |
 | `search` | 60 / min | ip |
-| `global-write` | 120 / min | user |
+| `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
 
 All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their
 numbers are config keys (`config/platform.php` `auth.*` for the auth limiters). On an Inertia form

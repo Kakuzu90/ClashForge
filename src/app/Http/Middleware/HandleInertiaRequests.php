@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Auth\Enums\StaffAbility;
+use App\Domain\Users\Queries\ProfileReadModel;
 use App\Http\Data\AuthData;
 use App\Http\Data\AuthUserData;
 use App\Http\Data\SharedPropsData;
@@ -59,7 +60,7 @@ class HandleInertiaRequests extends Middleware
             auth: new AuthData(
                 user: $user === null ? null : new AuthUserData(
                     username: $user->username,
-                    avatarUrl: null, // profiles and avatars land in P1-03
+                    avatarUrl: app(ProfileReadModel::class)->avatarUrl($user),
                     emailVerified: $user->hasVerifiedEmail(),
                 ),
                 // Show/hide flags only; the server re-checks every action (specs/04 §3).

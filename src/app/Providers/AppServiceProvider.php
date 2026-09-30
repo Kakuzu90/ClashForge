@@ -70,6 +70,20 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute((int) config('platform.auth.login_per_ip_per_minute'))->by('login:ip:'.$request->ip())->response($this->throttledForm('login')),
         ]);
 
+        // Backstop on every signed-in write (specs/04 §4). An Inertia form gets the wait as a flash
+        // error on the page it came from, not a bare 429.
+        RateLimiter::for('global-write', fn (Request $request): Limit => Limit::perMinute((int) config('platform.rate_limits.global_write_per_minute'))
+            ->by('global-write:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(function (Request $request, array $headers): Response {
+                Log::channel('security')->warning('auth.rate_limited', ['limiter' => 'global-write', 'ip_hash' => IpHash::of($request->ip())]);
+
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'Too many changes. Wait a minute and try again.'], 429, $headers);
+                }
+
+                return back()->with('error', 'Too many changes. Wait a minute and try again.');
+            }));
+
         RateLimiter::for('password-reset', fn (Request $request): array => [
             Limit::perHour((int) config('platform.auth.password_reset_per_hour'))->by('password-reset:'.$this->emailKey($request))->response($this->throttledForm('password-reset')),
             Limit::perHour((int) config('platform.auth.password_reset_per_ip_per_hour'))->by('password-reset:ip:'.$request->ip())->response($this->throttledForm('password-reset')),

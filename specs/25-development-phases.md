@@ -253,8 +253,9 @@ user input, files, or crosses a trust boundary.
 | Registration + email verification (P1-08) | [04 §4](04-roles-and-permissions.md), [11](11-security.md), [07](07-database-schema.md) (auth) | [16](16-notifications.md), [18](18-design-system.md) |
 | Roles, status, policy scaffold | [04](04-roles-and-permissions.md), [11](11-security.md) | [19](19-module-structure.md) |
 | Profiles + avatar upload | [07](07-database-schema.md) (users), [10](10-media-storage.md), [18](18-design-system.md) | [04](04-roles-and-permissions.md) |
-| Privacy settings + public profile | [04](04-roles-and-permissions.md), [18 §6](18-design-system.md) | [17 §6](17-search-and-discovery.md) (SEO) |
+| Privacy settings + public profile (+ `user_stats`) | [04](04-roles-and-permissions.md), [18 §6](18-design-system.md), [07](07-database-schema.md) (`privacy_settings`, `user_stats`) | [17 §6](17-search-and-discovery.md) (SEO) |
 | Settings area incl. sessions, deletion | [04](04-roles-and-permissions.md), [11](11-security.md) | [08 §6](08-entity-relationships.md) (deletion semantics) |
+| Username change + `username_history` (P1-09) | [07](07-database-schema.md) (users, `username_history`), [04 §4](04-roles-and-permissions.md) | [23 §1](23-edge-cases.md) |
 | Admin v1 + audit log | [12](12-moderation-system.md), [07](07-database-schema.md) (audit) | [18 §4](18-design-system.md) (admin components) |
 | Notifications v1 | [16](16-notifications.md), [07](07-database-schema.md) | [20](20-jobs-and-scheduling.md) |
 

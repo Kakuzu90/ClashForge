@@ -80,6 +80,18 @@ return [
 
     'trusted_proxies' => array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', ''))))),
 
+    // Profile field limits (FR-PROFILE-2, specs/07 `profiles`).
+    'profile' => [
+        'display_name_max' => 50,
+        'bio_max' => 500,
+        'languages_max' => 3,
+    ],
+
+    // Named limiters outside auth (specs/04 §4).
+    'rate_limits' => [
+        'global_write_per_minute' => 120,
+    ],
+
     'security_log' => [
         // auth.permission_denied lines per account (or IP) and route per minute (specs/11 §3).
         'denials_per_minute' => 20,

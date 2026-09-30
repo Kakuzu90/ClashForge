@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Enums\UserStatus;
+use App\Domain\Users\Models\Profile;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -38,6 +39,31 @@ class UserFactory extends Factory
             'role' => Role::User,
             'status' => UserStatus::Active,
         ];
+    }
+
+    /**
+     * Every user has exactly one profile (FR-PROFILE-1); registration creates it, so the factory
+     * does too.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            if (! Profile::query()->where('user_id', $user->id)->exists()) {
+                (new Profile)->forceFill(['user_id' => $user->id])->save();
+            }
+        });
+    }
+
+    /**
+     * Fills the profile created with the user.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function withProfileData(array $attributes): static
+    {
+        return $this->afterCreating(function (User $user) use ($attributes): void {
+            Profile::query()->where('user_id', $user->id)->firstOrFail()->forceFill($attributes)->save();
+        });
     }
 
     /**

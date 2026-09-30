@@ -55,3 +55,14 @@ it('refuses uploads from accounts that may not write content', function (string 
         ->and(Gate::forUser($user)->allows('complete', $media))->toBeFalse()
         ->and(Gate::forUser($user)->allows('view', $media))->toBeTrue();
 })->with(['restricted', 'suspended', 'pendingDeletion']);
+
+it('treats an avatar as a profile write that restricted accounts may make', function () {
+    $user = User::factory()->restricted()->create();
+    $avatar = Media::factory()->collection(MediaCollection::Avatar)->create(['user_id' => $user->id]);
+    $screenshot = Media::factory()->create(['user_id' => $user->id]);
+
+    expect(Gate::forUser($user)->allows('create', [Media::class, MediaCollection::Avatar]))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('create', [Media::class, MediaCollection::BaseScreenshot]))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('complete', $avatar))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('complete', $screenshot))->toBeFalse();
+});

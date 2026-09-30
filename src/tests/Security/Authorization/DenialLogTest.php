@@ -22,12 +22,12 @@ it('logs a Gate denial', function () {
 });
 
 it('logs a write blocked by account status', function () {
-    $user = User::factory()->restricted()->create();
+    $user = User::factory()->pendingDeletion()->create();
 
     $this->actingAs($user)->postJson('/uploads/intent')->assertForbidden();
 
     expect($this->securityEvents()[0])->toMatchArray(['message' => 'auth.permission_denied'])
-        ->and($this->securityEvents()[0]['context'])->toMatchArray(['user' => $user->ulid, 'reason' => 'status:restricted', 'route' => 'uploads.intent']);
+        ->and($this->securityEvents()[0]['context'])->toMatchArray(['user' => $user->ulid, 'reason' => 'status:pending_deletion', 'route' => 'uploads.intent']);
 });
 
 it('logs a banned session being ended', function () {

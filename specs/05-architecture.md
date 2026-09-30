@@ -69,7 +69,7 @@ talks to it through **(a)** its public service classes, **(b)** its read-model/D
 | **Recruitment** | `recruitment_posts`, `recruitment_applications`, `recruitment_interests` | `RecruitmentPostService`, `ApplicationService`, `RecruitmentSearchQuery` | PlayerAccounts, Clans, Notifications |
 | **Marketplace** | `seller_profiles`, `marketplace_listings`, `marketplace_orders`, `marketplace_reviews`, `marketplace_disputes` | `ListingService`, `OrderService`, `ReviewService` | Users, Messaging, Media, Moderation |
 | **Messaging** | `conversations`, `conversation_participants`, `messages` | `ConversationService`, `MessageService` | Users, Moderation |
-| **Media** | `media`, `media_variants` | `UploadIntentService`, `MediaAttachmentService`, `MediaUrlResolver` | — (edge module) |
+| **Media** | `media`, `media_variants` | `UploadIntentService`, `MediaAttachmentService`, `MediaReadService` (status and variant URLs by media id), `MediaUrlResolver` | — (edge module) |
 | **GameAssets** | — (config + manifest, no tables) | `GameAssetResolver` (unit / TH / clan badge / league emblem → URL + accessible name), `GameAssetPolicy` flag | — (edge module). The only place Supercell assets are referenced ([18 §2](18-design-system.md)) |
 | **Notifications** | `notifications`, `notification_preferences` | `Notifier` (facade over channels), `NotificationReadModel` | Users |
 | **Moderation** | `reports`, `report_cases`, `moderation_actions`, `user_sanctions` | `ReportService`, `CaseService`, `SanctionService`, `Moderatable` contract | Users, Notifications, Audit |

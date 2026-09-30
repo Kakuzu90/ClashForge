@@ -64,7 +64,8 @@ src/
 app/Domain/Bases/
 ├── Actions/          PublishBase.php, ToggleLike.php, RecordView.php
 ├── Contracts/        BaseRepository.php, TrendingScorer.php     ← what others may depend on
-├── Data/             PublishBaseData.php, BaseCardData.php      ← readonly DTOs
+├── Data/             PublishBaseData.php, BaseCardData.php      ← readonly DTOs (plus, where Http must
+│                     validate against Support value objects, a static `*FieldRules` facade, e.g. Users `ProfileFieldRules`)
 ├── Enums/            BaseCategory.php, BaseStatus.php, Visibility.php
 ├── Events/           BasePublished.php, BaseLiked.php
 ├── Exceptions/       DuplicateLayoutException.php

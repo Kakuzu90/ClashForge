@@ -25,7 +25,7 @@ class UploadIntentService
 
     public function create(Authenticatable $user, CreateUploadIntentData $data): UploadTicketData
     {
-        Gate::forUser($user)->authorize('create', Media::class);
+        Gate::forUser($user)->authorize('create', [Media::class, $data->collection]);
 
         $now = Date::now();
         $ttl = (int) config('media.intent_ttl');

@@ -9,6 +9,6 @@ defineProps<{ compact?: boolean }>();
 <template>
     <Link :href="home().url" class="hit-target inline-flex items-center rounded-sm font-display leading-none text-fg" aria-label="Clash Commons home">
         <span v-if="compact" class="text-h3 text-brand" aria-hidden="true">CC</span>
-        <span v-else class="text-h2" aria-hidden="true">Clash <span class="text-brand">Commons</span></span>
+        <span v-else class="text-h2 whitespace-nowrap" aria-hidden="true">Clash <span class="text-brand">Commons</span></span>
     </Link>
 </template>

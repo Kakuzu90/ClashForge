@@ -5,12 +5,14 @@ namespace App\Models;
 use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Enums\UserStatus;
 use App\Domain\Auth\Notifications\ResetPasswordNotification;
+use App\Domain\Users\Models\Profile;
 use App\Support\Auth\HasAccountStanding;
 use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -83,6 +85,14 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
     public function uniqueIds(): array
     {
         return ['ulid'];
+    }
+
+    /**
+     * @return HasOne<Profile, $this>
+     */
+    public function profile(): HasOne
+    {
+        return $this->hasOne(Profile::class);
     }
 
     /**

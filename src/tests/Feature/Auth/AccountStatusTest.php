@@ -164,9 +164,9 @@ describe('write gate', function () {
         $this->actingAs($user)->post('/_test/content-write')->assertOk();
     });
 
-    it('blocks a restricted account from starting an upload', function () {
-        $this->actingAs(User::factory()->restricted()->create())
-            ->postJson('/uploads/intent', ['collection' => 'base_screenshot', 'filename' => 'a.jpg', 'size' => 1000, 'mime' => 'image/jpeg'])
+    it('blocks a pending deletion from starting an upload at the route', function () {
+        $this->actingAs(User::factory()->pendingDeletion()->create())
+            ->postJson('/uploads/intent', ['collection' => 'avatar', 'filename' => 'a.jpg', 'size' => 1000, 'mime' => 'image/jpeg'])
             ->assertForbidden()
             ->assertJson(['message' => __('account.write_blocked')]);
     });

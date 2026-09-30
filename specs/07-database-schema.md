@@ -89,11 +89,11 @@ Public presentation of a user. 1:1 with `users`; split so profile writes never t
 | display_name | varchar(50) null | falls back to username |
 | bio | varchar(500) null | plain text, stored unescaped, escaped on render |
 | avatar_media_id | bigint null FK → media | `ON DELETE SET NULL` |
-| country_code | char(2) null | ISO-3166-1 |
-| languages | varchar(5)[] | ISO-639-1, max 3, `CHECK (array_length <= 3)` |
+| country_code | char(2) null | ISO-3166-1 alpha-2: the ICU region list minus regions that are not countries (EU, UN, XK, ZZ, …) |
+| languages | varchar(5)[] | ISO-639-1, max 3, `CHECK (array_length <= 3)`; JSON on SQLite (tests), both through `AsStringList` |
 | timezone | varchar(64) null | |
-| socials | jsonb default '{}' | `{youtube, twitch, discord, x}`, each validated on write |
-| search_vector | tsvector | generated from username + display_name + bio |
+| socials | jsonb default '{}' | `{youtube, twitch, discord, x}` as handles, never URLs (YouTube `@handle`, Twitch login, Discord username, X handle), each validated on write; links are built on render from fixed `https://` hosts, Discord shows as text |
+| search_vector | tsvector | from username + display_name + bio; a trigger or reindex job, not a generated column, since `username` is on `users` (P3-05) |
 | created_at / updated_at | timestamptz | |
 
 **Indexes:** GIN on `search_vector`; `(country_code)`; GIN on `languages`.

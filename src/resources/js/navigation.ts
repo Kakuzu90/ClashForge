@@ -1,5 +1,6 @@
 import { home } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
+import { edit as profileSettings } from '@/routes/settings/profile';
 
 export type NavIconName = 'home' | 'bases' | 'recruit' | 'search' | 'market' | 'profile';
 
@@ -50,3 +51,13 @@ export function isActive(currentUrl: string, itemUrl: string): boolean {
     const path = currentUrl.split(/[?#]/)[0] || '/';
     return itemUrl === '/' ? path === '/' : path === itemUrl || path.startsWith(`${itemUrl}/`);
 }
+
+export interface SettingsLink {
+    key: string;
+    label: string;
+    href: () => string;
+}
+
+// specs/18 §6 Settings sub-nav: Profile · Privacy · Accounts · Security · Notifications · Danger zone.
+// Each section joins when its page ships (P1-04, P1-05, P2).
+export const settingsNav: SettingsLink[] = [{ key: 'profile', label: 'Profile', href: () => profileSettings().url }];

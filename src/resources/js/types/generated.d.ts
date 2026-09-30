@@ -66,6 +66,32 @@ export type MediaVisibility = 'public' | 'private';
 export type VariantName = 'thumb' | 'card' | 'full' | 'poster' | 'video_720p';
 }
 }
+namespace Users {
+namespace Data {
+export type AvatarData = {
+status: App.Domain.Media.Enums.MediaStatus | null,
+url512: string | null,
+url128: string | null,
+url48: string | null,
+};
+export type ProfileFormData = {
+username: string,
+displayName: string | null,
+bio: string | null,
+countryCode: string | null,
+languages: string[],
+timezone: string | null,
+socials: App.Domain.Users.Data.SocialHandlesData,
+avatar: App.Domain.Users.Data.AvatarData,
+};
+export type SocialHandlesData = {
+youtube: string | null,
+twitch: string | null,
+x: string | null,
+discord: string | null,
+};
+}
+}
 }
 namespace Http {
 namespace Data {
@@ -104,6 +130,29 @@ status: string | null,
 export type ResetPasswordPageData = {
 token: string,
 email: string,
+};
+}
+namespace Settings {
+export type ProfileSettingsPageData = {
+profile: App.Domain.Users.Data.ProfileFormData,
+avatarUpload: App.Domain.Media.Data.UploadCollectionData,
+countries: {
+value: string,
+label: string,
+}[],
+languages: {
+value: string,
+label: string,
+}[],
+timezones: {
+value: string,
+label: string,
+}[],
+limits: {
+displayNameMax: number,
+bioMax: number,
+languagesMax: number,
+},
 };
 }
 }

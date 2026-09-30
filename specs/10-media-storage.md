@@ -155,6 +155,11 @@ parent's transaction:
 - assert the parent's quota (≤2 screenshots, ≤1 video, ≤5 account images, 1 avatar);
 - set `attachable_type/id`, clear `expires_at`, set `position`.
 
+Media a parent stops using (a replaced or removed avatar) is released by
+`MediaAttachmentService::release()`: claimed as `deleting` and deleted by `DeleteMediaObjectsJob`
+once the parent's transaction commits, with no recovery window. Quarantined media is never
+released. CDN copies can outlive the objects until the edge cache is purged (P0-09).
+
 A base whose media is still `processing` is created in `processing` status and published
 automatically by the `MediaReady` listener when the last item finishes.
 
@@ -260,7 +265,7 @@ correct for ≤60 s clips), multiple resolutions, subtitles, GIF output.
 
 | Scope | Limit | Enforced |
 |---|---|---|
-| Avatar | 1, ≤2 MB | On attach (replaces the previous, which is queued for deletion) |
+| Avatar | 1, ≤2 MB | On attach (replaces the previous, which is deleted after commit, §3 "Attachment") |
 | CoC account images | 5 per account, ≤5 MB each | `coc_accounts.images_count` checked in the attach transaction |
 | Base screenshots | 2 per base, ≤5 MB each | attach transaction |
 | Base video | 1 per base, ≤100 MB, ≤60 s | attach transaction |

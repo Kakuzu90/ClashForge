@@ -3,6 +3,7 @@
 use App\Domain\Auth\AuthServiceProvider;
 use App\Domain\GameAssets\GameAssetsServiceProvider;
 use App\Domain\Media\MediaServiceProvider;
+use App\Domain\Users\UsersServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\AuthorizationServiceProvider;
 use App\Providers\FortifyServiceProvider;
@@ -15,5 +16,6 @@ return [
     AuthServiceProvider::class,
     AuthorizationServiceProvider::class,
     MediaServiceProvider::class,
+    UsersServiceProvider::class,
     GameAssetsServiceProvider::class,
 ];
