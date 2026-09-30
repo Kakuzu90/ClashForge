@@ -54,7 +54,15 @@ if [ $fast -eq 0 ]; then
   fi
   # Stale if regenerating changes what is on disk (compared with the working tree, not HEAD).
   gen=(resources/js/types resources/js/routes resources/js/actions resources/js/wayfinder)
-  gen_hash() { (cd "$src" && find "${gen[@]}" -type f -exec shasum {} + 2>/dev/null | sort | shasum); }
+  if command -v sha256sum >/dev/null 2>&1; then
+    hash=(sha256sum)
+  elif command -v shasum >/dev/null 2>&1; then
+    hash=(shasum -a 256)
+  else
+    echo "FAIL: generated-file checks require sha256sum or shasum."
+    exit 1
+  fi
+  gen_hash() { (cd "$src" && find "${gen[@]}" -type f -exec "${hash[@]}" {} + 2>/dev/null | sort | "${hash[@]}"); }
   before=$(gen_hash)
   run "ts types"  app php artisan typescript:transform
   run "wayfinder" app php artisan wayfinder:generate

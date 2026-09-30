@@ -27,13 +27,17 @@ beforeEach(function () {
 });
 
 it('signs uploads against the configured endpoint when no presign host is set', function () {
-    $signed = app(MediaUrlResolver::class)->presignUpload('quarantine/2026/09/x/original.jpg', 'image/jpeg', Date::now()->addMinutes(5));
+    $this->freezeTime();
+    $expiresAt = Date::now()->addMinutes(5);
+    $signed = app(MediaUrlResolver::class)->presignUpload('quarantine/2026/09/x/original.jpg', 'image/jpeg', $expiresAt);
 
     $url = parse_url($signed['url']);
+    parse_str($url['query'], $query);
 
     expect($url['host'].':'.$url['port'])->toBe('storage-internal:9000')
         ->and($url['path'])->toBe('/test-bucket/quarantine/2026/09/x/original.jpg')
-        ->and($url['query'])->toContain('X-Amz-Signature=')->toMatch('/X-Amz-Expires=(299|300)\b/')
+        ->and($url['query'])->toContain('X-Amz-Signature=')
+        ->and(Date::parse($query['X-Amz-Date'])->addSeconds((int) $query['X-Amz-Expires'])->getTimestamp())->toBe($expiresAt->getTimestamp())
         ->and($signed['headers'])->toBe(['Content-Type' => 'image/jpeg']);
 });
 
