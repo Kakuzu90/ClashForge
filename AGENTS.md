@@ -28,6 +28,7 @@ DESIGN.md         design direction + antislop owner decisions (points to specs/1
 tasks/            BOARD.md + one task file per unit of work
 docs/ai/rules/    path-scoped coding rules (read before touching matching paths)
 docs/ai/workflows/ step-by-step procedures, invoked by name
+docs/ai/PLAYBOOK.md human cheat sheet: how to prompt each flow
 scripts/          check.sh (all checks), guard-paths.sh (protected paths)
 .githooks/        pre-commit — enable with: git config core.hooksPath .githooks
 src/              the Laravel app (created in Phase 0) — app/Domain, app/Http, resources/js, tests
