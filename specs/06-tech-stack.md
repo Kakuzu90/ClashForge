@@ -5,7 +5,8 @@
 | Layer | Choice | Confidence |
 |---|---|---|
 | Language / framework | PHP 8.3 + Laravel 12 | High — matches the committed Docker stack |
-| Frontend | **Livewire 3 + Alpine.js + Tailwind CSS 4** | High |
+| Frontend | **Inertia 2 + Vue 3 (TypeScript, `<script setup>`) + Tailwind CSS 4** | High |
+| SSR | Inertia SSR renderer (Node 22, own container) on public routes | Medium — one extra process, see §2 |
 | Database | PostgreSQL 16 | High |
 | Cache / Queue / Session | `database` driver (Postgres) | High for MVP |
 | Object storage | Cloudflare R2 (S3 driver) | High |
@@ -13,49 +14,64 @@
 | Search | PostgreSQL FTS (`tsvector` + GIN) + `pg_trgm` | High for MVP |
 | Media processing | Intervention Image v3 + ffmpeg on the worker | Medium — revisit at volume |
 | Mail | Postmark or Amazon SES (Mailpit locally) | Medium |
-| Admin UI | Hand-built Livewire under `/admin` | High |
+| Admin UI | Hand-built Inertia + Vue pages under `/admin` | High |
 | Error tracking | Sentry | High |
-| Testing | Pest 3, Laravel HTTP/queue/storage fakes | High |
-| Static analysis | PHPStan/Larastan L6 (L8 on `app/Domain`) + Pint + Deptrac | High |
+| Testing | Pest 3 (+ `assertInertia`), Vitest + Vue Test Utils, Laravel HTTP/queue/storage fakes | High |
+| Static analysis | PHPStan/Larastan L6 (L8 on `app/Domain`) + Pint + Deptrac; `vue-tsc` + ESLint (`eslint-plugin-vue`) + Prettier | High |
+| PHP ↔ TS contracts | `spatie/laravel-typescript-transformer` (DTOs, enums → TS types), Laravel Wayfinder (routes → TS helpers) | High |
 
 ## 2. Frontend: the actual decision
 
-### Option A — Laravel + Blade + Livewire (recommended)
+### Option A — Laravel + Inertia 2 + Vue 3 (chosen)
 
 **For this project specifically:**
-- The product is **content-first and SEO-critical**. Public base pages and player profiles must be
-  server-rendered, crawlable and shareable with rich Open Graph cards. Livewire gives that for free;
-  an SPA makes you build SSR to get it back.
-- The interactive surface is **narrow and local**: like/bookmark toggles, filter panels, upload
-  progress, notification bell, infinite scroll, admin tables. None of these need a client-side
-  router or a client-side store.
-- **One language, one mental model, one deploy.** With a small team, every hour spent on a TypeScript
-  API client is an hour not spent on the dispute workflow.
-- Forms with file uploads, validation and authorization are Livewire's strongest case, and this app
-  is mostly forms with file uploads.
-- Payload size stays small, which matters because the audience is mobile-heavy in regions where
-  data is expensive.
+- The interactive surface is wider than it first looks: filter panels that update without losing
+  scroll position, optimistic like/bookmark toggles, multi-file presigned uploads with progress, a
+  searchable TH/unit picker, the notification bell, infinite scroll, and admin workflow screens
+  (dispute resolution, report triage) with multi-step local state. Vue handles these on the client
+  without a server round-trip per interaction — which matters for a mobile-heavy, high-latency
+  audience.
+- **Server-driven routing stays.** Inertia keeps Laravel routes, controllers, middleware, policies,
+  Form Requests and session auth exactly as they are. No API layer, no client-side router, no token
+  storage, no CORS, one deploy.
+- **SEO and Open Graph are covered by SSR.** Public pages (base detail, profiles, discovery,
+  recruitment, market) are rendered on the server by Inertia's SSR renderer, so crawlers and
+  link-unfurlers get full HTML. Title, meta description, canonical, OG and JSON-LD are *also*
+  emitted by the root Blade view from controller-supplied view data, so share cards keep working
+  even if the SSR process is down.
+- **Typed contracts between PHP and Vue.** Page props are the modules' `Data` DTOs; TypeScript types
+  are generated from them and route helpers from Laravel routes. A renamed field fails `vue-tsc` in
+  CI, not in production.
+- **Headroom for the roadmap.** The interactive base-layout editor and any live war dashboard slot
+  into the same stack instead of forcing a second UI paradigm later.
+- Payload stays controlled: per-page code splitting, partial reloads (`only:`), deferred props and
+  merge props for infinite scroll keep public pages inside the JS budget (NFR-PERF-6).
 
 **Costs, honestly:**
-- Every interaction is a network round-trip. Mitigated by doing genuinely local UI in Alpine
-  (dropdowns, modals, tab switching, optimistic like animation) and reserving Livewire for state
-  that touches the server.
-- Livewire's server-state model means chatty components can generate load; we cap it with
-  `wire:model.blur`/`.live.debounce`, computed properties and a per-user `global-write` limiter.
-- If a genuinely app-like surface appears later (a live war dashboard, real-time chat), Livewire is
-  the wrong tool, and we would add Inertia for that section only. Nothing in the architecture
-  prevents that.
+- **One more long-running process.** SSR needs a Node renderer (`php artisan inertia:start-ssr`)
+  beside PHP-FPM. That is a deliberate exception to "no daemons we don't need"
+  ([01](01-product-overview.md)) — it is the price of SEO. It runs in its own container, is
+  stateless, is health-checked and auto-restarted, and pages degrade to client-side rendering if it
+  dies. SSR is disabled for `/admin/*`, `/settings/*`, `/dashboard` and `/notifications`, which
+  need no crawlability.
+- **Two languages, two toolchains.** PHP + TypeScript, Pest + Vitest, PHPStan + `vue-tsc`/ESLint.
+  Mitigated by keeping Vue components presentational: business rules, authorization and validation
+  stay in PHP.
+- **Props are public.** Everything passed to a page is serialised into the HTML and the Inertia XHR
+  response. Only DTOs cross the boundary — never Eloquent models or `toArray()`
+  ([11](11-security.md)).
+- SSR-unsafe code (touching `window`/`document` during setup) breaks the server render; a lint rule
+  and an SSR smoke test in CI catch it.
 
-### Option B — Laravel + Inertia + Vue/React
+### Option B — Laravel + Blade + Livewire (not chosen)
 
-Better if: the UI were interaction-heavy, the team had strong frontend specialists, or the product
-needed rich client-side state (drag-and-drop base editor, live war room).
+Better if: the team were PHP-only, the interactive surface were limited to a handful of toggles,
+and avoiding a Node process outranked client-side interactivity.
 
-Why not now: dual-stack build/debug/test cost, SSR needed for SEO (a Node process we then have to
-operate — directly against the low-cost, no-extra-daemon constraint), and a large share of the work
-would be re-describing server state as props and types.
-
-**Revisit if:** we build an interactive base-layout editor, or real-time features become core.
+Why not: every interaction is a server round-trip (expensive on the target mobile networks),
+chatty components add write load to a database-backed cache/session stack, component state is
+harder to type and test, and the planned base editor / war room would need Inertia anyway —
+leaving two UI paradigms in one app.
 
 ### Option C — Separate API + decoupled frontend
 
@@ -68,9 +84,11 @@ flexibility we would not use.
 
 ### Decision
 
-**Livewire 3.** The one non-obvious consequence to plan for: keep business logic out of Livewire
-components entirely (they call services, like controllers do), so that if a section ever migrates
-to Inertia or an API, only the thin presentation layer is rewritten.
+**Inertia 2 + Vue 3 (Composition API, `<script setup lang="ts">`), SSR on public routes.** Keep
+business logic out of controllers and Vue components entirely: controllers validate → call a
+service/action → `Inertia::render()` with DTO props, or redirect. Vue components render props and
+emit user intent; they never compute permissions, quotas, prices or eligibility. If a public JSON
+API arrives (Phase 7), it reuses the same services and DTOs — only a thin resource layer is added.
 
 ## 3. Database: PostgreSQL over MySQL
 
@@ -138,16 +156,20 @@ a transcoding service — the `MediaProcessor` interface exists for that swap.
 **Search.** Postgres FTS behind a `SearchService` interface. Migration trigger and target in
 [17](17-search-and-discovery.md).
 
-**Admin panel.** Hand-built Livewire, not Filament/Nova. Reasoning: the admin surfaces here are
+**Admin panel.** Hand-built Inertia + Vue, not Filament/Nova. Reasoning: the admin surfaces here are
 workflow tools (dispute resolution, report triage with content snapshots, ownership transfer), not
 CRUD grids. A generic admin package optimises for the CRUD we barely have and fights us on the
 workflows we actually need — plus it doubles the UI dependency surface we must style and secure.
-Simple CRUD tables in Livewire are ~60 lines each.
+Simple CRUD screens are one controller plus one Vue page built on shared `Admin*` table and
+filter components.
 
 **Auth scaffolding.** Use Laravel's Fortify for backend auth logic only (no Breeze/Jetstream views).
 All views are ours, per the design-system constraint in [18](18-design-system.md).
 
-**Frontend build.** Vite (already in compose), Tailwind CSS 4, Alpine. Two self-hosted font families
+**Frontend build.** Vite (already in compose), Vue 3 + TypeScript, `@inertiajs/vue3`, Tailwind CSS 4.
+Client and SSR bundles are built together (`vite build && vite build --ssr`); the SSR bundle ships
+in the same image and runs in the `ssr` container. Generated TS types and Wayfinder route helpers
+are rebuilt in CI and a diff fails the build. Two self-hosted font families
 (Lilita One, Inter) with `font-display: swap` — self-hosted, not Google Fonts CDN, to avoid a
 third-party request and any consent question.
 
@@ -155,6 +177,10 @@ third-party request and any consent question.
 complex rules, and policies. External edges always faked: `Http::fake()` for the CoC API,
 `Storage::fake()` for R2, `Queue::fake()`/`Bus::fake()` for dispatch assertions, `Mail::fake()`.
 A small set of contract tests runs the real `CocApiClient` against recorded fixtures.
+Inertia responses are asserted with `assertInertia()` (component name + prop shape), with
+`inertia.testing.ensure_pages_exist` on. Vue components with logic (composables, forms, the upload
+queue) get Vitest + Vue Test Utils tests; purely presentational components are covered by the
+`/dev/components` gallery and one SSR smoke test that renders every public page.
 
 ## 6. Explicitly rejected for the MVP
 
@@ -164,7 +190,8 @@ A small set of contract tests runs the real `CocApiClient` against recorded fixt
 | Meilisearch / Typesense / Elasticsearch | Postgres FTS is sufficient below ~100k documents |
 | Laravel Reverb / websockets | No real-time requirement in the MVP; requires Redis |
 | Filament / Nova | Workflow-shaped admin, not CRUD-shaped |
-| Inertia + Vue/React | See §2 |
+| Livewire / Alpine | See §2 |
+| React | Vue chosen for SFC ergonomics and smaller runtime; no team preference for React |
 | Kubernetes | One VPS, one container set; compose or a PaaS is the correct tier |
 | Serverless / Vapor | Long-running ffmpeg jobs and a low, predictable load profile fit a VPS better |
 | A payments provider | Marketplace payments are out of scope ([15](15-marketplace-workflow.md)) |

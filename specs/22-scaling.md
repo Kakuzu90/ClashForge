@@ -53,7 +53,7 @@ Already covered by the Redis move.
 
 ### 7th — Single app server (Stage 3)
 **Response:** the app is stateless by requirement (NFR-SCALE-2), so this is: put a load balancer in
-front, run 2–3 app containers, move sessions to Redis, ensure no local filesystem writes outside
+front, run 2–3 app containers (each with its own `ssr` sidecar), move sessions to Redis, ensure no local filesystem writes outside
 the framework cache, and make deploys roll node by node.
 
 ## 3. Database scaling plan
@@ -106,7 +106,8 @@ Rough, but enough to know when something is wrong:
 | Base feed page (24 cards, indexed, counters denormalised) | 3–6 queries, < 40 ms |
 | Base detail page | 6–10 queries, < 60 ms |
 | Profile page | 5–8 queries, < 50 ms |
-| Livewire filter update | 2–4 queries, < 30 ms |
+| Inertia partial reload (filter change) | 2–4 queries, < 30 ms |
+| SSR render (base detail) | 20–60 ms Node CPU |
 | Image processing (3 variants from a 5 MB source) | 2–5 s |
 | Video transcode (60 s, 1080p → 720p) | 30–90 s |
 | CoC account sync (cache miss) | 200–600 ms, 1 API call |

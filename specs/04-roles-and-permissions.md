@@ -80,9 +80,12 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 - One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `CocAccountPolicy`,
   `BaseLayoutPolicy`, `BaseCommentPolicy`, `RecruitmentPostPolicy`, `ApplicationPolicy`,
   `ListingPolicy`, `OrderPolicy`, `ReportPolicy`, `MediaPolicy`.
-- Every controller/Livewire action calls `authorize()` / `$this->authorize()`. **No implicit trust
+- Every controller action calls `authorize()` / `Gate::authorize()`. **No implicit trust
   from route grouping alone** — route middleware is defence in depth, not the check.
-- Blade uses `@can` for display; the server re-checks on action. Hiding a button is not authorization.
+- Vue never decides authorization. Controllers pass per-resource ability flags computed by
+  policies (e.g. `base.can = { update, delete, report }`) and a global `auth.can` map via shared
+  props; components use them only to show or hide UI. The server re-checks on action. Hiding a
+  button is not authorization.
 - Admin-only abilities live in Gates: `access-admin`, `manage-roles`, `resolve-disputes`,
   `view-audit-log`.
 - `Gate::before` grants super admin everything except the explicitly denied (`impersonate`).
@@ -106,8 +109,8 @@ Three middlewares, applied in order, each with a dedicated denial page:
 ## 4. Authentication strategy
 
 ### Mechanism
-- **Session-based authentication** (Laravel's built-in guard), database session driver. Livewire
-  uses the same session; no token juggling.
+- **Session-based authentication** (Laravel's built-in guard), database session driver. Inertia
+  requests use the same session cookie; no token juggling.
 - No API tokens or Sanctum in the MVP — there is no public API and no separate frontend. When a
   public read API arrives (Phase 7), it will be Sanctum-issued, scoped, per-user tokens with their
   own rate limits.

@@ -1,0 +1,9 @@
+# Stricter pass for the business core (specs/03 NFR-MAINT-2). Runs once app/Domain exists (P0-02).
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 8
+    paths:
+        - app/Domain
+    tmpDir: storage/framework/cache/phpstan-domain

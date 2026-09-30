@@ -238,7 +238,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 | **Button** | primary (gold), secondary (surface+border), ghost, danger, success | default, hover, active(compressed), focus-visible, disabled, loading(spinner, width-locked) |
 | | sizes: sm 32px, md 40px, lg 48px; `block`, `icon-only` (square, aria-label required) | |
 | **Input / Textarea** | default, with-prefix, with-suffix, with-counter | default, focus, error, disabled, readonly |
-| **Select** | native-styled, searchable (Alpine) | same |
+| **Select** | native-styled, searchable (Vue combobox) | same |
 | **Checkbox / Radio / Toggle** | — | default, checked, indeterminate, focus, disabled |
 | **Pill / Tag** | neutral, category (per-category hue), th, status, removable | default, hover, selected |
 | **Badge** | verified (gold check), featured (purple star), role (mod/admin), rarity | — |
@@ -428,7 +428,7 @@ information-dense, keyboard-first.
 | Reward toast | Slide + slight overshoot + gold glow fade | 500ms |
 | Modal / sheet | Fade scrim 150ms; sheet slides up 250ms `--ease-out` | — |
 | Skeleton shimmer | 1.5s linear loop | — |
-| Page transition | None. Server-rendered navigation stays instant and honest | — |
+| Page transition | None. Inertia swaps pages instantly; a top progress bar shows only after 250 ms | — |
 
 `@media (prefers-reduced-motion: reduce)` — all transforms and loops are disabled, transitions drop
 to ≤50ms opacity only, count-ups render the final value immediately, and shimmer becomes a static
@@ -458,18 +458,22 @@ tint. This is implemented once in the base stylesheet, not per component.
 
 - Tailwind CSS 4 with `@theme` mapping the semantic tokens; **arbitrary colour values are banned**
   in templates — a lint rule enforces token usage.
-- Blade components under `resources/views/components/{ui,game,admin}/`, with a living component
+- Vue SFC components under `resources/js/Components/{ui,game,admin}/` (`UiButton`, `GamePlayerCard`,
+  `AdminTable` …), with a living component
   gallery at `/dev/components` (non-production only) showing every variant and state. This page is
   the design system's actual source of truth and must be updated with each new variant.
-- Alpine for local interactivity (menus, sheets, tabs, optimistic like animation); Livewire only
-  where server state is involved.
+- Vue handles local interactivity (menus, sheets, tabs, optimistic like animation). Anything that
+  touches server state goes through an Inertia visit, partial reload or `useForm` — never a
+  hand-rolled `fetch`/axios call (presigned uploads excepted). Components must be SSR-safe: no
+  `window`/`document` access outside `onMounted`.
 - Icons: one original 24px outline set, delivered as an inline SVG sprite; no icon font, no
   third-party set that ships brand marks. Platform iconography never mixes with game assets inside
   the same sprite.
 - Game assets (units, Town Halls, clan badges, league emblems) are rendered **only** through
-  `<x-game.asset>` / `GameAssetResolver` (§2.3), unmodified, always with an accessible name, and
-  always with a non-asset fallback. A review-checklist item and a lint rule ban game-asset paths in
-  templates.
+  `GameAssetResolver` (§2.3) in PHP — DTOs carry the resolved `{ url, alt, width, height }` — and
+  the `<GameAsset>` Vue component, unmodified, always with an accessible name, and always with a
+  non-asset fallback. A review-checklist item and an ESLint rule ban game-asset paths in `.vue`
+  files.
 - Illustrations for empty states: original, simple geometric shapes in brand colours — no
   characters, no redraws of game art.
 - Images: `loading="lazy"` below the fold, explicit `width`/`height`, `srcset` from media variants,

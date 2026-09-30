@@ -30,7 +30,7 @@ phase that exposes it ships.
 | # | Risk | I | L | Score | Mitigation |
 |---|---|---|---|---|---|
 | R11 | Game updates break data mapping | 2 | 4 | 8 | `jsonb` storage, unknown units preserved, no hardcoded TH max, contract tests |
-| R12 | Livewire performance on slow mobile networks | 3 | 3 | 9 | Alpine for local interactivity, minimal round-trips, debounced inputs, performance budgets in CI |
+| R12 | Client JS weight and SSR reliability on slow mobile networks | 3 | 3 | 9 | Per-page code splitting, deferred/partial props, bundle-size budget in CI; SSR container health-checked and auto-restarted; meta/OG rendered by root Blade view independent of SSR |
 | R13 | Spam and bot registration at launch | 3 | 3 | 9 | Turnstile, email verification, trust ramp, disposable-domain blocklist |
 | R14 | Scraping of the base corpus by competitors | 2 | 4 | 8 | Rate limits, pagination caps, no public API; accepted as partly unavoidable |
 | R15 | SEO fails to materialise; no organic acquisition | 3 | 3 | 9 | Server-rendered pages, structured data, TH/category landing pages from day one |
@@ -72,7 +72,7 @@ Each assumption is stated with what happens if it turns out false.
 | A10 | Postgres FTS is adequate to ~100k documents | Move to Meilisearch earlier; the interface exists |
 | A11 | In-house ffmpeg is adequate for MVP video volume | Offload to a transcoding service; the interface exists |
 | A12 | One VPS serves 50k MAU | Scale vertically first, then horizontally; the app is stateless by requirement |
-| A13 | Livewire is sufficient for every MVP interaction | Add Alpine-side behaviour; in the extreme, a single section adopts Inertia — business logic already sits in services, so only presentation moves |
+| A13 | One Inertia SSR Node process beside PHP-FPM is reliable and cheap enough on one VPS | Restrict SSR to the highest-value public routes and serve the rest client-rendered; in the extreme, cache SSR HTML for anonymous public pages at the edge — business logic already sits in services, so only rendering moves |
 | A14 | R2 + Cloudflare egress stays effectively free | Media costs rise; tighten quotas; the storage interface allows a provider change |
 
 ### Operational

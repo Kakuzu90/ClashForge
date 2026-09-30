@@ -28,25 +28,32 @@ src/
 │   │   ├── Audit/
 │   │   └── Search/
 │   ├── Http/
-│   │   ├── Controllers/             # thin: only where Livewire is not the right tool
+│   │   ├── Controllers/             # ← UI entry points: thin, return Inertia::render() or redirect
+│   │   │   ├── Home/ Bases/ Profile/ Accounts/ Recruit/ Market/ Settings/
 │   │   │   ├── Web/                 # redirects, downloads, copy-link, sitemap, health
-│   │   │   ├── Upload/              # presigned intent + complete
+│   │   │   ├── Upload/              # presigned intent + complete (JSON)
 │   │   │   └── Admin/
-│   │   ├── Middleware/
+│   │   ├── Middleware/              # incl. HandleInertiaRequests (shared props, root view, SSR toggle)
 │   │   ├── Requests/                # form requests grouped by domain
 │   │   └── Resources/               # only if a JSON API appears (Phase 7)
-│   ├── Livewire/                    # ← the UI
-│   │   ├── Pages/                   # full-page components, one per route
-│   │   │   ├── Home/ Bases/ Profile/ Accounts/ Recruit/ Market/ Settings/
-│   │   ├── Components/              # reusable interactive components
-│   │   └── Admin/
 │   ├── Models/                      # thin re-export shims ONLY if needed for conventions
 │   ├── Policies/                    # registered centrally; implementations may live in Domain
 │   ├── Providers/
 │   ├── Support/                     # framework-adjacent helpers shared by all modules
 │   │   ├── Enums/ Casts/ Rules/ Traits/ Macros/ ValueObjects/
-│   └── View/Components/             # Blade component classes
-├── bootstrap/ config/ database/ public/ resources/ routes/ storage/ tests/
+├── resources/
+│   ├── css/app.css                  # Tailwind 4 `@theme` tokens
+│   ├── js/
+│   │   ├── app.ts  ssr.ts           # Inertia client + SSR entry points
+│   │   ├── Pages/                   # ← the UI: one Vue page per Inertia::render() name
+│   │   │   ├── Home/ Bases/ Profile/ Accounts/ Recruit/ Market/ Settings/ Admin/
+│   │   ├── Layouts/                 # PublicLayout, AppLayout, AdminLayout (persistent layouts)
+│   │   ├── Components/              # design system: ui/ game/ admin/
+│   │   ├── Composables/             # useLike, useUpload, useFilters …
+│   │   ├── types/generated.d.ts     # from PHP Data DTOs + enums — generated, never hand-edited
+│   │   └── routes/  actions/  wayfinder/   # Wayfinder output — generated, never hand-edited
+│   └── views/app.blade.php          # the single root view: @vite, @inertiaHead, meta/OG/JSON-LD, @inertia
+├── bootstrap/ config/ database/ public/ routes/ storage/ tests/
 ```
 
 ### Inside a module
@@ -77,16 +84,20 @@ Laravel. It is worth it: it makes the ownership boundary visible in the file pat
 ## 2. Dependency rules (enforced in CI)
 
 ```
-Livewire / Http  ──▶  Domain\*\Services | Actions | Queries | Data | Enums | Contracts
+Http             ──▶  Domain\*\Services | Actions | Queries | Data | Enums | Contracts
 Domain\X         ──▶  Domain\Y\Contracts | Services | Data | Events | Enums          ✅
 Domain\X         ──▶  Domain\Y\Models                                                 ❌
-Domain\*         ──▶  App\Livewire | App\Http                                         ❌
+Domain\*         ──▶  App\Http                                                      ❌
 Domain\CocIntegration ──▶ any other Domain                                            ❌ (edge module)
 Domain\Media          ──▶ any other Domain                                            ❌ (edge module)
 Domain\GameAssets     ──▶ any other Domain                                            ❌ (edge module)
 Domain\Audit          ──▶ any other Domain                                            ❌ (leaf)
 Support          ──▶  nothing in Domain                                               ❌
 ```
+
+On the frontend, `resources/js` may import only its own modules plus generated types/routes;
+ESLint `no-restricted-imports`/`no-restricted-syntax` ban direct `axios`/`fetch` to app routes
+outside the upload composable, and game-asset paths in `.vue` files.
 
 Implemented with Deptrac (`deptrac.yaml`) as a CI job. A violation fails the build with the exact
 file and line. Exceptions require an entry in a `deptrac.allowlist` file with a comment explaining
@@ -106,8 +117,10 @@ why — visible, reviewable debt rather than silent erosion.
 | Policy | `{Model}Policy` | `BaseLayoutPolicy` |
 | Enum | singular noun | `BaseCategory`, `ReportReason` |
 | Value object | domain noun | `PlayerTag`, `BaseLink`, `LayoutHash` |
-| Livewire page | `App\Livewire\Pages\{Area}\{Action}` | `Pages\Bases\Show`, `Pages\Bases\Create` |
-| Blade component | kebab | `<x-game.player-card>`, `<x-ui.button>` |
+| Controller | `App\Http\Controllers\{Area}\{Resource}Controller`, resourceful methods | `Bases\BaseController@show` |
+| Inertia page | `resources/js/Pages/{Area}/{Action}.vue`, rendered as `'{Area}/{Action}'` | `Pages/Bases/Show.vue` |
+| Vue component | PascalCase, prefixed by its folder | `UiButton.vue`, `GamePlayerCard.vue`, `AdminTable.vue` |
+| Composable | `use{Thing}` | `useLike`, `useUpload` |
 | Migration | `{timestamp}_create_{table}_table` | standard |
 | Test | `{Subject}Test` in a mirrored path | `tests/Feature/Bases/PublishBaseTest.php` |
 
@@ -147,7 +160,7 @@ require __DIR__.'/web/accounts.php';
 | `/admin/*` | staff |
 | `/health` `/sitemap.xml` `/robots.txt` | infrastructure |
 
-All state-changing routes are POST/PATCH/DELETE or Livewire actions; nothing mutates on GET
+All state-changing routes are POST/PATCH/DELETE (Inertia `router`/`useForm`); nothing mutates on GET
 (`/bases/{slug}/copy` records a counter, which is the one deliberate exception — it is deduped,
 rate-limited and idempotent within its window).
 
@@ -178,12 +191,13 @@ tests/
 ├── Contract/         # CoC API mapper against recorded fixtures
 ├── Architecture/     # Pest arch tests: no Domain→Http, models not used cross-module, no `env()` outside config
 ├── Fixtures/         # recorded API responses, sample media
-└── Support/          # factories helpers, fake clients, test traits
+├── Support/          # factories helpers, fake clients, test traits
+└── js/               # Vitest + Vue Test Utils: composables and components with logic
 ```
 
 **Architecture tests** (Pest's `arch()`) run as unit tests and cover what Deptrac does not:
-no `dd`/`dump`/`ray` in `app/`, no `env()` outside `config/`, every Livewire page has a
-corresponding feature test, every model has `$fillable`, every enum is backed.
+no `dd`/`dump`/`ray` in `app/`, no `env()` outside `config/`, every Inertia page has a
+feature test asserting its component and props, no Eloquent model passed to `Inertia::render()`, every model has `$fillable`, every enum is backed.
 
 ## 7. Console commands
 
@@ -218,9 +232,10 @@ it deletes anything.
 4. Enums and value objects for the new invariants.
 5. Service/Action with its transaction boundary, dispatching domain events.
 6. Policy, registered in `AuthServiceProvider`.
-7. Form Request or Livewire validation rules.
-8. Livewire page/component + Blade views using existing design-system components.
-9. Feature test (happy path + authorization + validation), plus a security test if a new surface
+7. Form Request.
+8. Controller returning `Inertia::render()` with DTO props + Vue page using existing design-system
+   components; regenerate TS types and Wayfinder routes.
+9. Feature test with `assertInertia` (happy path + authorization + validation), plus a security test if a new surface
    accepts user input or files.
 10. Add the component variant to `/dev/components` if a new UI variant was introduced.
 11. Update `specs/` if the implementation diverged from the plan — the spec is the artifact that

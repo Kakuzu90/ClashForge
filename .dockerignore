@@ -1,0 +1,15 @@
+.git
+.github
+.claude
+.agents
+specs
+tasks
+docs
+anti-slop
+node_modules
+src/node_modules
+src/vendor
+src/storage/*.key
+src/.env
+**/.DS_Store
+*.md

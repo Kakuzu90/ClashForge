@@ -13,8 +13,9 @@ Each NFR has a target and a way to verify it. Anything unverifiable is a wish, n
 | NFR-PERF-5 | Cumulative Layout Shift | < 0.1 | Lighthouse CI; all media has intrinsic dimensions |
 | NFR-PERF-6 | JS shipped on a public page | < 120 KB gzipped | Bundle-size budget failing the build |
 | NFR-PERF-7 | No page issues more than 25 SQL queries | hard cap | `preventLazyLoading` in non-production + a query-count assertion in feature tests |
-| NFR-PERF-8 | Livewire component update round-trip, p95 | < 250 ms | Instrumented in application metrics |
+| NFR-PERF-8 | Inertia visit / partial-reload round-trip (XHR), p95 | < 250 ms | Instrumented in application metrics |
 | NFR-PERF-9 | Background job p95 wait time in queue | < 30 s for `default`, < 5 min for `media` | Queue depth metric + job timing |
+| NFR-PERF-10 | SSR render time for a public page, p95 | < 150 ms | SSR renderer timing logged per request |
 
 **Non-negotiable query rules:** no N+1 in any list view; every feed and profile query is covered by
 an index verified with `EXPLAIN`; counters are denormalised columns, never `COUNT(*)` in a loop.
@@ -49,7 +50,7 @@ Full controls in [11-security.md](11-security.md). NFR-level commitments:
 |---|---|
 | NFR-SEC-1 | HTTPS only, HSTS with a 1-year max-age, secure + httpOnly + SameSite=Lax session cookies. |
 | NFR-SEC-2 | A Content-Security-Policy with no `unsafe-inline` for scripts; nonce-based where inline is unavoidable. |
-| NFR-SEC-3 | All authorization goes through Policies/Gates. No inline role checks in controllers or Blade beyond `@can`. |
+| NFR-SEC-3 | All authorization goes through Policies/Gates. No inline role checks in controllers; Vue reads policy-computed `can` flags only, never `role`. |
 | NFR-SEC-4 | No secrets in the repository; all credentials via environment. |
 | NFR-SEC-5 | Dependency scanning on every PR; critical CVEs block merge. |
 | NFR-SEC-6 | Every destructive or cross-user admin action is audit-logged with actor, target, before/after and IP. |
