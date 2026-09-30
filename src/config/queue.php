@@ -44,6 +44,17 @@ return [
             'after_commit' => false,
         ],
 
+        // Consumed only by the media worker. Same jobs table, but its retry_after must exceed the
+        // 900 s media job timeout or a long job is reserved twice (specs/20 §5).
+        'media' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'media',
+            'retry_after' => (int) env('DB_MEDIA_QUEUE_RETRY_AFTER', 1200),
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),

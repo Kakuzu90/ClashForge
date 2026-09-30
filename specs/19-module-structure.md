@@ -161,6 +161,7 @@ require __DIR__.'/web/accounts.php';
 | `/search` | search |
 | `/notifications` `/settings/*` `/dashboard` | authenticated |
 | `/admin/*` | staff |
+| `/uploads/intent` `/uploads/{ulid}/complete` `/uploads/{ulid}` | presigned upload flow (JSON, owner only, [10 §3](10-media-storage.md)) |
 | `/health` `/sitemap.xml` `/robots.txt` | infrastructure |
 
 All state-changing routes are POST/PATCH/DELETE (Inertia `router`/`useForm`); nothing mutates on GET

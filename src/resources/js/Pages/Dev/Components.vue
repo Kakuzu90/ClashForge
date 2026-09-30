@@ -7,6 +7,7 @@ import UiEmptyState from '@/Components/ui/UiEmptyState.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
 import UiPill, { type PillTone } from '@/Components/ui/UiPill.vue';
+import UiProgress from '@/Components/ui/UiProgress.vue';
 import UiSkeleton from '@/Components/ui/UiSkeleton.vue';
 import UiTextarea from '@/Components/ui/UiTextarea.vue';
 import UiToast from '@/Components/ui/UiToast.vue';
@@ -29,7 +30,7 @@ const selected = ref(false);
 const modalOpen = ref(false);
 const { push } = useToast();
 
-const sections = ['Buttons', 'Inputs', 'Cards', 'Pills', 'Badges', 'Avatars', 'Modal', 'Toasts', 'Skeletons', 'Empty state'];
+const sections = ['Buttons', 'Inputs', 'Cards', 'Pills', 'Badges', 'Avatars', 'Modal', 'Toasts', 'Skeletons', 'Progress', 'Empty state'];
 const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 </script>
 
@@ -180,6 +181,17 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiSkeleton variant="stat" />
                     <UiSkeleton variant="media" />
                     <UiSkeleton variant="card" />
+                </div>
+            </section>
+
+            <section :id="anchor('Progress')" aria-labelledby="h-progress">
+                <h2 id="h-progress" class="font-display text-h1">Progress</h2>
+                <div class="mt-4 grid gap-6 sm:grid-cols-2">
+                    <UiProgress label="Uploading screenshot.png" :value="0" />
+                    <UiProgress label="Uploading screenshot.png" :value="64" />
+                    <UiProgress label="Uploading screenshot.png" :value="100" />
+                    <UiProgress label="Processing (indeterminate)" />
+                    <UiProgress label="Hidden label, still announced" :value="40" hide-label />
                 </div>
             </section>
 

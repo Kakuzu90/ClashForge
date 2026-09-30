@@ -1,4 +1,48 @@
 declare namespace App {
+namespace Domain {
+namespace Media {
+namespace Data {
+export type MediaVariantData = {
+name: App.Domain.Media.Enums.VariantName,
+url: string,
+width: number,
+height: number,
+};
+export type UploadCollectionData = {
+value: App.Domain.Media.Enums.MediaCollection,
+label: string,
+maxBytes: number,
+accept: string,
+typesLabel: string,
+};
+export type UploadStatusData = {
+mediaUlid: string,
+status: App.Domain.Media.Enums.MediaStatus,
+finished: boolean,
+failureMessage: string | null,
+width: number | null,
+height: number | null,
+variants: App.Domain.Media.Data.MediaVariantData[],
+};
+export type UploadTicketData = {
+mediaUlid: string,
+uploadUrl: string,
+uploadMethod: string,
+uploadHeaders: Record<string, string>,
+expiresIn: number,
+maxSize: number,
+};
+}
+namespace Enums {
+export type MediaCollection = 'avatar' | 'account_image' | 'base_screenshot' | 'base_video' | 'evidence' | 'portfolio';
+export type MediaFailureReason = 'object_missing' | 'size_mismatch' | 'undecodable' | 'dimensions_too_large' | 'dimensions_too_small' | 'animated' | 'suspicious_content' | 'processing_error';
+export type MediaKind = 'image' | 'video';
+export type MediaStatus = 'pending' | 'uploaded' | 'processing' | 'ready' | 'failed' | 'quarantined' | 'deleting';
+export type MediaVisibility = 'public' | 'private';
+export type VariantName = 'thumb' | 'card' | 'full' | 'poster' | 'video_720p';
+}
+}
+}
 namespace Http {
 namespace Data {
 export type AuthData = {

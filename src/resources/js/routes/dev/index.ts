@@ -105,9 +105,54 @@ layouts.head = (args: { layout: string | number } | [layout: string | number ] |
     method: 'head',
 })
 
+/**
+* @see \App\Http\Controllers\Dev\MediaPreviewController::__invoke
+* @see app/Http/Controllers/Dev/MediaPreviewController.php:25
+* @route '/dev/media'
+*/
+export const media = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: media.url(options),
+    method: 'get',
+})
+
+media.definition = {
+    methods: ["get","head"],
+    url: '/dev/media',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Dev\MediaPreviewController::__invoke
+* @see app/Http/Controllers/Dev/MediaPreviewController.php:25
+* @route '/dev/media'
+*/
+media.url = (options?: RouteQueryOptions) => {
+    return media.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Dev\MediaPreviewController::__invoke
+* @see app/Http/Controllers/Dev/MediaPreviewController.php:25
+* @route '/dev/media'
+*/
+media.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: media.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Dev\MediaPreviewController::__invoke
+* @see app/Http/Controllers/Dev/MediaPreviewController.php:25
+* @route '/dev/media'
+*/
+media.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: media.url(options),
+    method: 'head',
+})
+
 const dev = {
     components: Object.assign(components, components),
     layouts: Object.assign(layouts, layouts),
+    media: Object.assign(media, media),
 }
 
 export default dev
