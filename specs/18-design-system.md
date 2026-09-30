@@ -323,7 +323,8 @@ These use body font, `--radius-sm`, no lift, no glow, denser spacing (`--space-2
 ### Mobile (< 768px) — the primary target
 - Sticky top bar: logo, search icon, notification bell.
 - **Bottom tab navigation** (5 items, 56px + safe-area inset): Home · Bases · Recruit · Market ·
-  Profile. Market is hidden until Phase 6; the slot is Search until then.
+  Profile. Market is hidden until Phase 6; the slot is Search until then. An item appears only once
+  its page exists (owner decision, P0-04), so early phases show fewer tabs.
 - Single-column content, 16px gutters.
 - Filters open as a bottom sheet, not an inline panel.
 - Primary actions are reachable with a thumb; destructive actions never are.

@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@inertiajs/vue3', () => ({ Head: { render: () => null } }));
+vi.mock('@inertiajs/vue3', () => ({ Head: { render: () => null }, Link: { template: '<a><slot /></a>' } }));
 
 import Index from '@/Pages/Home/Index.vue';
 

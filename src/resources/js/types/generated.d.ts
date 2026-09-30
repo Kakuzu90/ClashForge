@@ -1,3 +1,27 @@
+declare namespace App {
+namespace Http {
+namespace Data {
+export type AuthData = {
+user: App.Http.Data.AuthUserData | null,
+can: Record<string, boolean>,
+};
+export type AuthUserData = {
+username: string,
+avatarUrl: string | null,
+emailVerified: boolean,
+};
+export type SharedPropsData = {
+auth: App.Http.Data.AuthData,
+flash: {
+success: string | null,
+error: string | null,
+},
+unreadCount: number | null,
+features: Record<string, boolean>,
+};
+}
+}
+}
 declare namespace Illuminate {
 export type CursorPaginator<TKey, TValue> = {
 data: TKey extends string ? Record<TKey, TValue> : TValue[],

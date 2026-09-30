@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import PublicLayout from '@/Layouts/PublicLayout.vue';
+
+defineOptions({ layout: PublicLayout });
 </script>
 
 <template>
-    <Head title="Home" />
-    <main class="grid min-h-screen place-items-center p-4">
-        <div class="text-center">
-            <h1 class="text-3xl font-bold">Clash Commons</h1>
-            <p class="mt-2">Foundation build. Placeholder page until the app shell lands (P0-04).</p>
-        </div>
-    </main>
+    <section class="py-10 md:py-16">
+        <h1 class="font-display text-display">Clash Commons</h1>
+        <p class="mt-3 max-w-xl text-body text-fg-secondary">
+            Base layouts, verified player cards and clan recruitment for Clash of Clans players. The first features are on the way.
+        </p>
+    </section>
 </template>

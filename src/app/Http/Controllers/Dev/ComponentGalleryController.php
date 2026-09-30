@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Dev;
 
 use App\Http\Controllers\Controller;
-use Inertia\Inertia;
+use App\Support\Seo\PageMeta;
 use Inertia\Response;
 
 /**
@@ -15,6 +15,6 @@ class ComponentGalleryController extends Controller
     {
         abort_if(app()->isProduction(), 404);
 
-        return Inertia::render('Dev/Components');
+        return PageMeta::page('Dev/Components', meta: new PageMeta(title: 'Components', noindex: true));
     }
 }

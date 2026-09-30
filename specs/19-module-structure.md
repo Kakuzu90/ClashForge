@@ -48,7 +48,8 @@ src/
 │   │   ├── Pages/                   # ← the UI: one Vue page per Inertia::render() name
 │   │   │   ├── Home/ Bases/ Profile/ Accounts/ Recruit/ Market/ Settings/ Admin/
 │   │   ├── Layouts/                 # PublicLayout, AppLayout, AdminLayout (persistent layouts)
-│   │   ├── Components/              # design system: ui/ game/ admin/
+│   │   ├── Components/              # design system: ui/ game/ admin/; shell/ (header, navs, footer); dev/ (previews)
+│   │   ├── navigation.ts            # primary nav config (items appear once their page exists)
 │   │   ├── Composables/             # useLike, useUpload, useFilters …
 │   │   ├── types/generated.d.ts     # from PHP Data DTOs + enums — generated, never hand-edited
 │   │   └── routes/  actions/  wayfinder/   # Wayfinder output — generated, never hand-edited

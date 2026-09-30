@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\Dev\ComponentGalleryController::__invoke
 * @see app/Http/Controllers/Dev/ComponentGalleryController.php:14
@@ -43,8 +43,71 @@ components.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     method: 'head',
 })
 
+/**
+* @see \App\Http\Controllers\Dev\LayoutPreviewController::__invoke
+* @see app/Http/Controllers/Dev/LayoutPreviewController.php:14
+* @route '/dev/layouts/{layout}'
+*/
+export const layouts = (args: { layout: string | number } | [layout: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: layouts.url(args, options),
+    method: 'get',
+})
+
+layouts.definition = {
+    methods: ["get","head"],
+    url: '/dev/layouts/{layout}',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Dev\LayoutPreviewController::__invoke
+* @see app/Http/Controllers/Dev/LayoutPreviewController.php:14
+* @route '/dev/layouts/{layout}'
+*/
+layouts.url = (args: { layout: string | number } | [layout: string | number ] | string | number, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { layout: args }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            layout: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        layout: args.layout,
+    }
+
+    return layouts.definition.url
+            .replace('{layout}', parsedArgs.layout.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Dev\LayoutPreviewController::__invoke
+* @see app/Http/Controllers/Dev/LayoutPreviewController.php:14
+* @route '/dev/layouts/{layout}'
+*/
+layouts.get = (args: { layout: string | number } | [layout: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: layouts.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Dev\LayoutPreviewController::__invoke
+* @see app/Http/Controllers/Dev/LayoutPreviewController.php:14
+* @route '/dev/layouts/{layout}'
+*/
+layouts.head = (args: { layout: string | number } | [layout: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: layouts.url(args, options),
+    method: 'head',
+})
+
 const dev = {
     components: Object.assign(components, components),
+    layouts: Object.assign(layouts, layouts),
 }
 
 export default dev

@@ -289,6 +289,22 @@
 
 @layer components {
     /*
+     * Horizontal page gutter (16px, 24px from 768px) that also clears the notch/cutout in landscape,
+     * since the root view sets viewport-fit=cover (specs/18 §5).
+     */
+    .gutter-x {
+        padding-left: max(var(--space-4), env(safe-area-inset-left));
+        padding-right: max(var(--space-4), env(safe-area-inset-right));
+    }
+
+    @media (width >= 48rem) {
+        .gutter-x {
+            padding-left: max(var(--space-6), env(safe-area-inset-left));
+            padding-right: max(var(--space-6), env(safe-area-inset-right));
+        }
+    }
+
+    /*
      * 44×44 minimum touch target (specs/18 §8) without changing the visual size from §4
      * (owner decision in DESIGN.md). The invisible hit area is centred on the control.
      */

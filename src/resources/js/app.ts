@@ -5,6 +5,9 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 
+// Puts the display font in the Vite manifest so the root view can preload it (Vite::asset).
+import.meta.glob('../../node_modules/@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2');
+
 const appName = import.meta.env.VITE_APP_NAME || 'Clash Commons';
 
 createInertiaApp({

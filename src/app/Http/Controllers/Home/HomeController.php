@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Home;
 
 use App\Http\Controllers\Controller;
-use Inertia\Inertia;
+use App\Support\Seo\PageMeta;
 use Inertia\Response;
 
 class HomeController extends Controller
 {
     public function __invoke(): Response
     {
-        return Inertia::render('Home/Index');
+        return PageMeta::page('Home/Index');
     }
 }
