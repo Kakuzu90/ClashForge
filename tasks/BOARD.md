@@ -15,8 +15,9 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P0-04 | App shell, layouts, navigation | done | P0-03 | tasks/phase-0/P0-04-app-shell.md |
 | P0-05 | Media pipeline (tables, intent/complete, image processing; split queue workers per specs/20 §1) | done | P0-02 | tasks/phase-0/P0-05-media-pipeline.md |
 | P0-06 | GameAssets module + asset policy plumbing | done | P0-02, P0-03 | tasks/phase-0/P0-06-game-assets.md |
-| P0-07 | Ops: health, logging, error tracking, workers | todo | P0-01 | |
+| P0-07 | Ops: health, logging, error tracking, workers | done | P0-01 | tasks/phase-0/P0-07-ops.md |
 | P0-08 | Media lifecycle jobs (orphan sweeper, purge-deleted, retry-failed, `DeleteMediaObjectsJob`, worker boot temp sweep, `media:reconcile-storage` with its `game/` exclusion test; split from P0-05/P0-06) | todo | P0-05 | |
+| P0-09 | Staging + backups: deploy runbook, staging deployed, backup restore drill, Sentry project + alerts + frontend error tracking, R2 + Cloudflare (CDN, `game/` resizing off, CORS, `quarantine/` lifecycle) | blocked | P0-07 + hosting/R2/Sentry accounts | |
 
 ## Phase 1 — Identity
 

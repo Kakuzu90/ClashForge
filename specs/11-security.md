@@ -177,6 +177,9 @@ HSTS (1 year, includeSubDomains, preload), TLS 1.2+, `X-Content-Type-Options: no
 `X-Frame-Options: DENY` / `frame-ancestors 'none'`, `Referrer-Policy: strict-origin-when-cross-origin`,
 `Permissions-Policy` denying camera/microphone/geolocation/payment, `Cross-Origin-Opener-Policy: same-origin`.
 
+- No version disclosure: `expose_php = Off`, nginx `server_tokens off`.
+- Client IPs come through `TrustProxies` limited to `TRUSTED_PROXIES` (the CDN edge ranges), so rate limits and logs key on the visitor, not the edge.
+
 ### Secrets & configuration
 - All secrets in environment variables; `.env` never committed; `.env.example` holds keys with empty
   values only.
@@ -198,6 +201,11 @@ HSTS (1 year, includeSubDomains, preload), TLS 1.2+, `X-Content-Type-Options: no
 failed and successful logins, password/email changes, 2FA changes, role changes, permission denials,
 CoC claim attempts and verification failures, ownership transfers, sanctions, admin data access,
 rate-limit breaches, upload quarantines, CSP violation reports.
+
+Security events go to the `security` log channel (JSON, 90 days). Errors go to Sentry with
+personal data stripped before sending: stack-frame arguments (`zend.exception_ignore_args`), request
+bodies, cookies, auth/XSRF headers, client-IP headers, query strings and user fields other than the
+id; database errors keep only SQLSTATE and the placeholder SQL, in Sentry and in the JSON logs.
 
 **Alerts:** >50 failed logins from one IP in 10 min; any role change; any ownership transfer;
 >10 quarantined uploads in an hour; CSP violation spike; permission-denial spike from one user;

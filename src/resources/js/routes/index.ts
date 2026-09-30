@@ -43,3 +43,47 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     method: 'head',
 })
 
+/**
+* @see \App\Http\Controllers\Web\HealthController::__invoke
+* @see app/Http/Controllers/Web/HealthController.php:16
+* @route '/health'
+*/
+export const health = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: health.url(options),
+    method: 'get',
+})
+
+health.definition = {
+    methods: ["get","head"],
+    url: '/health',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Web\HealthController::__invoke
+* @see app/Http/Controllers/Web/HealthController.php:16
+* @route '/health'
+*/
+health.url = (options?: RouteQueryOptions) => {
+    return health.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Web\HealthController::__invoke
+* @see app/Http/Controllers/Web/HealthController.php:16
+* @route '/health'
+*/
+health.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: health.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Web\HealthController::__invoke
+* @see app/Http/Controllers/Web/HealthController.php:16
+* @route '/health'
+*/
+health.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: health.url(options),
+    method: 'head',
+})
+

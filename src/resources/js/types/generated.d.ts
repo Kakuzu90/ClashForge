@@ -82,6 +82,11 @@ features: Record<string, boolean>,
 };
 }
 }
+namespace Support {
+namespace Health {
+export type HealthStatus = 'ok' | 'degraded' | 'down' | 'unknown';
+}
+}
 }
 declare namespace Illuminate {
 export type CursorPaginator<TKey, TValue> = {

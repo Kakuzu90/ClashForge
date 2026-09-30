@@ -33,7 +33,7 @@ Double them for a part-time effort.
 | Asset policy | `GameAssets` module: `GameAssetResolver` + `<GameAsset>` (fallback, accessible name, kill switch), `assets:make-manifest` / `assets:publish-pack` / `assets:verify-pack`, `game/` CDN binding with resizing disabled (staging), fan-content disclaimer in the global footer, lint rule banning game-asset paths in templates ([18 §2](18-design-system.md), [10 §11](10-media-storage.md)) |
 | App shell | Persistent Inertia layouts (public, app, admin), root Blade view with meta/OG, shared props, mobile bottom nav, desktop sidebar, global search stub, dark theme |
 | Media pipeline | `media` + `media_variants` tables, presigned intent/complete/status endpoints, `ProcessMediaJob` with image validation + variants, storage wiring against **MinIO locally** ([10 §2.1](10-media-storage.md)); R2 + CDN domain swapped in by env when the account exists. Lifecycle jobs (orphan sweeper, purge, retry-failed, storage reconcile with the `game/` prefix excluded by allowlist + its test) are a separate task |
-| Ops | Health endpoint, Sentry, structured logging, queue workers + scheduler + SSR renderer running, backup verified, staging deployed |
+| Ops | Health endpoint, scheduler heartbeat, Sentry (backend), structured logging, queue workers + scheduler + SSR renderer running. Staging deploy, backup restore drill, browser error tracking and the R2 + Cloudflare setup are a separate task that waits on the accounts |
 
 **Exit:** a styled page that uploads an image to object storage, processes it, and renders the
 variants — end to end against MinIO locally, with tests. Re-verify the same flow against R2 + CDN
@@ -243,6 +243,7 @@ user input, files, or crosses a trust boundary.
 | Media lifecycle jobs (sweeper, purge, retry-failed, reconcile with its `game/` exclusion test) | [10 §9–10](10-media-storage.md), [20](20-jobs-and-scheduling.md) | [07](07-database-schema.md) (media) |
 | GameAssets module + asset policy plumbing | [18 §2](18-design-system.md), [10 §11](10-media-storage.md) | [19](19-module-structure.md) |
 | Ops: health, logging, error tracking, workers | [20](20-jobs-and-scheduling.md) | [03 §7](03-non-functional-requirements.md) |
+| Staging + backups (deploy, restore drill, Sentry project + alerts, R2 + Cloudflare) | [05 §6](05-architecture.md), [03 §3, §7](03-non-functional-requirements.md) | [10 §2, §7](10-media-storage.md), [11](11-security.md) |
 
 ### Phase 1 — Identity
 

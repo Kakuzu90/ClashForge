@@ -84,10 +84,10 @@ Full controls in [11-security.md](11-security.md). NFR-level commitments:
 
 | ID | Requirement |
 |---|---|
-| NFR-OBS-1 | Structured JSON logs with request id, user id, route and duration. |
-| NFR-OBS-2 | Error tracking (Sentry or equivalent) with release tagging and source maps. |
+| NFR-OBS-1 | Structured JSON logs with request id, user id, route and duration. The request id (inbound `X-Request-Id` when well-formed, else a ULID) is echoed on the response and carried into queued jobs through Laravel `Context`; each request ends with one summary line. |
+| NFR-OBS-2 | Error tracking (Sentry or equivalent) with release tagging (`APP_RELEASE`) and source maps. Backend first; browser error tracking and source-map upload arrive with staging (P0-09) under the public-page JS budget. Events are scrubbed of personal data ([11 §3](11-security.md)). |
 | NFR-OBS-3 | Application metrics: queue depth per queue, failed jobs, CoC API success/error/latency, media pipeline throughput, cache hit ratio. |
-| NFR-OBS-4 | Health endpoint checking database, storage and queue liveness, consumed by uptime monitoring. |
+| NFR-OBS-4 | Health endpoint (`GET /health`) checking database, queue, storage and scheduler liveness, consumed by uptime monitoring. It returns 503 when a required check is down, `degraded` with 200 for a queue backlog, and `unknown` (never a failure) while cached state is missing; the body holds status words only. |
 | NFR-OBS-5 | Alerts: queue depth > 500 for 10 min, failed jobs > 20/h, CoC API error rate > 25% for 15 min, disk > 80%, 5xx rate > 1%. |
 | NFR-OBS-6 | An admin-visible sync-health page so moderators can distinguish "user is lying" from "API is down". |
 

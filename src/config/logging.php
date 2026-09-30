@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Observability\QueryExceptionRedactor;
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -92,6 +94,30 @@ return [
                 'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
             ],
             'processors' => [PsrLogMessageProcessor::class],
+        ],
+
+        // Structured JSON for production (specs/03 NFR-OBS-1): LOG_STACK=json. Context (request
+        // id, user id) is attached to every record.
+        'json' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => env('LOG_JSON_STREAM', 'php://stderr'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class, QueryExceptionRedactor::class],
+        ],
+
+        // Security events (specs/11 §3): logins, role changes, denials, quarantines. JSON, kept longer.
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => 'info',
+            'days' => (int) env('LOG_SECURITY_DAYS', 90),
+            'formatter' => JsonFormatter::class,
+            'processors' => [QueryExceptionRedactor::class],
+            'replace_placeholders' => true,
         ],
 
         'stderr' => [

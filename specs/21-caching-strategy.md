@@ -53,7 +53,11 @@ of defence, not the first.
 | `tags:popular` | Top tags | 1 h | Nightly tag reconcile |
 | `stats:homepage` | Site-wide counters for the landing page | 15 min | — |
 | `sitemap:chunk:{n}` | Sitemap XML | 24 h | Nightly regeneration |
-| `ratelimit:*` | Limiter counters | per limiter | Automatic |
+| `ratelimit:*` | Limiter counters | per limiter | Automatic. `/health` uses its own `file` store, so a database outage cannot break it |
+| `platform:health:storage` | Last storage probe result | 15 min | Next `platform:check-health` |
+| `platform:health:heartbeat` | Last scheduler tick | 7 days (expired → `unknown`) | Next `platform:heartbeat` |
+| `media:signed-get:{sha1}` | Signed private media URL | signed TTL − 30 s | — (short TTL is the invalidation) |
+| `assets:publish:{version}` | Publish lock (`Cache::lock`) | 30 min | Release at the end of the run |
 | `lock:*` | `Cache::lock` atomic locks | per lock | Automatic |
 
 **Never cached:** anything containing another user's private data, moderation queues, admin views,

@@ -41,6 +41,7 @@ src/
 │   ├── Providers/
 │   ├── Support/                     # framework-adjacent helpers shared by all modules
 │   │   ├── Enums/ Casts/ Rules/ Traits/ Macros/ ValueObjects/
+│   │   ├── Seo/ Health/ Observability/   # page meta, /health checks, Sentry scrubbing + log redaction
 ├── resources/
 │   ├── css/app.css                  # Tailwind 4 `@theme` tokens
 │   ├── js/
@@ -162,7 +163,7 @@ require __DIR__.'/web/accounts.php';
 | `/notifications` `/settings/*` `/dashboard` | authenticated |
 | `/admin/*` | staff |
 | `/uploads/intent` `/uploads/{ulid}/complete` `/uploads/{ulid}` | presigned upload flow (JSON, owner only, [10 §3](10-media-storage.md)) |
-| `/health` `/sitemap.xml` `/robots.txt` | infrastructure |
+| `/health` `/sitemap.xml` `/robots.txt` | infrastructure; `/health` sits outside the `web` group (no session, no cookies) and replaces the framework's `/up` |
 
 All state-changing routes are POST/PATCH/DELETE (Inertia `router`/`useForm`); nothing mutates on GET
 (`/bases/{slug}/copy` records a counter, which is the one deliberate exception — it is deduped,
@@ -209,7 +210,9 @@ feature test asserting its component and props, no Eloquent model passed to `Ine
 php artisan coc:sync-accounts            # scheduler entry point, tier-aware
 php artisan coc:sync-clans
 php artisan coc:rotate-keys
-php artisan coc:check-health
+php artisan coc:check-health             # CoC key pool ready (P2-01)
+php artisan platform:check-health        # external dependencies → /health state (every 5 min)
+php artisan platform:heartbeat           # scheduler liveness marker (every minute, no summary line)
 php artisan media:sweep-orphans
 php artisan media:purge-deleted
 php artisan media:reconcile-storage

@@ -92,11 +92,13 @@ for a full temp volume does not.
 | `GenerateSitemapJob` | Nightly | Public bases + profiles, chunked sitemap index |
 | `ExportUserDataJob` | On request | Builds a ZIP, uploads privately, emails a 7-day signed link |
 | `PruneOperationalTablesJob` | Nightly | `sessions`, `cache` expired rows, `coc_api_requests` >7d, `failed_jobs` >30d, `base_view_events` >30d |
-| `CheckExternalHealthJob` | Every 5 min | CoC API + R2 reachability → health endpoint state |
+| `platform:check-health` (command, runs inline) | Every 5 min | R2 reachability (one HEAD, no writes), later the CoC key pool → cached health state read by `/health` |
+| `platform:heartbeat` (command) | Every minute | Scheduler liveness marker for `/health` (§6) |
 
 ## 3. Schedule
 
 ```
+* / 1 min    platform:heartbeat            (the one task allowed at :00; withoutOverlapping(5))
 * / 5 min    coc:sync-accounts            (withoutOverlapping, onOneServer)
 * / 5 min    platform:check-health
 * / 15 min   bases:recompute-trending
