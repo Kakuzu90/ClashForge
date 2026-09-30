@@ -52,9 +52,9 @@ mechanism and the test that proves it.
 - Every Inertia prop is visible in page source and in the XHR JSON response. Props are built only
   from `Data` DTOs with explicit fields; passing an Eloquent model, a model collection or
   `->toArray()` to `Inertia::render()` is banned (Pest arch test).
-- Shared props (`HandleInertiaRequests::share`) are limited to: the auth user summary (username,
-  avatar, role, verification flags), flash messages, unread-notification count, the `can` map and
-  client-safe feature flags. Never email, IP data, 2FA state or anything from `coc_accounts` beyond
+- Shared props (`HandleInertiaRequests::share`, typed by `App\Http\Data\SharedPropsData`) are limited
+  to: `auth.user` summary (username, avatar, verification flags; no role, since Vue never reads it),
+  `auth.can`, `flash`, `unreadCount` and client-safe `features`. Page props may add `meta.title`. Never email, IP data, 2FA state or anything from `coc_accounts` beyond
   public fields.
 - Lazy/deferred props are authorised exactly like the page that declares them.
 - **Test:** a stored-XSS test posts `<img src=x onerror=...>` into every text field and asserts the

@@ -9,3 +9,4 @@ resources/js/actions
 resources/js/wayfinder
 composer.lock
 package-lock.json
+.vite

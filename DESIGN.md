@@ -58,4 +58,5 @@ Recorded 2026-09-30. Each keeps a spec 18 choice that an antislop rule would oth
 | Gold glow on reward toast, verified ring, top TH tier ring | R-13 glow cap | **Keep** | Reward and status highlights only, never text, never on cards/buttons/backgrounds in bulk. |
 | Purple star on the "featured" badge | R-04 generic icons | **Keep** | Labels featured content; it is a status marker, not a decorative feature icon. |
 | Uppercase `--text-xs` labels (+0.04em) | R-06 | **Keep** | Small pill and label text; tracking is modest, not the extreme-spacing section-label pattern. |
+| Control sizes below 44px (spec 18 §4: buttons 32/40, pills 28, modal close 40) | R-03, spec 18 §8 | **Keep visual size, add hit area** | 2026-09-30 (audit-002): the §4 sizes stay visually; a `.hit-target` 44×44 invisible area covers touch. Text inputs are 44px tall below `sm`, 40px from `sm` up. Adjacent 44px areas may overlap where controls sit 8px apart. |
 | Em dashes (R-02) | R-02 | **Scope** | Banned in user-facing copy (Vue templates, translations, emails, notifications, meta text, OG text). Not applied to `specs/`, `docs/`, `tasks/`, code comments or commit messages. |

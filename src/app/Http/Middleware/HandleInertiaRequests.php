@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Data\AuthData;
+use App\Http\Data\SharedPropsData;
 use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -49,9 +51,22 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $shared = new SharedPropsData(
+            auth: new AuthData(
+                user: null, // mapped from the authenticated user once auth ships (P1-01)
+                can: [],
+            ),
+            flash: [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
+            unreadCount: null, // notifications land in P1-07
+            features: [],
+        );
+
         return [
             ...parent::share($request),
-            //
+            ...$shared->toArray(),
         ];
     }
 }

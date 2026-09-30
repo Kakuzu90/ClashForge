@@ -52,14 +52,17 @@ if [ $fast -eq 0 ]; then
   else
     results+=("skip  pest (postgres): db service not running")
   fi
+  # Stale if regenerating changes what is on disk (compared with the working tree, not HEAD).
+  gen=(resources/js/types resources/js/routes resources/js/actions resources/js/wayfinder)
+  gen_hash() { (cd "$src" && find "${gen[@]}" -type f -exec shasum {} + 2>/dev/null | sort | shasum); }
+  before=$(gen_hash)
   run "ts types"  app php artisan typescript:transform
   run "wayfinder" app php artisan wayfinder:generate
   echo "==> generated files up to date"
-  gen=(src/resources/js/types src/resources/js/routes src/resources/js/actions src/resources/js/wayfinder)
-  if [ -z "$(git -C "$root" status --porcelain -- "${gen[@]}")" ] || ! git -C "$root" ls-files --error-unmatch src/resources/js/types >/dev/null 2>&1; then
+  if [ "$before" = "$(gen_hash)" ]; then
     results+=("pass  generated files up to date")
   else
-    results+=("FAIL  generated files up to date (regenerated output differs — commit it)"); failed=1
+    results+=("FAIL  generated files were stale (now regenerated — re-run and commit them)"); failed=1
   fi
   run "vitest"             node npm run test
   run "build (client+ssr)" node npm run build

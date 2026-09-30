@@ -37,8 +37,9 @@
 - **SEO and Open Graph are covered by SSR.** Public pages (base detail, profiles, discovery,
   recruitment, market) are rendered on the server by Inertia's SSR renderer, so crawlers and
   link-unfurlers get full HTML. Title, meta description, canonical, OG and JSON-LD are *also*
-  emitted by the root Blade view from controller-supplied view data, so share cards keep working
-  even if the SSR process is down.
+  emitted by the root Blade view from controller-supplied view data (`PageMeta::page()`), so share
+  cards keep working even if the SSR process is down. The same call passes `meta.title` as a prop so
+  the client title matches after hydration.
 - **Typed contracts between PHP and Vue.** Page props are the modules' `Data` DTOs; TypeScript types
   are generated from them and route helpers from Laravel routes. A renamed field fails `vue-tsc` in
   CI, not in production.
