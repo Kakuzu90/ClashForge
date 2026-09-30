@@ -79,9 +79,13 @@ talks to it through **(a)** its public service classes, **(b)** its read-model/D
 
 ### Boundary enforcement
 
-- A static-analysis rule (Deptrac or a PHPStan custom rule) fails CI when
-  `App\Domain\X` references `App\Domain\Y\Models\*`. Allowed targets are
-  `App\Domain\Y\Contracts\*`, `App\Domain\Y\Services\*`, `App\Domain\Y\Data\*`, `App\Domain\Y\Events\*`.
+- A Pest architecture test (`tests/Architecture/ModuleBoundariesTest.php`, discovering modules
+  automatically) fails the build when `App\Domain\X` references `App\Domain\Y\Models\*` or any other
+  internal namespace of Y. Allowed targets are `App\Domain\Y\Contracts\*`, `App\Domain\Y\Services\*`,
+  `App\Domain\Y\Data\*`, `App\Domain\Y\Events\*`, `App\Domain\Y\Enums\*`. Deptrac enforces the
+  Http → Domain → Support layering.
+- The "Depends on" column above documents intent; it is not enforced, because event listeners
+  legitimately reference publishers outside it (e.g. Clans consuming `CocAccountVerified`).
 - Cross-module **reads** that would be expensive through services (feed rendering) use explicit
   read-model query classes that join across tables and return DTOs. This is a deliberate,
   documented escape hatch — joins are fine, model coupling is not.

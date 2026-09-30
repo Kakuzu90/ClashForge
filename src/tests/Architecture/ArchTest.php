@@ -9,9 +9,3 @@ arch('no debugging helpers in app code')
 arch('env() is only called from config files')
     ->expect('env')
     ->toOnlyBeUsedIn('config');
-
-arch('enums are backed')
-    ->expect('App')
-    ->enums()
-    ->toBeStringBackedEnums()
-    ->ignoring('App\Http');

@@ -38,7 +38,7 @@ run() { # label, service, command...
 
 run "pint"      app ./vendor/bin/pint --test
 run "phpstan"   app ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
-if [ -d "$src/app/Domain" ]; then
+if [ -n "$(find "$src/app/Domain" -name "*.php" -print -quit 2>/dev/null)" ]; then
   run "phpstan (Domain, L8)" app ./vendor/bin/phpstan analyse -c phpstan-domain.neon --no-progress --memory-limit=1G
 fi
 run "deptrac"   app ./vendor/bin/deptrac analyse --no-progress
