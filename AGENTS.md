@@ -33,6 +33,7 @@ scripts/          check.sh (all checks), guard-paths.sh (protected paths)
 .githooks/        pre-commit — enable with: git config core.hooksPath .githooks
 src/              the Laravel app (created in Phase 0) — app/Domain, app/Http, resources/js, tests
 .claude/          Claude Code wiring (skills/agents/rules/hooks point back to docs/ai and scripts)
+.codex/agents/    Codex subagent roles (reviewers; point back to docs/ai/workflows)
 .agents/skills/   third-party skills (antislop), managed by `npx skills` + skills-lock.json — never hand-edit
 ```
 

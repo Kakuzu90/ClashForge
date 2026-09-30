@@ -13,13 +13,13 @@ skipped check as passed.
   surface that takes user input, files, or crosses a trust boundary (auth, admin, uploads, CoC
   tokens, props exposure).
 
-Run each review with fresh eyes: in Claude Code, delegate to the `spec-guardian` and
-`security-reviewer` agents (in parallel). In tools without subagents, perform the review as a
+Run each review with fresh eyes: in Claude Code (`.claude/agents/`) or Codex (`.codex/agents/`),
+delegate to the `spec-guardian` and `security-reviewer` agents (in parallel). In tools without subagents, perform the review as a
 separate pass, re-reading the diff from scratch rather than relying on implementation memory.
 
 ## 3. antislop audit (UI tasks only)
 If the change touches UI or user-facing copy, run `docs/ai/workflows/antislop-audit.md` after §1 is
-green. In Claude Code, delegate it to the `antislop-auditor` agent (in parallel with §2); in other
+green. In Claude Code or Codex, delegate it to the `antislop-auditor` agent (in parallel with §2); in other
 tools, run it as a separate pass. Present the numbered findings and stop: fix only the numbers the
 user approves, then re-run §1. The task stays `review` until then.
 
