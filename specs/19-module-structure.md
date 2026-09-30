@@ -219,8 +219,9 @@ php artisan stats:reconcile               # repairs all denormalised counters
 php artisan moderation:expire-sanctions
 php artisan notifications:prune
 php artisan search:reindex {type?}
-php artisan assets:publish-pack {path} --version=  # upload a curated game-asset pack to R2, byte-exact
-php artisan assets:verify-pack           # bucket objects still match the manifest checksums
+php artisan assets:make-manifest {path} --pack-version=  # write/refresh a pack's manifest from its files
+php artisan assets:publish-pack {path} --pack-version=   # upload a curated game-asset pack to R2, byte-exact
+php artisan assets:verify-pack [--pack-version=]         # bucket objects still match the manifest checksums
 php artisan platform:anonymize-deleted
 php artisan dev:seed-demo                 # non-production only
 ```

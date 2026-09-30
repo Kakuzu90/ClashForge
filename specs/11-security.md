@@ -126,6 +126,11 @@ an interface. A presigned PUT cannot enforce size or type, so size is enforced b
 check and a capped download, and stray quarantine bytes are removed by a delayed re-delete and a
 31-day bucket lifecycle rule ([10 §2–3](10-media-storage.md)).
 
+Game-asset URLs supplied by the CoC API (clan badges, league icons) are untrusted input: the
+resolver renders them only when `https` on an allowlisted host, without userinfo or port
+([18 §2.3](18-design-system.md)). Pack versions and manifest keys are anchored, path-safe tokens,
+so no value can escape `game/{version}/`.
+
 ### API abuse, scraping and bots
 - Named rate limiters on every write and on search; a global per-user write limiter as a backstop.
 - Cloudflare in front: bot fight mode, managed rules, and a rate-limiting rule on

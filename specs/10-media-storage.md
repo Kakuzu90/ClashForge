@@ -280,7 +280,7 @@ Four scheduled jobs. Every one of them is the reason the storage bill stays pred
 | `media:sweep-orphans` | Hourly | Delete unattached `media` rows (`attachable_id` null) past `expires_at` (24 h) — `pending`, `uploaded` **and** `ready` (media can be ready before attach); delete their objects |
 | `media:purge-deleted` | Daily | Hard-delete storage objects + variants for media soft-deleted more than 7 days ago |
 | `media:reconcile-storage` | Weekly | List bucket keys **under `public/`, `quarantine/` and `private/` only**, diff against `media`+`media_variants`; delete bucket objects with no database row (log first, delete on the second consecutive detection); alert on database rows with no object. **The `game/` prefix is excluded by an explicit allowlist in code, not by convention** — every game asset has no `media` row by design, so an unguarded reconcile would delete the entire asset pack. A test asserts the exclusion |
-| `assets:verify-pack` | Weekly | Verifies every manifest entry resolves to an object whose SHA-256 matches the recorded checksum; alerts on missing, extra or modified objects |
+| `assets:verify-pack` | Weekly | Verifies every manifest entry resolves to an object whose SHA-256 matches the recorded checksum, and that the bucket `manifest.json` is byte-identical to the committed one; alerts on missing, extra or modified objects, and fails on a malformed configured version |
 | `media:retry-failed` | Every 6 h | Retry `failed` media with reason `processing_error` (the only failures that keep their original) younger than 24 h, up to 3 total attempts, then notify the owner |
 
 Cascade rules:
@@ -330,17 +330,27 @@ stored API URL for clan badges. Callers do not know or care which.
    resizing, no format conversion, no optimisation pass, no sprite-sheeting. `pngcrush`,
    `imageoptim` and similar are explicitly out: lossless or not, they rewrite the file and
    forfeit the "unmodified" claim.
-2. A `manifest.json` is generated listing, per asset: key, slug, display name, category, village
-   (home/builder), source, SHA-256 and byte size.
-3. `php artisan assets:publish-pack {path} --version={n}` uploads the whole tree to
-   `game/{n}/` with `Content-Type` set from the real file signature and
-   `Cache-Control: public, max-age=31536000, immutable`, verifies each uploaded object's checksum
-   against the manifest, and fails atomically — a partial pack is never activated.
-4. The manifest is committed to the repository **and** stored alongside the pack. The repo copy is
-   what the resolver reads at runtime (no per-request bucket listing); the bucket copy is what
-   `assets:verify-pack` audits against.
-5. Activation is a config change (`config('assets.pack_version')`). The previous version stays in
-   the bucket, so a rollback is a one-line revert with no re-upload.
+2. `php artisan assets:make-manifest {path} --pack-version={n}` writes the pack's `manifest.json`:
+   per asset, key, category, `ref` (the API's unit name, the Town Hall level or the league id),
+   display name, village (home/builderBase, units only), source, SHA-256, byte size, width and
+   height. Checksums, sizes and dimensions always come from the files; staff fill in the rest
+   (category and village for units, source), and reruns keep what they entered. The command lists
+   whatever is still missing. Only `image/png` and `image/webp`, by real signature, may be packed.
+3. `php artisan assets:publish-pack {path} --pack-version={n}` (Symfony reserves `--version`)
+   checks the folder against the manifest (no missing, extra or changed files), refuses a version
+   whose `game/{n}/` prefix already has objects or whose committed manifest describes a different
+   pack, and holds a per-version lock for the run. It then uploads the whole tree to `game/{n}/`
+   with `Content-Type` set from the real file signature and
+   `Cache-Control: public, max-age=31536000, immutable`, re-reads each uploaded object and compares
+   its SHA-256 with the manifest, and uploads the manifest last. Any failure deletes everything the
+   run uploaded — a partial pack is never activated.
+4. The manifest is committed to the repository (`resources/game-assets/{n}/manifest.json`, written
+   by the publish) **and** stored alongside the pack. The repo copy is what the resolver reads at
+   runtime (no per-request bucket listing); the bucket copy is what `assets:verify-pack` audits
+   against, byte for byte.
+5. Activation is a config change (`ASSETS_PACK_VERSION`, read as `config('assets.pack_version')`).
+   The previous version stays in the bucket, so a rollback is a one-line revert with no re-upload.
+   With no version configured, every catalogue asset resolves to our placeholder.
 
 ### 11.3 Rules
 

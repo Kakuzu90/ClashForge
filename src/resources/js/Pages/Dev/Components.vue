@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiBadge from '@/Components/ui/UiBadge.vue';
 import UiButton, { type ButtonSize, type ButtonVariant } from '@/Components/ui/UiButton.vue';
@@ -26,6 +27,22 @@ const thTones: PillTone[] = ['th-1', 'th-2', 'th-3', 'th-4', 'th-5', 'th-6', 'th
 const avatarSizes = [24, 32, 48, 64, 96, 128] as const;
 
 const text = ref('');
+type GameAssetData = App.Domain.GameAssets.Data.GameAssetData;
+const assetSizes: GameAssetSize[] = [24, 32, 48, 64];
+// An original sample image: the gallery never ships real game art (specs/18 §2).
+const sampleImage =
+    'data:image/svg+xml,' +
+    encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="#f5b800"/><circle cx="32" cy="32" r="14" fill="#1a2140"/></svg>',
+    );
+const loadedAsset: GameAssetData = { kind: 'unit', url: sampleImage, alt: 'Sample unit', short: 'SU', width: 64, height: 64 };
+const fallbackAssets: GameAssetData[] = [
+    { kind: 'unit', url: null, alt: 'Archer Queen', short: 'AQ', width: null, height: null },
+    { kind: 'town_hall', url: null, alt: 'Town Hall 16', short: '16', width: null, height: null },
+    { kind: 'league', url: null, alt: 'Legend League', short: 'LL', width: null, height: null },
+    { kind: 'clan_badge', url: null, alt: 'Night Owls clan badge', short: 'NO', width: null, height: null },
+];
+const brokenAsset: GameAssetData = { kind: 'unit', url: 'data:image/png;base64,broken', alt: 'Barbarian', short: 'B', width: 64, height: 64 };
 const townHalls: SelectOption[] = Array.from({ length: 17 }, (_, i) => ({ value: `th${17 - i}`, label: `Town Hall ${17 - i}` }));
 const categories: SelectOption[] = [
     { value: 'war', label: 'War', hint: 'Built to stop three-star attacks' },
@@ -39,7 +56,20 @@ const selected = ref(false);
 const modalOpen = ref(false);
 const { push } = useToast();
 
-const sections = ['Buttons', 'Inputs', 'Cards', 'Pills', 'Badges', 'Avatars', 'Modal', 'Toasts', 'Skeletons', 'Progress', 'Empty state'];
+const sections = [
+    'Buttons',
+    'Inputs',
+    'Cards',
+    'Pills',
+    'Badges',
+    'Avatars',
+    'Modal',
+    'Toasts',
+    'Skeletons',
+    'Progress',
+    'Game assets',
+    'Empty state',
+];
 const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 </script>
 
@@ -218,6 +248,22 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiProgress label="Uploading screenshot.png" :value="100" />
                     <UiProgress label="Processing (indeterminate)" />
                     <UiProgress label="Hidden label, still announced" :value="40" hide-label />
+                </div>
+            </section>
+
+            <section :id="anchor('Game assets')" aria-labelledby="h-game-assets">
+                <h2 id="h-game-assets" class="font-display text-h1">Game assets</h2>
+                <p class="mt-2 max-w-prose text-body text-fg-secondary">
+                    Placeholders appear when the category is switched off, no pack is active, the entry is unknown or the image fails. The loaded
+                    state uses an original sample image.
+                </p>
+                <div class="mt-4 flex flex-col gap-6">
+                    <div v-for="asset in [loadedAsset, ...fallbackAssets, brokenAsset]" :key="asset.alt" class="flex items-end gap-4">
+                        <GameAsset v-for="s in assetSizes" :key="s" :asset="asset" :size="s" />
+                        <span class="text-sm text-fg-secondary"
+                            >{{ asset.alt }} ({{ asset.url === null ? 'fallback' : asset.alt === 'Barbarian' ? 'missing image' : 'loaded' }})</span
+                        >
+                    </div>
                 </div>
             </section>
 

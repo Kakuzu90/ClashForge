@@ -1,5 +1,22 @@
 declare namespace App {
 namespace Domain {
+namespace GameAssets {
+namespace Data {
+export type GameAssetData = {
+kind: App.Domain.GameAssets.Enums.GameAssetKind,
+url: string | null,
+alt: string,
+short: string,
+width: number | null,
+height: number | null,
+};
+}
+namespace Enums {
+export type GameAssetCategory = 'troop' | 'hero' | 'spell' | 'equipment' | 'town_hall' | 'league';
+export type GameAssetKind = 'unit' | 'town_hall' | 'league' | 'clan_badge';
+export type Village = 'home' | 'builderBase';
+}
+}
 namespace Media {
 namespace Data {
 export type MediaVariantData = {

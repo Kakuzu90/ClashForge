@@ -89,7 +89,12 @@ the convention is the influence and the execution is ours ([18 §3](18-design-sy
 - **Fallback always exists.** Unknown units and missing assets render our own placeholder plus the
   label; nothing depends on an asset being present ([09 §8](09-coc-api-integration.md)).
 - **Kill switch.** `config('assets.enabled') = false` makes the resolver return placeholders
-  everywhere. That is condition 7 of §2.1 in executable form.
+  everywhere. That is condition 7 of §2.1 in executable form, and it is the category switch: game
+  assets are one category, so there are no per-kind flags.
+- **Remote URLs are allowlisted.** URLs the CoC API supplies (clan badges, the league-icon
+  fallback) render only when they are `https` on an allowlisted host (`assets.remote_hosts`,
+  `api-assets.clashofclans.com`), with no userinfo or port; anything else resolves to the
+  placeholder.
 - **Accessibility.** Every game asset carries an accessible name (the unit, TH level, clan or
   league name) and never carries meaning alone — the numeral or label is always present.
 
@@ -267,7 +272,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 | **Empty state** | with illustration slot, title, body, primary action | — |
 | **Alert / Banner** | info, warning, danger, maintenance | dismissible |
 | **Icon** | 16/20/24, from one original outline+solid set — platform iconography only | — |
-| **GameAsset** | unit / th / clan-badge / league; sizes 24/32/48/64 | loaded, fallback (our placeholder + label), missing. Renders assets unmodified via `GameAssetResolver` (§2.3); accessible name required |
+| **GameAsset** | unit / th / clan-badge / league; sizes 24/32/48/64 | loaded, fallback (our placeholder shape per kind + short text: initials or the TH numeral), missing (image error → fallback). Renders assets unmodified via `GameAssetResolver` (§2.3): scaled only, never rounded, bordered or filtered; accessible name required |
 
 ### Signature components (the ones that carry the product's identity)
 
@@ -485,7 +490,8 @@ tint. This is implemented once in the base stylesheet, not per component.
   third-party set that ships brand marks. Platform iconography never mixes with game assets inside
   the same sprite.
 - Game assets (units, Town Halls, clan badges, league emblems) are rendered **only** through
-  `GameAssetResolver` (§2.3) in PHP — DTOs carry the resolved `{ url, alt, width, height }` — and
+  `GameAssetResolver` (§2.3) in PHP — `GameAssetData` carries `{ kind, url, alt, short, width,
+  height }`, `url` null meaning "show our placeholder" — and
   the `<GameAsset>` Vue component, unmodified, always with an accessible name, and always with a
   non-asset fallback. A review-checklist item and an ESLint rule ban game-asset paths in `.vue`
   files.
