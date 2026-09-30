@@ -15,7 +15,7 @@ Five named queues on the `database` connection. Worker counts are the MVP baseli
 Worker command shape (already in `docker-compose.yml`, extended):
 ```
 php artisan queue:work database --queue=high,default --tries=3 --sleep=1 --rest=0.2 --max-time=3600
-php artisan queue:work media    --queue=media       --tries=2 --sleep=3 --max-time=3600 --memory=512 --timeout=900
+php artisan media:sweep-temp; php artisan queue:work media --queue=media --tries=2 --sleep=3 --max-time=3600 --memory=512 --timeout=900
 php artisan queue:work database --queue=sync,low    --tries=3 --sleep=2 --max-time=3600
 ```
 
@@ -47,9 +47,12 @@ for a full temp volume does not.
 | `ProcessMediaJob` | `/uploads/{ulid}/complete` | Validate → re-encode → variants → `ready`. Pre-flight disk-space check. Cleans its temp dir in `failed()` |
 | `GenerateVideoPosterJob` | Part of `ProcessMediaJob` (not separate — one job, one temp file) | — |
 | `PurgeQuarantineObjectJob` (`low`) | Delayed, after processing ends | Deletes the quarantine key again once its presigned PUT has expired, so a late re-upload cannot linger ([10 §3](10-media-storage.md)) |
-| `DeleteMediaObjectsJob` | Media purge, entity deletion | Deletes originals + variants from R2; idempotent |
-| `SweepOrphanMediaJob` | Hourly schedule | — |
-| `ReconcileStorageJob` | Weekly schedule | Two-pass: log, then delete on second detection. **Scans `public/`, `quarantine/`, `private/` only — the `game/` prefix is allowlisted out, because game assets have no `media` row by design** ([10 §9](10-media-storage.md)) |
+| `DeleteMediaObjectsJob` (`low`) | Sweep, purge, entity deletion | Deletes originals + variants + the row for a batch of ≤50 claimed (`deleting`) ids; re-checks each row under a lock; one refused row does not stop the batch (the job throws at the end and retries 3× at 60/300/900 s); 75 s timeout, below the `database` connection's `retry_after`; idempotent |
+| `media:sweep-orphans` (command, runs inline) | Hourly schedule | Claims expired unattached media, queues deletion in batches, re-queues stalled deletions ([10 §9](10-media-storage.md)) |
+| `media:retry-failed` (command, runs inline) | Every 6 h | Re-dispatches `ProcessMediaJob` for young `processing_error` failures with runs left |
+| `media:purge-deleted` (command, runs inline) | Daily schedule | Claims media soft-deleted > 7 days ago |
+| `media:reconcile-storage` (command, runs inline) | Weekly schedule | Two-pass: log, then delete on the next consecutive detection ≥ 24 h later. **Scans `public/`, `quarantine/`, `private/` only — the `game/` prefix is allowlisted out, because game assets have no `media` row by design** ([10 §9](10-media-storage.md)) |
+| `media:sweep-temp` (command) | Media worker start | Removes per-job temp dirs a killed worker left ([10 §10](10-media-storage.md)) |
 | `assets:verify-pack` (command, runs inline) | Weekly schedule | Checks every manifest entry still exists in `game/{version}/` with a matching SHA-256 and the bucket manifest is byte-identical; alerts on missing, extra or altered objects |
 
 ### Bases (`default`)
@@ -106,6 +109,7 @@ for a full temp volume does not.
 hourly :05   coc:sync-clans               (only tracked clans)
 hourly :10   bases:aggregate-metrics       (views + copies)
 hourly :20   media:sweep-orphans
+6 h at :45   media:retry-failed           (00:45, 06:45, 12:45, 18:45)
 hourly :30   moderation:escalate-aging-cases
 daily  02:00 platform:prune-operational-tables
 daily  02:15 notifications:prune

@@ -58,9 +58,10 @@ services:
 
   # Image (later video) processing: exactly one process, CPU-capped, on the `media` connection
   # whose retry_after (1200 s) outlives the 900 s job timeout (specs/10 §6, specs/20 §5).
+  # Boot first clears temp dirs a killed worker left behind (specs/10 §10).
   queue-media:
     <<: *app
-    command: php artisan queue:work media --queue=media --tries=2 --sleep=3 --max-time=3600 --memory=512 --timeout=900
+    command: sh -c "php artisan media:sweep-temp; exec php artisan queue:work media --queue=media --tries=2 --sleep=3 --max-time=3600 --memory=512 --timeout=900"
     restart: unless-stopped
     stop_grace_period: 910s
     cpus: 1.0

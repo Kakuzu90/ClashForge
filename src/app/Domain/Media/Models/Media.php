@@ -40,10 +40,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property MediaFailureReason|null $failure_reason
  * @property MediaVisibility $visibility
  * @property int $position
+ * @property int $processing_attempts
  * @property CarbonImmutable|null $processed_at
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
+ * @property CarbonImmutable|null $deleted_at
  */
 #[UseFactory(MediaFactory::class)]
 class Media extends Model
@@ -108,6 +110,7 @@ class Media extends Model
             'width' => 'integer',
             'height' => 'integer',
             'position' => 'integer',
+            'processing_attempts' => 'integer',
             'processed_at' => 'immutable_datetime',
             'expires_at' => 'immutable_datetime',
         ];

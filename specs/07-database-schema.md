@@ -502,6 +502,7 @@ one job.
 | failure_reason | varchar(100) null | |
 | visibility | varchar(10) | `public`\|`private` |
 | position | smallint default 0 | ordering within a collection |
+| processing_attempts | smallint default 0 | processing runs so far, the job's own retries included; `media:retry-failed` stops at 3 ([10 §9](10-media-storage.md)) |
 | processed_at | timestamptz null | |
 | expires_at | timestamptz null | set on `pending`; drives the orphan sweeper |
 | created_at / updated_at / deleted_at | timestamptz | |
@@ -519,6 +520,13 @@ Derived renditions (thumb, card, full, poster, transcoded mp4).
 `id`, `media_id (FK, cascade)`, `variant (thumb|card|full|poster|video_720p)`, `path`, `width`,
 `height`, `size_bytes`, `mime_type`, `created_at`.
 **Unique:** `(media_id, variant)`.
+
+### `media_storage_orphans` [M]
+First-pass state of `media:reconcile-storage` ([10 §9](10-media-storage.md)): a bucket key with no
+`media`/`media_variants` row, deleted when the next consecutive run finds it again at least 24 h
+later. Rows for keys that vanished or gained a row are cleared at the end of each run.
+
+`path (text PK)`, `first_seen_at (timestamptz)`, `last_seen_at (timestamptz)`.
 
 ---
 

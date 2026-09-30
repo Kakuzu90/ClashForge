@@ -8,6 +8,7 @@ use App\Domain\Media\Enums\MediaFailureReason;
 use App\Domain\Media\Enums\MediaStatus;
 use App\Domain\Media\Events\MediaFailed;
 use App\Domain\Media\Events\MediaReady;
+use App\Domain\Media\Events\MediaRetriesExhausted;
 use App\Domain\Media\Exceptions\InsufficientTempSpace;
 use App\Domain\Media\Exceptions\MediaRejected;
 use App\Domain\Media\Jobs\PurgeQuarantineObjectJob;
@@ -44,7 +45,17 @@ class MediaProcessingService
             return;
         }
 
-        $media->forceFill(['status' => MediaStatus::Processing])->save();
+        // Conditional, so a row the sweeper claimed (`deleting`) in the meantime stays claimed.
+        // Every run counts toward media:retry-failed's cap, the job's own retries included.
+        $claimed = Media::query()->whereKey($media->id)
+            ->whereIn('status', [MediaStatus::Uploaded, MediaStatus::Processing])
+            ->update(['status' => MediaStatus::Processing, 'processing_attempts' => DB::raw('processing_attempts + 1')]);
+
+        if ($claimed === 0) {
+            return;
+        }
+
+        $media->refresh();
         $disk = Storage::disk($media->disk);
 
         try {
@@ -85,6 +96,11 @@ class MediaProcessingService
         }
 
         $this->markFailed($media, MediaStatus::Failed, MediaFailureReason::ProcessingError);
+
+        if ($media->processing_attempts >= (int) config('media.lifecycle.retry_max_attempts')) {
+            Log::warning('media.retry_exhausted', ['media' => $media->ulid, 'attempts' => $media->processing_attempts]);
+            MediaRetriesExhausted::dispatch($media->ulid, $media->user_id, $media->collection);
+        }
     }
 
     public function tempDir(string $ulid): string

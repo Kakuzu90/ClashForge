@@ -32,3 +32,31 @@ Schedule::command('assets:verify-pack')
     ->onOneServer()
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'assets:verify-pack']));
+
+Schedule::command('media:sweep-orphans')
+    ->hourlyAt(20)
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'media:sweep-orphans']));
+
+Schedule::command('media:retry-failed')
+    ->cron('45 */6 * * *')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'media:retry-failed']));
+
+Schedule::command('media:purge-deleted')
+    ->dailyAt('02:30')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'media:purge-deleted']));
+
+Schedule::command('media:reconcile-storage')
+    ->weeklyOn(0, '05:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'media:reconcile-storage']));

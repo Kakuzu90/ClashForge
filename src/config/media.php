@@ -152,6 +152,31 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Lifecycle
+    |--------------------------------------------------------------------------
+    |
+    | The cleanup jobs of specs/10 §9. Quarantined media is never touched by any of them.
+    |
+    */
+
+    'lifecycle' => [
+        // Soft-deleted media keeps its objects this long before media:purge-deleted removes them.
+        'purge_after_days' => 7,
+        // media:retry-failed re-runs `processing_error` failures younger than the window, until
+        // this many processing attempts in total have been made.
+        'retry_max_attempts' => 3,
+        'retry_window_hours' => 24,
+        // Media ids per DeleteMediaObjectsJob, and per claim or retry query. Sized so a batch
+        // (about four keys a row) deletes well inside the job's 75 s timeout.
+        'batch_size' => 50,
+        // A `deleting` row this old lost its deletion job; the sweeper queues it again.
+        'stale_deleting_minutes' => 60,
+        // A key with no row is deleted only when seen again at least this long after first sight.
+        'reconcile_confirm_after_hours' => 24,
+    ],
+
     'rate_limits' => [
         'intents_per_hour' => 30,
     ],

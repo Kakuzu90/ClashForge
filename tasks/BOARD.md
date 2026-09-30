@@ -16,7 +16,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P0-05 | Media pipeline (tables, intent/complete, image processing; split queue workers per specs/20 §1) | done | P0-02 | tasks/phase-0/P0-05-media-pipeline.md |
 | P0-06 | GameAssets module + asset policy plumbing | done | P0-02, P0-03 | tasks/phase-0/P0-06-game-assets.md |
 | P0-07 | Ops: health, logging, error tracking, workers | done | P0-01 | tasks/phase-0/P0-07-ops.md |
-| P0-08 | Media lifecycle jobs (orphan sweeper, purge-deleted, retry-failed, `DeleteMediaObjectsJob`, worker boot temp sweep, `media:reconcile-storage` with its `game/` exclusion test; split from P0-05/P0-06) | todo | P0-05 | |
+| P0-08 | Media lifecycle jobs (orphan sweeper, purge-deleted, retry-failed, `DeleteMediaObjectsJob`, worker boot temp sweep, `media:reconcile-storage` with its `game/` exclusion test; split from P0-05/P0-06) | done | P0-05 | tasks/phase-0/P0-08-media-lifecycle.md |
 | P0-09 | Staging + backups: deploy runbook, staging deployed, backup restore drill, Sentry project + alerts + frontend error tracking, R2 + Cloudflare (CDN, `game/` resizing off, CORS, `quarantine/` lifecycle) | blocked | P0-07 + hosting/R2/Sentry accounts | |
 
 ## Phase 1 — Identity
@@ -50,7 +50,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P3-03 | Feed, trending, landing pages | todo | P3-01 | |
 | P3-04 | Likes, bookmarks, comments, counters | todo | P3-01 | |
 | P3-05 | Search v1 | todo | P3-01 | |
-| P3-06 | Moderation v1 | todo | P3-01, P1-06 | |
+| P3-06 | Moderation v1 (incl. 30-day quarantine purge with `audit_logs` entry, specs/10 §9; from P0-08) | todo | P3-01, P1-06 | |
 | P3-07 | SEO surfaces | todo | P3-03 | |
 
 ## Phases 4–6

@@ -273,22 +273,27 @@ Quota changes are config values, not code.
 
 ## 9. Cleanup & orphan handling
 
-Four scheduled jobs. Every one of them is the reason the storage bill stays predictable.
+Scheduled commands (`app/Console/Commands/Media`, backed by `MediaLifecycleService` and
+`StorageReconciler`). Every one of them is the reason the storage bill stays predictable.
+Deletion is two-step: the command claims rows by flipping them to `deleting` (attachment refuses
+that state), then `DeleteMediaObjectsJob` removes the original, every variant and the row. It
+re-reads each row under a lock and skips any that processing has moved out of `deleting`. No job
+here ever selects `quarantined` media. Every command that deletes accepts `--dry-run`.
 
 | Job | Schedule | Action |
 |---|---|---|
-| `media:sweep-orphans` | Hourly | Delete unattached `media` rows (`attachable_id` null) past `expires_at` (24 h) — `pending`, `uploaded` **and** `ready` (media can be ready before attach); delete their objects |
-| `media:purge-deleted` | Daily | Hard-delete storage objects + variants for media soft-deleted more than 7 days ago |
-| `media:reconcile-storage` | Weekly | List bucket keys **under `public/`, `quarantine/` and `private/` only**, diff against `media`+`media_variants`; delete bucket objects with no database row (log first, delete on the second consecutive detection); alert on database rows with no object. **The `game/` prefix is excluded by an explicit allowlist in code, not by convention** — every game asset has no `media` row by design, so an unguarded reconcile would delete the entire asset pack. A test asserts the exclusion |
+| `media:sweep-orphans` | Hourly | Delete unattached `media` rows (`attachable_id` null) past `expires_at` (24 h) — `pending`, `uploaded`, `ready` (media can be ready before attach) **and** `failed`; never `processing` or `quarantined`; delete their objects. Also re-queues `deleting` rows idle for 60 min and logs `media.deletion_stalled` at `error` |
+| `media:purge-deleted` | Daily | Hard-delete storage objects + variants for media soft-deleted more than 7 days ago (quarantined excluded) |
+| `media:reconcile-storage` | Weekly | List bucket keys **under `public/`, `quarantine/` and `private/` only**, diff against `media` (soft-deleted rows included) + `media_variants`. Delete bucket objects with no database row: log first (recorded in `media_storage_orphans`), delete on the next consecutive detection at least 24 h later, so neither an in-flight job nor a manual rerun can trigger a deletion. Alert on database rows with no object (variants of `ready` rows; kept originals of `quarantined` and `processing_error` rows); the run then exits non-zero. **The `game/` prefix is excluded by an explicit allowlist in code (`StorageReconciler::PREFIXES`, a constant, not config), not by convention** — every game asset has no `media` row by design, so an unguarded reconcile would delete the entire asset pack. A test asserts the exclusion |
 | `assets:verify-pack` | Weekly | Verifies every manifest entry resolves to an object whose SHA-256 matches the recorded checksum, and that the bucket `manifest.json` is byte-identical to the committed one; alerts on missing, extra or modified objects, and fails on a malformed configured version |
-| `media:retry-failed` | Every 6 h | Retry `failed` media with reason `processing_error` (the only failures that keep their original) younger than 24 h, up to 3 total attempts, then notify the owner |
+| `media:retry-failed` | Every 6 h | Retry `failed` media with reason `processing_error` (the only failures that keep their original) younger than 24 h, up to 3 processing runs in total (`media.processing_attempts`, incremented on every run including the job's own retries), then dispatch `MediaRetriesExhausted` so the owner is notified (listener: P1-07) |
 
 Cascade rules:
 - Deleting a base → its media soft-deleted → purged after 7 days (a window for accidental-delete
   recovery and for moderation review).
 - Deleting a user → 30-day soft delete → anonymisation → media purge.
 - **Quarantined media is never auto-deleted**; it is retained 30 days for moderator review and then
-  purged by a separate job that logs to `audit_logs`.
+  purged by a separate job that logs to `audit_logs` (P3-06, after `audit_logs` lands in P1-06).
 
 ## 10. Failure modes and responses
 
@@ -299,7 +304,7 @@ Cascade rules:
 | `complete` never called | Row expires in 24 h; sweeper removes the object |
 | Processing fails | `failed` + reason shown to the user with a re-upload affordance; the parent base stays in `processing` and is not published |
 | Processing times out | Counts as a failure: retried once within the job's 60-minute retry window (`maxExceptions` 2), then `failed`; alert if the failure rate exceeds 5% |
-| Worker dies mid-transcode | Temp files are in a per-job directory cleaned by the job's `failed()` hook and by a boot-time sweep |
+| Worker dies mid-transcode | Temp files are in a per-job directory cleaned by the job's `failed()` hook and by `media:sweep-temp`, which the media worker runs on every start (directories older than the media connection's `retry_after`) |
 | Storage key collision | Impossible by construction (ULID in the path) |
 | Base published, media deleted by moderator | Base falls back to a placeholder; author is notified; base stays published unless the moderation action says otherwise |
 | Disk full on the worker | Pre-flight free-space check before download; job releases back to the queue and alerts. Releases do not use up the failure budget; they only wait inside the retry window |

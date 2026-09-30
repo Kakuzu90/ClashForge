@@ -62,7 +62,7 @@ Primary set in [13 §9](13-claiming-workflow.md). Additional:
 | Image with an enormous canvas (30000×30000, small file) | Rejected by the dimension check **before** decode — this is the decompression-bomb defence |
 | Animated WebP or APNG in an image collection | Rejected; animation belongs in the video slot |
 | R2 returns success but the object is not readable | Post-upload `HEAD` check catches it; the job fails and the user is asked to retry |
-| Storage reconcile finds an object with no database row | Logged on the first pass, deleted on the second consecutive detection a week later — never deleted on first sight, because an in-flight upload looks exactly like an orphan |
+| Storage reconcile finds an object with no database row | Logged on the first pass, deleted on the second consecutive detection a week later (at least 24 h after the first, so a manual rerun cannot delete) — never deleted on first sight, because an in-flight upload looks exactly like an orphan |
 | A user hits the 500 MB per-user soft cap | Warned at 80%, blocked at 100% with a prompt to delete old media |
 | Quarantined media from a user who then deletes their account | Quarantine is retained for the full 30 days regardless; deletion of the account does not erase evidence |
 
@@ -123,6 +123,6 @@ Primary set in [15 §7](15-marketplace-workflow.md). Additional:
 | Two requests toggle the same like simultaneously | `UNIQUE (base_layout_id, user_id)` makes the duplicate insert fail; the service treats the constraint violation as "already liked" and returns the correct state |
 | Counter drift after a failed transaction | The nightly reconcile repairs every denormalised counter |
 | The `cache` table is truncated in production | Everything rebuilds; slower for a few minutes, no incorrect results — this is the property that justifies the caching rules |
-| A queue worker is killed mid-media-job | The job returns to the queue after `retry_after`; the job is idempotent and starts over; temp files are cleaned by the boot sweep |
+| A queue worker is killed mid-media-job | The job returns to the queue after `retry_after`; the job is idempotent and starts over; temp files are cleaned by `media:sweep-temp` when the worker restarts |
 | Postgres failover | Connections drop; the app returns 503 from the health endpoint; workers retry; no data loss within the RPO |
 | A search query returns hidden content because of a stale index | Cannot happen on Postgres FTS (same transaction). On Meilisearch later, moderation actions delete from the index synchronously **and** the result set is re-filtered against the database before rendering |

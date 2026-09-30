@@ -42,6 +42,7 @@ class MediaFactory extends Factory
             'status' => MediaStatus::Pending,
             'visibility' => MediaVisibility::Public,
             'position' => 0,
+            'processing_attempts' => 0,
             'expires_at' => $now->addHours((int) config('media.pending_expiry_hours')),
         ];
     }
@@ -80,6 +81,19 @@ class MediaFactory extends Factory
     public function failed(MediaFailureReason $reason = MediaFailureReason::Undecodable): static
     {
         return $this->state(fn () => ['status' => MediaStatus::Failed, 'failure_reason' => $reason]);
+    }
+
+    /**
+     * Past its unattached expiry, as the orphan sweeper finds it.
+     */
+    public function expired(): static
+    {
+        return $this->state(fn () => ['expires_at' => Date::now()->subMinute()]);
+    }
+
+    public function attached(): static
+    {
+        return $this->state(fn () => ['attachable_type' => 'base', 'attachable_id' => 1, 'expires_at' => null]);
     }
 
     public function quarantined(): static

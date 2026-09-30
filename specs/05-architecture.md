@@ -107,6 +107,7 @@ Domain events published by modules and consumed elsewhere:
 | `BaseInteracted` (like/copy/view) | Bases | Metrics aggregator, Notifications (throttled) |
 | `CommentPosted` | Bases | Notifications, Moderation (auto-screen) |
 | `MediaReady` / `MediaFailed` | Media | Bases, PlayerAccounts, Marketplace |
+| `MediaRetriesExhausted` | Media | Notifications (owner: re-upload needed) |
 | `ReportFiled` | Moderation | Notifications (staff), Metrics |
 | `SanctionApplied` | Moderation | Auth (status change), Notifications, Audit, Search (de-index) |
 | `RecruitmentApplicationSubmitted` | Recruitment | Notifications |

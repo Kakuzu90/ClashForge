@@ -214,6 +214,8 @@ php artisan coc:check-health             # CoC key pool ready (P2-01)
 php artisan platform:check-health        # external dependencies → /health state (every 5 min)
 php artisan platform:heartbeat           # scheduler liveness marker (every minute, no summary line)
 php artisan media:sweep-orphans
+php artisan media:retry-failed
+php artisan media:sweep-temp              # media worker start: stale per-job temp dirs
 php artisan media:purge-deleted
 php artisan media:reconcile-storage
 php artisan bases:recompute-trending
