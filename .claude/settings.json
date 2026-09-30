@@ -36,10 +36,20 @@
       "Bash(docker compose down:*)"
     ],
     "deny": [
-      "Read(./src/.env)",
-      "Read(./src/.env.*)",
       "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.env.local)",
+      "Read(./.env.backup)",
+      "Read(./.env.production)",
+      "Read(./.env.staging)",
+      "Read(./.env.testing)",
+      "Read(./.env.docker)",
+      "Read(./src/.env)",
+      "Read(./src/.env.local)",
+      "Read(./src/.env.backup)",
+      "Read(./src/.env.production)",
+      "Read(./src/.env.staging)",
+      "Read(./src/.env.testing)",
+      "Read(./src/.env.docker)"
     ]
   },
   "hooks": {

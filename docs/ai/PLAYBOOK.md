@@ -14,6 +14,31 @@ npx skills add miqdadbadjuber/anti-slop        # only if .agents/skills/ is miss
 
 Optional: `uipro init --ai codex` if you want ui-ux-pro-max inside Codex (Claude already has it).
 
+First run of the app (after P0-01):
+
+```bash
+cp src/.env.example src/.env                                  # fresh clone only
+docker compose run --rm app composer install
+docker compose run --rm app php artisan key:generate          # fresh clone only
+docker compose up -d                                          # app, web, node (Vite), queue, scheduler, db, mailpit
+docker compose exec app php artisan migrate
+docker compose exec node npm run build && docker compose --profile ssr up -d ssr   # SSR renderer
+```
+
+App: http://localhost:8080 · Mailpit: http://localhost:8025 · extras: `--profile storage` (MinIO), `--profile tools` (Adminer).
+
+Laravel Boost MCP: nothing to start by hand; each tool launches it on demand, but the `app` container
+must be running (`docker compose up -d`).
+- **Claude Code:** reads `.mcp.json` in the repo; approve it once.
+- **Codex (CLI and VS Code extension):** shares `~/.codex/config.toml`; already added on this machine.
+  On a new machine, add it (absolute `-f` path so it works from any cwd) and reload VS Code:
+
+```toml
+[mcp_servers.laravel-boost]
+command = "docker"
+args = ["compose", "-f", "/absolute/path/to/ClashForge/docker-compose.yml", "exec", "-T", "app", "php", "artisan", "boost:mcp"]
+```
+
 ---
 
 ## 1. Where am I? (start of every session)

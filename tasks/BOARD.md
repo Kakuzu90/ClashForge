@@ -9,11 +9,11 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
-| P0-01 | Project setup, CI, static analysis (incl. Inertia/Vue/TS, SSR entry, laravel/boost; CI runs `scripts/check.sh`; `git config core.hooksPath .githooks`) | todo | — | |
+| P0-01 | Project setup, CI, static analysis (incl. Inertia/Vue/TS, SSR entry, laravel/boost; CI runs `scripts/check.sh`; `git config core.hooksPath .githooks`) | done | — | tasks/phase-0/P0-01-project-setup.md |
 | P0-02 | Domain skeleton + `Support` primitives | todo | P0-01 | |
 | P0-03 | Design tokens + `Ui*` Vue primitives | todo | P0-01 | |
 | P0-04 | App shell, layouts, navigation | todo | P0-03 | |
-| P0-05 | Media pipeline (tables, intent/complete, processing, sweeper) | todo | P0-02 | |
+| P0-05 | Media pipeline (tables, intent/complete, processing, sweeper; split queue workers per specs/20 §1) | todo | P0-02 | |
 | P0-06 | GameAssets module + asset policy plumbing | todo | P0-02, P0-03 | |
 | P0-07 | Ops: health, logging, error tracking, workers | todo | P0-01 | |
 

@@ -178,6 +178,6 @@ Domain/Bases/
 | Environment | Purpose | Notes |
 |---|---|---|
 | Local | Docker compose (`app`, `web`, `node` → Vite dev server, `queue`, `scheduler`, `db`, `mailpit`; opt-in profiles: `ssr` → Inertia SSR renderer, `storage` → minio, `tools` → adminer) | No external accounts needed: MinIO stands in for R2, Mailpit for the mail provider, and the CoC client binds to a recorded-fixture fake by default |
-| CI | GitHub Actions, matrix SQLite + Postgres | All external edges faked; no network |
+| CI | GitHub Actions, matrix SQLite + Postgres, running `scripts/check.sh` (deferred at P0-01; added before staging) | All external edges faked; no network |
 | Staging | Single small VPS, real R2 bucket (separate), real CoC API with a staging key | Seeded with synthetic data |
 | Production | App VPS (PHP-FPM + `ssr` container) + managed Postgres + R2 + Cloudflare | Zero-downtime deploy, migrations gated |

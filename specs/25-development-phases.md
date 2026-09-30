@@ -27,7 +27,7 @@ Double them for a part-time effort.
 
 | Workstream | Deliverables |
 |---|---|
-| Project setup | Laravel 12 in `src/`, PHP 8.3, Inertia 2 + Vue 3 + TypeScript (client + SSR entries), docker compose running (incl. `node`, `ssr`), Pint, PHPStan L6, Pest, Deptrac, ESLint + `vue-tsc` + Vitest, TS type + Wayfinder generation, CI green on SQLite + Postgres |
+| Project setup | Laravel 12 in `src/`, PHP 8.3, Inertia 2 + Vue 3 + TypeScript (client + SSR entries), docker compose running (incl. `node`, `ssr`), Pint, PHPStan L6, Pest, Deptrac, ESLint + `vue-tsc` + Vitest, TS type + Wayfinder generation, test suite green on SQLite + Postgres via `scripts/check.sh` (CI workflow deferred by owner decision; `check.sh` is its entry point) |
 | Domain skeleton | `app/Domain/*` module folders, service provider wiring, `Support` primitives (enums, value objects, casts) |
 | Design system | Tokens in Tailwind `@theme`, fonts self-hosted, `Ui*` Vue primitives (button, input, card, pill, badge, avatar, modal, toast, skeleton, empty-state), component gallery at `/dev/components` |
 | Asset policy | `GameAssets` module: `GameAssetResolver` + `<GameAsset>` (fallback, accessible name, kill switch), `assets:publish-pack` / `assets:verify-pack`, `game/` CDN binding with resizing disabled, reconcile-job prefix allowlist + its test, fan-content disclaimer in the global footer, lint rule banning game-asset paths in templates ([18 §2](18-design-system.md), [10 §11](10-media-storage.md)) |

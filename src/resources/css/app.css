@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+@source '../**/*.blade.php';
+@source '../**/*.vue';
+@source '../**/*.ts';
+
+/* Design tokens (specs/18 §3) land in P0-03. */

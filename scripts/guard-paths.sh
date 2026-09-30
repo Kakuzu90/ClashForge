@@ -6,7 +6,7 @@ set -uo pipefail
 status=0
 for path in "$@"; do
   case "$path" in
-    *resources/js/types/generated.d.ts|*resources/js/routes/*|*resources/js/actions/*)
+    *resources/js/types/generated.d.ts|*resources/js/routes/*|*resources/js/actions/*|*resources/js/wayfinder/*)
       # Allowed only when produced by the generators; set ALLOW_GENERATED=1 in that case.
       if [ "${ALLOW_GENERATED:-0}" != "1" ]; then
         echo "$path is generated: run 'php artisan typescript:transform' / 'php artisan wayfinder:generate' instead of editing." >&2

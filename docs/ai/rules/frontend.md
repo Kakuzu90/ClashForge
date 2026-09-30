@@ -11,7 +11,7 @@ paths:
 - Vue 3 SFCs, `<script setup lang="ts">`, Composition API. Pages in `Pages/<Area>/<Action>.vue`,
   persistent layouts in `Layouts/`, design system in `Components/{ui,game,admin}/` (`UiButton`,
   `GamePlayerCard`, `AdminTable`), composables `use<Thing>` in `Composables/`.
-- Prop types come from `types/generated.d.ts`; routes from Wayfinder (`routes/`, `actions/`). Never
+- Prop types come from `types/generated.d.ts`; routes from Wayfinder (`routes/`, `actions/`, `wayfinder/`). Never
   hand-edit either — regenerate. Never hardcode URLs.
 - Server state changes only via Inertia `router` / `useForm` / partial reloads (`only:`), deferred
   and merge props. No direct `fetch`/axios to app routes (presigned uploads in `useUpload` excepted).

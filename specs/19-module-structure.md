@@ -51,7 +51,7 @@ src/
 │   │   ├── Components/              # design system: ui/ game/ admin/
 │   │   ├── Composables/             # useLike, useUpload, useFilters …
 │   │   ├── types/generated.d.ts     # from PHP Data DTOs + enums — generated, never hand-edited
-│   │   └── routes/  actions/        # Wayfinder output — generated, never hand-edited
+│   │   └── routes/  actions/  wayfinder/   # Wayfinder output — generated, never hand-edited
 │   └── views/app.blade.php          # the single root view: @vite, @inertiaHead, meta/OG/JSON-LD, @inertia
 ├── bootstrap/ config/ database/ public/ routes/ storage/ tests/
 ```
