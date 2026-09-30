@@ -1,7 +1,7 @@
 # ClashForge (Clash Commons) local dev stack. Laravel app lives in ./src.
 # No Redis by design: cache, queue and sessions use the database driver (specs/06 §4).
 # Media: MinIO locally (profile `storage`), Cloudflare R2 in staging/production; swapping is .env only.
-# Ported from CoCCommunity infra (P0-01). Queue split per specs/20 §1 lands with the media pipeline.
+# Ported from CoCCommunity infra (P0-01).
 name: clashforge
 
 x-app: &app
@@ -48,13 +48,28 @@ services:
     networks:
       - clashforge
 
-  # One worker for all queues until the media pipeline adds the specs/20 §1 split.
-  # --rest keeps idle database-queue workers from hammering Postgres; --max-time recycles hourly.
+  # Queue workers per specs/20 §1. --rest keeps idle database-queue workers from hammering
+  # Postgres; --max-time recycles hourly. Job-level timeouts override --timeout where set.
   queue:
     <<: *app
-    command: php artisan queue:work database --queue=high,default,media,sync,low --tries=3 --sleep=1 --rest=0.2 --max-time=3600
+    command: php artisan queue:work database --queue=high,default --tries=3 --sleep=1 --rest=0.2 --max-time=3600
     restart: unless-stopped
     stop_grace_period: 130s
+
+  # Image (later video) processing: exactly one process, CPU-capped, on the `media` connection
+  # whose retry_after (1200 s) outlives the 900 s job timeout (specs/10 §6, specs/20 §5).
+  queue-media:
+    <<: *app
+    command: php artisan queue:work media --queue=media --tries=2 --sleep=3 --max-time=3600 --memory=512 --timeout=900
+    restart: unless-stopped
+    stop_grace_period: 910s
+    cpus: 1.0
+
+  queue-sync:
+    <<: *app
+    command: php artisan queue:work database --queue=sync,low --tries=3 --sleep=2 --rest=0.2 --max-time=3600
+    restart: unless-stopped
+    stop_grace_period: 310s
 
   scheduler:
     <<: *app
@@ -126,7 +141,8 @@ services:
     profiles:
       - storage
 
-  # One-shot: creates the bucket and opens public/ and game/, mirroring the R2 + CDN binding (specs/10).
+  # One-shot: creates the bucket, opens public/ and game/ (mirroring the R2 + CDN binding) and
+  # expires quarantine/ objects after 31 days, the same lifecycle rule R2 needs (specs/10 §2).
   minio-init:
     image: quay.io/minio/mc:latest
     depends_on:
@@ -142,6 +158,8 @@ services:
       mc mb --ignore-existing local/$$AWS_BUCKET &&
       mc anonymous set download local/$$AWS_BUCKET/public &&
       mc anonymous set download local/$$AWS_BUCKET/game &&
+      (mc ilm rule rm --all --force local/$$AWS_BUCKET >/dev/null 2>&1 || true) &&
+      mc ilm rule add --prefix quarantine/ --expire-days 31 local/$$AWS_BUCKET &&
       echo 'minio ready: bucket '$$AWS_BUCKET' with public/ and game/ readable'
       "
     networks:

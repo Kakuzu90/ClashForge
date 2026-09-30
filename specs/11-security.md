@@ -122,7 +122,9 @@ Fully specified in [10-media-storage.md](10-media-storage.md). Summary of contro
 magic-byte MIME detection, extension+MIME allowlist, mandatory re-encode, SVG rejected,
 non-public quarantine prefix, app-generated storage keys, separate cookieless media origin,
 sandbox CSP on media, size/dimension/duration caps enforced before decode, optional ClamAV behind
-an interface.
+an interface. A presigned PUT cannot enforce size or type, so size is enforced by the worker's HEAD
+check and a capped download, and stray quarantine bytes are removed by a delayed re-delete and a
+31-day bucket lifecycle rule ([10 §2–3](10-media-storage.md)).
 
 ### API abuse, scraping and bots
 - Named rate limiters on every write and on search; a global per-user write limiter as a backstop.

@@ -8,16 +8,22 @@ Five named queues on the `database` connection. Worker counts are the MVP baseli
 |---|---|---|---|---|---|
 | `high` | User-visible, latency-sensitive: verification follow-up, notification for a direct action | 1 | 60s | 3 | 10, 30, 60 |
 | `default` | Everything else user-triggered: indexing, counters, fan-out | 1 | 120s | 3 | 30, 120, 300 |
-| `media` | Image and video processing (CPU-heavy) | 1 (separate container, CPU-capped) | 900s | 2 | 60, 300 |
+| `media` | Image and video processing (CPU-heavy) | 1 (separate container, CPU-capped) | 900s | 2 failures within a 60 min window | 60, 300 |
 | `sync` | CoC API synchronisation | 1 | 60s | 3 | 60, 300, 900 |
 | `low` | Email, digests, pruning, reconciliation | 1 | 300s | 3 | 60, 300, 900 |
 
 Worker command shape (already in `docker-compose.yml`, extended):
 ```
 php artisan queue:work database --queue=high,default --tries=3 --sleep=1 --rest=0.2 --max-time=3600
-php artisan queue:work database --queue=media       --tries=2 --sleep=3 --max-time=3600 --memory=512
+php artisan queue:work media    --queue=media       --tries=2 --sleep=3 --max-time=3600 --memory=512 --timeout=900
 php artisan queue:work database --queue=sync,low    --tries=3 --sleep=2 --max-time=3600
 ```
+
+The media worker reads the `media` queue connection: the same `jobs` table, but its own
+`retry_after` (1200 s, above the 900 s job timeout, see §5). Jobs are dispatched on the default
+connection with queue `media`. `ProcessMediaJob` uses `maxExceptions` 2 inside a 60-minute
+`retryUntil` window instead of `tries`: exceptions and timeouts use up the budget, but releasing
+for a full temp volume does not.
 
 `--max-time=3600` recycles workers hourly, which bounds memory leaks and picks up deploys.
 `--rest` matters on a database queue: it stops idle workers from hammering Postgres with polling.
@@ -40,6 +46,7 @@ php artisan queue:work database --queue=sync,low    --tries=3 --sleep=2 --max-ti
 |---|---|---|
 | `ProcessMediaJob` | `/uploads/{ulid}/complete` | Validate → re-encode → variants → `ready`. Pre-flight disk-space check. Cleans its temp dir in `failed()` |
 | `GenerateVideoPosterJob` | Part of `ProcessMediaJob` (not separate — one job, one temp file) | — |
+| `PurgeQuarantineObjectJob` (`low`) | Delayed, after processing ends | Deletes the quarantine key again once its presigned PUT has expired, so a late re-upload cannot linger ([10 §3](10-media-storage.md)) |
 | `DeleteMediaObjectsJob` | Media purge, entity deletion | Deletes originals + variants from R2; idempotent |
 | `SweepOrphanMediaJob` | Hourly schedule | — |
 | `ReconcileStorageJob` | Weekly schedule | Two-pass: log, then delete on second detection. **Scans `public/`, `quarantine/`, `private/` only — the `game/` prefix is allowlisted out, because game assets have no `media` row by design** ([10 §9](10-media-storage.md)) |

@@ -32,7 +32,7 @@ Double them for a part-time effort.
 | Design system | Tokens in Tailwind `@theme`, fonts self-hosted, `Ui*` Vue primitives (button, input, card, pill, badge, avatar, modal, toast, skeleton, empty-state), component gallery at `/dev/components` |
 | Asset policy | `GameAssets` module: `GameAssetResolver` + `<GameAsset>` (fallback, accessible name, kill switch), `assets:publish-pack` / `assets:verify-pack`, `game/` CDN binding with resizing disabled, reconcile-job prefix allowlist + its test, fan-content disclaimer in the global footer, lint rule banning game-asset paths in templates ([18 §2](18-design-system.md), [10 §11](10-media-storage.md)) |
 | App shell | Persistent Inertia layouts (public, app, admin), root Blade view with meta/OG, shared props, mobile bottom nav, desktop sidebar, global search stub, dark theme |
-| Media pipeline | `media` + `media_variants` tables, presigned intent/complete endpoints, `ProcessMediaJob` with image validation + variants, orphan sweeper, storage wiring against **MinIO locally** ([10 §2.1](10-media-storage.md)); R2 + CDN domain swapped in by env when the account exists |
+| Media pipeline | `media` + `media_variants` tables, presigned intent/complete/status endpoints, `ProcessMediaJob` with image validation + variants, storage wiring against **MinIO locally** ([10 §2.1](10-media-storage.md)); R2 + CDN domain swapped in by env when the account exists. Lifecycle jobs (orphan sweeper, purge, retry-failed) are a separate task |
 | Ops | Health endpoint, Sentry, structured logging, queue workers + scheduler + SSR renderer running, backup verified, staging deployed |
 
 **Exit:** a styled page that uploads an image to object storage, processes it, and renders the
@@ -239,7 +239,8 @@ user input, files, or crosses a trust boundary.
 | Domain skeleton + `Support` primitives | [05](05-architecture.md), [19](19-module-structure.md) | — |
 | Design tokens + `Ui*` Vue primitives | [18 §3–4](18-design-system.md) | [03 §8](03-non-functional-requirements.md) |
 | App shell, layouts, navigation | [18 §5](18-design-system.md) | [04](04-roles-and-permissions.md) |
-| Media pipeline (tables, intent/complete, processing, sweeper) | [10](10-media-storage.md), [07](07-database-schema.md) (media) | [20](20-jobs-and-scheduling.md), [11](11-security.md) |
+| Media pipeline (tables, intent/complete, processing) | [10](10-media-storage.md), [07](07-database-schema.md) (media) | [20](20-jobs-and-scheduling.md), [11](11-security.md) |
+| Media lifecycle jobs (sweeper, purge, retry-failed) | [10 §9–10](10-media-storage.md), [20](20-jobs-and-scheduling.md) | [07](07-database-schema.md) (media) |
 | GameAssets module + asset policy plumbing | [18 §2](18-design-system.md), [10 §11](10-media-storage.md) | [19](19-module-structure.md) |
 | Ops: health, logging, error tracking, workers | [20](20-jobs-and-scheduling.md) | [03 §7](03-non-functional-requirements.md) |
 

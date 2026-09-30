@@ -489,11 +489,11 @@ one job.
 | attachable_type / attachable_id | varchar(60) null / bigint null | null until attached |
 | collection | varchar(30) | `avatar`\|`account_image`\|`base_screenshot`\|`base_video`\|`evidence`\|`portfolio` |
 | kind | varchar(10) | `image`\|`video` |
-| disk | varchar(20) | `r2` |
+| disk | varchar(20) | Laravel disk name (`media`), never the provider name |
 | path | text | storage key |
 | original_filename | varchar(255) | sanitised, never used as the storage key |
-| mime_type | varchar(100) | detected, not declared |
-| extension | varchar(10) | derived from detected MIME |
+| mime_type | varchar(100) null | detected from the file signature, not declared; null until processed |
+| extension | varchar(10) null | derived from detected MIME; null until processed |
 | size_bytes | bigint | |
 | width / height | int null | |
 | duration_seconds | numeric(6,2) null | video |
@@ -506,9 +506,11 @@ one job.
 | expires_at | timestamptz null | set on `pending`; drives the orphan sweeper |
 | created_at / updated_at / deleted_at | timestamptz | |
 
-**Constraints:** `UNIQUE (disk, path)`; `CHECK (status <> 'ready' OR attachable_id IS NOT NULL OR collection = 'avatar')`.
+**Constraints:** `UNIQUE (disk, path)`; enum `CHECK`s on `status`, `collection`, `kind`, `visibility`.
+Media may be `ready` before it is attached (processing finishes before the parent form is submitted),
+so there is no attachment constraint; unattached rows expire and are swept.
 **Indexes:** `(attachable_type, attachable_id, collection, position)`;
-`(status, expires_at) WHERE status IN ('pending','uploaded')` — the sweeper's index;
+`(expires_at) WHERE attachable_id IS NULL` — the sweeper's index;
 `(user_id, created_at DESC)`; `(checksum_sha256)`.
 
 ### `media_variants` [M]

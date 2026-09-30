@@ -11,6 +11,8 @@ paths:
   (`specs/19` §1). Other modules use only its `Contracts|Services|Data|Events|Enums`.
 - Controllers (`app/Http/Controllers/<Area>/<Resource>Controller`): validate (Form Request) →
   `authorize()` → call a service/action → `Inertia::render('<Area>/<Action>', $props)` or redirect.
+  Http cannot reference domain models, so when the policy needs a model the service/action that
+  loads it (owner-scoped, 404 first) calls `Gate::forUser($user)->authorize()` (specs/04 §3).
   No queries beyond route-model binding, no business rules.
 - Props are `Data` DTOs (spatie/laravel-data style, readonly) — never models, collections of
   models, or `toArray()`. Include per-resource `can` flags from the policy.

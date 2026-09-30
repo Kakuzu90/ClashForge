@@ -27,18 +27,20 @@ nothing else.
 
 ```
 quarantine/{yyyy}/{mm}/{media_ulid}/original.{ext}    ← raw upload lands here, never served
-public/avatars/{user_ulid}/{variant}.webp
-public/accounts/{account_ulid}/{media_ulid}/{variant}.webp
-public/bases/{base_ulid}/{media_ulid}/{variant}.webp
-public/bases/{base_ulid}/{media_ulid}/video_720p.mp4
-public/bases/{base_ulid}/{media_ulid}/poster.webp
-private/evidence/{report_ulid}/{media_ulid}/original.{ext}   ← signed URLs only, staff access
+public/{collection}/{media_ulid}/{variant}.webp      ← e.g. public/base_screenshot/01j…/card.webp
+public/base_video/{media_ulid}/video_720p.mp4
+public/base_video/{media_ulid}/poster.webp
+private/{collection}/{media_ulid}/{variant}.webp     ← e.g. evidence; signed URLs only, staff access
 
 game/{pack_version}/units/{slug}.png          ← curated game assets, uploaded by staff, byte-exact
 game/{pack_version}/townhalls/{level}.png
 game/{pack_version}/leagues/{league_id}.png
 game/{pack_version}/manifest.json
 ```
+
+Derived keys depend only on the media row, never on the parent: processing runs before the parent
+(base, account, report) is attached, and attaching never moves objects. The media row's
+`attachable_*` columns hold the relationship.
 
 Why `quarantine/` is a separate prefix: it makes "unvalidated bytes are not publicly reachable" a
 property of the bucket layout rather than of application logic. A bug in a URL resolver cannot
@@ -47,7 +49,11 @@ expose an unscanned file, because the public CDN binding does not cover that pre
 Why `game/` is a separate prefix: those objects are **not user media**. They have no `media` row,
 they never pass through the upload pipeline, and they must never be re-encoded. Keeping them under
 their own prefix is what lets every sweeper, quota and reconcile job ignore them by rule rather
-than by accident. The CDN binding covers `public/` **and** `game/`; both are read-only and public.
+than by accident.
+
+The bucket carries a lifecycle rule expiring `quarantine/` objects after 31 days (one day past the
+quarantine review hold). It is a backstop for anything the application-level cleanup misses, such
+as bytes PUT to a presigned URL that is never completed (§3). The CDN binding covers `public/` **and** `game/`; both are read-only and public.
 Full policy in [18 §2](18-design-system.md); the upload procedure is §11 below.
 
 ### 2.1 Local development
@@ -63,26 +69,30 @@ provider.
 
 Two local-only wrinkles, both confined to configuration:
 
-- **Presign host.** The app signs URLs against `http://minio:9000`, which the browser on the host
-  cannot resolve. `MediaUrlResolver` rewrites the host of generated URLs to `MEDIA_PRESIGN_HOST`
-  when that variable is set, and leaves them untouched when it is not. It is empty in
+- **Presign host.** The app talks to `http://minio:9000`, which the browser on the host cannot
+  resolve. When `MEDIA_PRESIGN_HOST` is set, `MediaUrlResolver` **signs** browser-facing URLs
+  (presigned PUT, private GET) against that host instead. Rewriting the host of an already signed
+  URL does not work: the SigV4 signature covers the Host header. It is empty in
   staging/production. (The alternative — a `minio` entry in the host's `/etc/hosts` — works too and
   needs no code, but requires a manual machine-level change.)
 - **No CDN.** There is no Cloudflare in front locally, so cache headers, hotlink rules and the
   `game/`-prefix resizing opt-out (§7, §11.3) are configuration that only takes effect in
   staging/production. They must be verified there, not assumed from a green local run.
 
-The `minio-init` one-shot container creates the bucket and marks `public/` and `game/` readable,
-mirroring the CDN binding in §2.
+The `minio-init` one-shot container creates the bucket, marks `public/` and `game/` readable
+(mirroring the CDN binding in §2) and sets the `quarantine/` lifecycle rule. The storage disk is
+named `media` in `config/filesystems.php`; `media.disk` is the disk name, not the provider.
 
 ## 3. Upload pipeline
 
 ```
  ┌─ Browser ──────────────────────────────────────────────────────────────┐
  │ 1. POST /uploads/intent {collection, filename, size, mime}             │
- │ 2. ← {media_ulid, presigned_put_url, expires_in: 300, max_size}        │
+ │ 2. ← 201 {mediaUlid, uploadUrl, uploadMethod: PUT, uploadHeaders,     │
+ │         expiresIn: 300, maxSize}                                       │
  │ 3. PUT bytes ──────────────────────────────────────▶ R2 quarantine/    │
- │ 4. POST /uploads/{media_ulid}/complete                                 │
+ │ 4. POST /uploads/{media_ulid}/complete   ← 202 {upload status}         │
+ │ 5. GET  /uploads/{media_ulid}  (poll)    ← 200 {upload status}         │
  └────────────────────────────────────────────────────────────────────────┘
                                    │
                           ProcessMediaJob (queue: media)
@@ -111,14 +121,31 @@ mirroring the CDN binding in §2.
 - Validates: collection is known, the user's quota for that collection has room, declared size is
   within the collection's limit, declared MIME is in the allowlist (a first-pass filter only).
 - Creates the `media` row in `pending` with `expires_at = now + 24h`.
-- Presigned PUT is valid for 5 minutes, constrained by `Content-Length` range and
-  `Content-Type`, and targets a key the client cannot choose.
+- Presigned PUT is valid for 5 minutes and targets a `quarantine/` key the client cannot choose.
+  It **cannot** enforce size or type: SigV4 presigning never signs `Content-Type` or
+  `Content-Length`, and R2 has no POST-policy uploads. Size is enforced by the job's HEAD check
+  (step a) and a download capped at the declared size + 1 byte; type by the magic-byte check.
+  Bytes PUT but never completed are removed by the orphan sweeper and, failing that, the
+  lifecycle rule (§2).
 - Rate limited: 30 intents/hour/user.
 
 ### Complete endpoint rules
 - Verifies the media row belongs to the caller and is `pending`.
-- Marks it `uploaded`, dispatches `ProcessMediaJob`.
+- Marks it `uploaded`, dispatches `ProcessMediaJob`; if the dispatch fails the row goes back to
+  `pending` so the client's retry can queue it again.
 - Idempotent — a duplicate call while `processing` is a no-op.
+
+### Status endpoint and responses
+- `GET /uploads/{media_ulid}` lets the uploader poll: `{mediaUlid, status, finished,
+  failureMessage, width, height, variants: [{name, url, width, height}]}`. `complete` returns the
+  same shape. Neither exposes storage keys or user ids.
+- Lookups are scoped to the caller first, so another user's ULID is a 404 (message
+  `Not found.`, no model names) before `MediaPolicy` runs.
+
+### After processing
+- The presigned PUT outlives a fast job, so a client could write to the quarantine key again after
+  the original was deleted. `PurgeQuarantineObjectJob` deletes the key once more at intent TTL +
+  60 s for `ready` and `failed` rows (never `quarantined`).
 
 ### Attachment
 Attachment happens when the parent form is submitted (publish base, save account images), inside the
@@ -163,15 +190,20 @@ the primary control** — it destroys embedded payloads by construction. On top 
 - **Optional ClamAV step**: a `MediaScanner` interface with a no-op implementation at launch and a
   ClamAV implementation behind a feature flag. Enable it when user-uploaded evidence files
   (arbitrary formats) ship with the report system, where re-encoding cannot be applied.
-- Any file failing validation in a way that suggests intent (MIME mismatch, embedded script
-  markers, zip-in-image) is set to `quarantined`, retained 30 days for review, and its uploader is
-  flagged for moderation.
+- Any file failing validation in a way that suggests intent (a real MIME outside the allowlist,
+  embedded script markers, a zip appended to the image) is set to `quarantined`, retained 30 days
+  for review, and its uploader is flagged for moderation (logged as `media.quarantined` until the
+  moderation system ships). A real MIME **inside** the allowlist that differs from the declared one
+  (a PNG named `.jpg`) is benign and processed as its real type.
+- Deterministic rejections (too small, animated, undecodable, size mismatch) delete the quarantine
+  original at once. `failed` after retries are exhausted (`processing_error`) keeps it for
+  `media:retry-failed`.
 
 ## 5. Image processing
 
 | Collection | Variants |
 |---|---|
-| avatar | 512, 128, 48 (square, centre-cropped) |
+| avatar | 512, 128, 48 (square, centre-cropped), stored as `full`, `card`, `thumb` |
 | account_image | full 1600w, card 800w, thumb 320w |
 | base_screenshot | full 1600w, card 800w, thumb 320w |
 | portfolio | card 800w, thumb 320w |
@@ -245,11 +277,11 @@ Four scheduled jobs. Every one of them is the reason the storage bill stays pred
 
 | Job | Schedule | Action |
 |---|---|---|
-| `media:sweep-orphans` | Hourly | Delete `media` rows in `pending`/`uploaded` past `expires_at` (24 h) with no `attachable_id`; delete their objects |
+| `media:sweep-orphans` | Hourly | Delete unattached `media` rows (`attachable_id` null) past `expires_at` (24 h) — `pending`, `uploaded` **and** `ready` (media can be ready before attach); delete their objects |
 | `media:purge-deleted` | Daily | Hard-delete storage objects + variants for media soft-deleted more than 7 days ago |
 | `media:reconcile-storage` | Weekly | List bucket keys **under `public/`, `quarantine/` and `private/` only**, diff against `media`+`media_variants`; delete bucket objects with no database row (log first, delete on the second consecutive detection); alert on database rows with no object. **The `game/` prefix is excluded by an explicit allowlist in code, not by convention** — every game asset has no `media` row by design, so an unguarded reconcile would delete the entire asset pack. A test asserts the exclusion |
 | `assets:verify-pack` | Weekly | Verifies every manifest entry resolves to an object whose SHA-256 matches the recorded checksum; alerts on missing, extra or modified objects |
-| `media:retry-failed` | Every 6 h | Retry `failed` media younger than 24 h, up to 3 total attempts, then notify the owner |
+| `media:retry-failed` | Every 6 h | Retry `failed` media with reason `processing_error` (the only failures that keep their original) younger than 24 h, up to 3 total attempts, then notify the owner |
 
 Cascade rules:
 - Deleting a base → its media soft-deleted → purged after 7 days (a window for accidental-delete
@@ -266,11 +298,11 @@ Cascade rules:
 | Upload PUT fails client-side | Client retries twice, then surfaces a retry button; the `pending` row expires harmlessly |
 | `complete` never called | Row expires in 24 h; sweeper removes the object |
 | Processing fails | `failed` + reason shown to the user with a re-upload affordance; the parent base stays in `processing` and is not published |
-| Processing times out | Job fails, retried twice, then `failed`; alert if the failure rate exceeds 5% |
+| Processing times out | Counts as a failure: retried once within the job's 60-minute retry window (`maxExceptions` 2), then `failed`; alert if the failure rate exceeds 5% |
 | Worker dies mid-transcode | Temp files are in a per-job directory cleaned by the job's `failed()` hook and by a boot-time sweep |
 | Storage key collision | Impossible by construction (ULID in the path) |
 | Base published, media deleted by moderator | Base falls back to a placeholder; author is notified; base stays published unless the moderation action says otherwise |
-| Disk full on the worker | Pre-flight free-space check before download; job releases back to the queue and alerts |
+| Disk full on the worker | Pre-flight free-space check before download; job releases back to the queue and alerts. Releases do not use up the failure budget; they only wait inside the retry window |
 
 ## 11. Game asset pack (staff-managed, self-hosted)
 

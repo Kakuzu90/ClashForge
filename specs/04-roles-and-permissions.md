@@ -80,8 +80,13 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 - One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `CocAccountPolicy`,
   `BaseLayoutPolicy`, `BaseCommentPolicy`, `RecruitmentPostPolicy`, `ApplicationPolicy`,
   `ListingPolicy`, `OrderPolicy`, `ReportPolicy`, `MediaPolicy`.
-- Every controller action calls `authorize()` / `Gate::authorize()`. **No implicit trust
-  from route grouping alone** — route middleware is defence in depth, not the check.
+- Every request that reads or writes a resource runs its policy. **No implicit trust from route
+  grouping alone** — route middleware is defence in depth, not the check. Controllers call
+  `authorize()` / `Gate::authorize()` when they hold what the policy needs; because Http may not
+  reference domain models ([19 §2](19-module-structure.md)), a service or action that loads a
+  model by its public id authorizes it with `Gate::forUser($user)->authorize()` straight after the
+  owner-scoped lookup (e.g. `UploadIntentService`, `CompleteUpload`). Policy tests call the Gate
+  and the service directly, so removing the call fails a test.
 - Vue never decides authorization. Controllers pass per-resource ability flags computed by
   policies (e.g. `base.can = { update, delete, report }`) and a global `auth.can` map via shared
   props; components use them only to show or hide UI. The server re-checks on action. Hiding a

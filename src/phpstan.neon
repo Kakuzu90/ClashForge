@@ -10,4 +10,8 @@ parameters:
         - database
         # Test fixtures exercise Support primitives (e.g. EnumHelpers) before any module uses them.
         - tests/Support
+    ignoreErrors:
+        # Used by Pest test files, which PHPStan does not analyse.
+        - identifier: trait.unused
+          path: tests/Support/*
     tmpDir: storage/framework/cache/phpstan
