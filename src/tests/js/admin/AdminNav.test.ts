@@ -28,6 +28,15 @@ describe('visibleAdminNav', () => {
     it('shows each item only with its ability', () => {
         expect(visibleAdminNav(adminNav, { accessAdmin: true }).map((item) => item.key)).toEqual(['dashboard']);
         expect(visibleAdminNav(adminNav, { accessAdmin: true, viewAuditLog: true }).map((item) => item.url)).toEqual(['/admin', '/admin/audit']);
+        expect(visibleAdminNav(adminNav, { accessAdmin: true, viewUsers: true }).map((item) => item.key)).toEqual(['dashboard', 'users']);
+    });
+
+    it('keeps the specs/18 §6 order: Dashboard, Users, Logs', () => {
+        expect(visibleAdminNav(adminNav, { accessAdmin: true, viewUsers: true, viewAuditLog: true }).map((item) => item.url)).toEqual([
+            '/admin',
+            '/admin/users',
+            '/admin/audit',
+        ]);
         expect(visibleAdminNav(adminNav, {})).toEqual([]);
     });
 });

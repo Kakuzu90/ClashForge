@@ -106,11 +106,15 @@ return [
     // Named limiters outside auth (specs/04 §4).
     'rate_limits' => [
         'global_write_per_minute' => 120,
+        // Admin user list and audit log loads per staff member (the deferred rows count too).
+        'admin_search_per_minute' => 60,
     ],
 
     'admin' => [
         // Rows per page in the admin tables, e.g. the audit log (FR-ADMIN-4).
         'per_page' => 50,
+        // Latest audit entries about an account on the admin user detail.
+        'audit_trail_limit' => 10,
     ],
 
     'security_log' => [

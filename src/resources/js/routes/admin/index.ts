@@ -1,4 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
+import users from './users'
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
 * @see app/Http/Controllers/Admin/DashboardController.php:17
@@ -90,6 +91,7 @@ audit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 const admin = {
     dashboard: Object.assign(dashboard, dashboard),
     audit: Object.assign(audit, audit),
+    users: Object.assign(users, users),
 }
 
 export default admin

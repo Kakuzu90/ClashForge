@@ -156,6 +156,8 @@ it('rejects invalid filters', function (array $query, string $field) {
     'scalar cursor' => [['cursor' => 'MQ'], 'cursor'],
     'non-integer id cursor' => [['cursor' => rtrim(strtr(base64_encode('{"_pointsToNextItems":true,"audit_logs.id":"abc"}'), '+/', '-_'), '=')], 'cursor'],
     'not base64 cursor' => [['cursor' => '%%%'], 'cursor'],
+    'invalid UTF-8 actor' => [['actor' => "\xC3\x28"], 'actor'],
+    'NUL byte target' => [['target' => "chi\0ef"], 'target'],
 ]);
 
 it('keeps the list within the query budget', function () {

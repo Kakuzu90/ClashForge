@@ -63,6 +63,7 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 | Manage tags / categories | – | – | ✓ | ✓ |
 | View moderation log | – | ○ own actions | ✓ | ✓ |
 | View audit log | – | – | ✓ | ✓ |
+| View user accounts (admin list and detail, with email) | – | – | ✓ | ✓ |
 | Change user roles | – | – | – | ✓ |
 | Manage feature flags / settings | – | – | – | ✓ |
 | Hard-delete a user | – | – | – | ✓ |
@@ -95,6 +96,8 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
   button is not authorization.
 - Profile visibility has no staff bypass: `/u/{username}` applies the same rules to staff, who see
   hidden accounts through the admin user detail instead.
+- The admin user list and detail never show the viewer's own account or any super admin (the
+  detail 404s), so staff cannot look up themselves or the platform owners there.
 - Staff abilities live in Gates, one per staff row of §2 (`App\Domain\Auth\Enums\StaffAbility`,
   registered in `App\Providers\AuthorizationServiceProvider`), including `access-admin`
   (moderator+), `manage-roles`, `resolve-disputes` and `view-audit-log`.
@@ -102,7 +105,7 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
   role holds. There is no `Gate::before` hook, so ownership policies (the `○` rows above) and rule 1
   still apply to super admins and the matrix holds exactly.
 - A staff ability also needs the account's status to allow it: the read abilities (`access-admin`,
-  `view-report-queue`, `view-moderation-log`, `view-audit-log`) stay open to restricted and
+  `view-users`, `view-report-queue`, `view-moderation-log`, `view-audit-log`) stay open to restricted and
   pending-deletion staff, every other staff ability needs an active account, and a suspended
   account has none. A timed sanction stops counting once `status_expires_at` passes.
 
@@ -180,6 +183,7 @@ before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`,
 | `search` | 60 / min | ip |
 | `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
 | `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page and password form share it | user |
+| `admin-search` | 60 / min (`platform.rate_limits.admin_search_per_minute`); admin user list and audit log share it, deferred rows count; a breach is a bare 429 shown inline | user |
 
 All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their
 numbers are config keys (`config/platform.php` `auth.*` for the auth limiters). On an Inertia form

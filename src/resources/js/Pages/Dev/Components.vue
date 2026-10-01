@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AdminAuditTrailList from '@/Components/admin/AdminAuditTrailList.vue';
 import AdminDiffViewer from '@/Components/admin/AdminDiffViewer.vue';
 import AdminFilterBar from '@/Components/admin/AdminFilterBar.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
@@ -102,6 +103,28 @@ const tableRows: SampleRow[] = [
     { id: 2, name: 'Second row', status: 'Closed' },
 ];
 const filterText = ref('');
+const trailEntries: App.Http.Data.Admin.AuditTrailEntryData[] = [
+    {
+        id: 2,
+        actionLabel: 'Sample action',
+        actorUsername: 'sample_admin',
+        actorRoleLabel: 'Admin',
+        actorVia: null,
+        before: { field: 'old value' },
+        after: { field: 'new value' },
+        createdAt: '2026-10-01T10:00:00+00:00',
+    },
+    {
+        id: 1,
+        actionLabel: 'Sample action',
+        actorUsername: null,
+        actorRoleLabel: null,
+        actorVia: 'console',
+        before: null,
+        after: { field: 'value' },
+        createdAt: '2026-09-30T10:00:00+00:00',
+    },
+];
 const { push } = useToast();
 
 // Specimens report their click, so the gallery also proves each variant's handler fires.
@@ -457,6 +480,8 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <AdminTable :columns="tableColumns" :rows="[]" :row-key="() => 0" caption="Table empty">
                         <template #empty>No rows match.</template>
                     </AdminTable>
+                    <AdminAuditTrailList :entries="trailEntries" />
+                    <AdminAuditTrailList :entries="[]" />
                     <AdminDiffViewer
                         :before="{ role: 'user', note: 'kept', removed: true }"
                         :after="{ role: 'moderator', note: 'kept', added: [1, 2] }"

@@ -108,7 +108,11 @@ const expandLabel = (entry: Entry) => `Details: ${entry.actionLabel}, ${subjectN
             <UiInput v-model="fields.to" label="To" type="date" hint="UTC" :error="errors.to" />
         </AdminFilterBar>
 
-        <UiAlert v-if="visitError" kind="danger" title="The audit log didn't load">
+        <UiAlert v-if="visitError?.throttled" kind="warning" title="Too many searches in a minute">
+            <p>Wait a moment, then try again.</p>
+            <UiButton class="mt-3" variant="secondary" size="sm" @click="router.reload()">Try again</UiButton>
+        </UiAlert>
+        <UiAlert v-else-if="visitError" kind="danger" title="The audit log didn't load">
             <p>
                 Try again in a moment.<template v-if="visitError.requestId">
                     If it keeps failing, quote request id <span class="font-semibold text-fg">{{ visitError.requestId }}</span

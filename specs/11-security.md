@@ -24,7 +24,10 @@ mechanism and the test that proves it.
 
 ### Injection (SQL / command / header)
 - Eloquent and the query builder with bound parameters everywhere. Raw SQL is permitted only for
-  search vectors and reconcile queries, always with bindings — **never** string interpolation.
+  search vectors, reconcile queries and the admin username prefix search (`LIKE ? ESCAPE`, with
+  `%`, `_` and `\` escaped), always with bindings — **never** string interpolation.
+- Free-text filters reject invalid UTF-8 and NUL bytes (`App\Support\Rules\Utf8Text`): Postgres
+  would raise on the bound value, a 500 instead of a field error.
 - Static analysis flags `DB::raw` usage; each occurrence needs an inline justification comment.
 - Sort/filter parameters map through an allowlist array to column names; user input is never
   concatenated into `ORDER BY`.
@@ -222,7 +225,10 @@ failed and successful logins, password/email changes (`auth.password_changed`,
 `auth.password_change_failed`, `auth.password_confirm_failed`), new devices (`auth.new_device`),
 session revocation and expiry (`auth.session_revoked`, `auth.session_expired`), 2FA changes, role
 changes, permission denials,
-CoC claim attempts and verification failures, ownership transfers, sanctions, admin data access,
+CoC claim attempts and verification failures, ownership transfers, sanctions, admin data access
+(`admin.user_viewed` on each admin user detail: actor and target ULID, `ip_hash`;
+`admin.users_listed` on each load of the user list rows: actor, which filters were used, row count,
+`ip_hash`, never the search text, which may be an email),
 rate-limit breaches, upload quarantines, CSP violation reports.
 
 Security events go to the `security` log channel (JSON, 90 days). Permission denials

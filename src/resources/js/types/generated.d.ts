@@ -8,6 +8,33 @@ export type AuditSubject = 'user';
 }
 namespace Auth {
 namespace Data {
+export type AdminUserDetailData = {
+ulid: string,
+username: string,
+email: string,
+emailVerifiedAt: string | null,
+roleLabel: string,
+statusLabel: string,
+statusTone: string,
+statusReason: string | null,
+statusEndsAt: string | null,
+joinedAt: string,
+lastSignInAt: string | null,
+activeSessions: number,
+deletedAt: string | null,
+};
+export type AdminUserRowData = {
+ulid: string,
+username: string,
+email: string,
+emailVerified: boolean,
+roleLabel: string,
+statusLabel: string,
+statusTone: string,
+joinedAt: string,
+lastSignInAt: string | null,
+deleted: boolean,
+};
 export type SessionData = {
 key: string,
 deviceLabel: string,
@@ -19,7 +46,7 @@ isCurrent: boolean,
 }
 namespace Enums {
 export type Role = 'user' | 'moderator' | 'admin' | 'super_admin';
-export type StaffAbility = 'access-admin' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
+export type StaffAbility = 'access-admin' | 'view-users' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
 export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pending_deletion';
 }
 }
@@ -180,6 +207,28 @@ endsAt: string | null,
 };
 }
 namespace Admin {
+export type AdminUserFiltersData = {
+search: string | null,
+role: string | null,
+status: string | null,
+};
+export type AdminUserIndexPageData = {
+filters: App.Http.Data.Admin.AdminUserFiltersData,
+roles: App.Http.Data.Admin.FilterOptionData[],
+statuses: App.Http.Data.Admin.FilterOptionData[],
+};
+export type AdminUserListData = {
+entries: App.Domain.Auth.Data.AdminUserRowData[],
+newerCursor: string | null,
+olderCursor: string | null,
+};
+export type AdminUserShowPageData = {
+user: App.Domain.Auth.Data.AdminUserDetailData,
+displayName: string | null,
+avatarUrl: string | null,
+auditTrail: App.Http.Data.Admin.AuditTrailEntryData[],
+moreAuditEntries: boolean,
+};
 export type AuditLogEntryData = {
 id: number,
 action: string,
@@ -211,6 +260,16 @@ olderCursor: string | null,
 export type AuditLogPageData = {
 filters: App.Http.Data.Admin.AuditLogFiltersData,
 actions: App.Http.Data.Admin.FilterOptionData[],
+};
+export type AuditTrailEntryData = {
+id: number,
+actionLabel: string,
+actorUsername: string | null,
+actorRoleLabel: string | null,
+actorVia: string | null,
+before: Record<string, any> | null,
+after: Record<string, any> | null,
+createdAt: string,
 };
 export type FilterOptionData = {
 value: string,

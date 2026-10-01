@@ -7,6 +7,7 @@ use App\Domain\Audit\Data\AuditLogRecordData;
 use App\Domain\Audit\Data\AuditLogSliceData;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Audit\Models\AuditLog;
+use App\Support\Pagination\CursorShape;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\Cursor;
@@ -21,17 +22,11 @@ class AuditLogQuery
     private const CURSOR_COLUMN = 'audit_logs.id';
 
     /**
-     * Whether a cursor is one this query issued in shape: base64url JSON with the direction flag
-     * and an integer id. Anything else would make the paginator throw.
+     * Whether a cursor is one this query could have issued.
      */
     public static function acceptsCursor(string $cursor): bool
     {
-        $json = base64_decode(str_replace(['-', '_'], ['+', '/'], $cursor), true);
-        $parameters = $json === false ? null : json_decode($json, true);
-
-        return is_array($parameters)
-            && is_bool($parameters['_pointsToNextItems'] ?? null)
-            && is_int($parameters[self::CURSOR_COLUMN] ?? null);
+        return CursorShape::accepts($cursor, self::CURSOR_COLUMN);
     }
 
     public function page(AuditLogFilterData $filters, int $perPage, ?string $cursor = null): AuditLogSliceData
@@ -89,6 +84,11 @@ class AuditLogQuery
         if ($filters->target !== null) {
             $query->where('audit_logs.auditable_type', AuditSubject::User->value)
                 ->whereIn('audit_logs.auditable_id', $this->userIds($filters->target));
+        }
+
+        if ($filters->subjectId !== null) {
+            $query->where('audit_logs.auditable_type', AuditSubject::User->value)
+                ->where('audit_logs.auditable_id', $filters->subjectId);
         }
 
         if ($filters->action !== null) {

@@ -84,6 +84,17 @@ class AppServiceProvider extends ServiceProvider
                 return back()->with('error', 'Too many changes. Wait a minute and try again.');
             }));
 
+        // Admin list searches (specs/11 §2: a named limiter on search). Each page load counts twice:
+        // the page and its deferred rows. A GET cannot redirect back on a breach (the previous URL
+        // is throttled too), so it is a bare 429 the page shows inline (useVisitError).
+        RateLimiter::for('admin-search', fn (Request $request): Limit => Limit::perMinute((int) config('platform.rate_limits.admin_search_per_minute'))
+            ->by('admin-search:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(function (Request $request, array $headers): Response {
+                Log::channel('security')->warning('auth.rate_limited', ['limiter' => 'admin-search', 'ip_hash' => IpHash::of($request->ip())]);
+
+                return response('Too many searches.', 429, $headers);
+            }));
+
         RateLimiter::for('password-reset', fn (Request $request): array => [
             Limit::perHour((int) config('platform.auth.password_reset_per_hour'))->by('password-reset:'.$this->emailKey($request))->response($this->throttledForm('password-reset')),
             Limit::perHour((int) config('platform.auth.password_reset_per_ip_per_hour'))->by('password-reset:ip:'.$request->ip())->response($this->throttledForm('password-reset')),

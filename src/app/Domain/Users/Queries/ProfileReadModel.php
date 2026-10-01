@@ -38,6 +38,16 @@ class ProfileReadModel
     }
 
     /**
+     * The display name, or null when none is set or the account has no profile row yet.
+     */
+    public function displayNameOf(User $user): ?string
+    {
+        $name = Profile::query()->where('user_id', $user->id)->value('display_name');
+
+        return is_string($name) && $name !== '' ? $name : null;
+    }
+
+    /**
      * The small avatar for the header (shared props), or null while there is none or it is still
      * processing.
      */

@@ -97,6 +97,14 @@ class SessionService
     }
 
     /**
+     * How many browsers are signed in to the account now (the admin user detail).
+     */
+    public function liveCount(User $user): int
+    {
+        return $this->liveRows($user)->count();
+    }
+
+    /**
      * True once a session is older than the absolute cap (specs/04 §4), however active it is.
      */
     public function pastAbsoluteLifetime(int $signedInAt): bool

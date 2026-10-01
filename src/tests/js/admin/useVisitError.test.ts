@@ -40,7 +40,15 @@ describe('useVisitError', () => {
         const prevented = fire('invalid', { response: { status: 500, headers: { 'x-request-id': 'req-123' } } });
 
         expect(prevented).toHaveBeenCalled();
-        expect(error()).toEqual({ requestId: 'req-123' });
+        expect(error()).toEqual({ requestId: 'req-123', throttled: false });
+    });
+
+    it('keeps a rate limit inline too, marked as throttled', () => {
+        const error = setup();
+        const prevented = fire('invalid', { response: { status: 429, headers: {} } });
+
+        expect(prevented).toHaveBeenCalled();
+        expect(error()).toEqual({ requestId: null, throttled: true });
     });
 
     it('leaves other invalid responses to Inertia', () => {
@@ -54,7 +62,7 @@ describe('useVisitError', () => {
     it('reports a network failure without a request id and clears on the next visit', () => {
         const error = setup();
         fire('exception', { exception: new Error('offline') });
-        expect(error()).toEqual({ requestId: null });
+        expect(error()).toEqual({ requestId: null, throttled: false });
 
         fire('start', {});
         expect(error()).toBeNull();

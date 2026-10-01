@@ -1,5 +1,6 @@
 import { home } from '@/routes';
 import { audit as adminAudit, dashboard as adminDashboard } from '@/routes/admin';
+import { index as adminUsers } from '@/routes/admin/users';
 import { edit as privacySettings } from '@/routes/settings/privacy';
 import { edit as profileSettings } from '@/routes/settings/profile';
 import { edit as securitySettings } from '@/routes/settings/security';
@@ -77,9 +78,10 @@ export interface AdminNavItem {
 }
 
 // specs/18 §6 admin nav: Dashboard · Reports · Disputes · Users · Content · Media · Marketplace · Logs.
-// Each section joins when its page ships (Users P1-12, Reports P3-06, Disputes P2-03).
+// Each section joins when its page ships (Reports P3-06, Disputes P2-03, Content and Media P3).
 export const adminNav: AdminNavItem[] = [
     { key: 'dashboard', label: 'Dashboard', href: () => adminDashboard().url, can: 'accessAdmin' },
+    { key: 'users', label: 'Users', href: () => adminUsers().url, can: 'viewUsers' },
     { key: 'logs', label: 'Logs', href: () => adminAudit().url, can: 'viewAuditLog' },
 ];
 

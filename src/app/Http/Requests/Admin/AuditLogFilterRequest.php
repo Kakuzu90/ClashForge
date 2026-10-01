@@ -6,6 +6,7 @@ use App\Domain\Audit\Data\AuditLogFilterData;
 use App\Domain\Audit\Enums\AuditAction;
 use App\Domain\Audit\Queries\AuditLogQuery;
 use App\Domain\Auth\Enums\StaffAbility;
+use App\Support\Rules\Utf8Text;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -33,8 +34,8 @@ class AuditLogFilterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'actor' => ['nullable', 'string', 'max:20'],
-            'target' => ['nullable', 'string', 'max:20'],
+            'actor' => ['nullable', 'string', 'max:20', new Utf8Text],
+            'target' => ['nullable', 'string', 'max:20', new Utf8Text],
             'action' => ['nullable', Rule::enum(AuditAction::class)],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],

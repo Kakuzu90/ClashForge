@@ -325,7 +325,8 @@ These use body font, `--radius-sm`, no lift, no glow, denser spacing (`--space-2
 Built so far (P1-06): `AdminTable` (sticky header inside its own keyboard-scrollable region,
 skeleton rows that keep the column classes, expandable detail rows; sorting and bulk-select join
 when a table needs them), `AdminFilterBar` (a GET search form with Apply and Clear),
-`AdminDiffViewer` (each change spelled out in words, colour only backs it up) and `AdminNav`.
+`AdminDiffViewer` (each change spelled out in words, colour only backs it up) and `AdminNav`;
+`AdminAuditTrailList` (P1-12: the latest entries about one record, who acted and what changed).
 
 ## 5. Layout
 
@@ -449,7 +450,8 @@ current one.
 *Loading:* table row skeletons that preserve column widths. A table's rows arrive as a deferred
 prop, so the first response carries the filters and the skeleton shows until the rows load.
 *Error:* inline error with the request id, for support correlation (`useVisitError`: a 5xx or a
-network failure becomes an inline alert with the `X-Request-Id` instead of Inertia's error modal).
+network failure becomes an inline alert with the `X-Request-Id` instead of Inertia's error modal;
+a 429 from `admin-search` becomes a "wait a moment" warning).
 
 ## 7. Motion
 
