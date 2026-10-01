@@ -309,7 +309,9 @@ author; disclosure obligations and timelines. Rehearsed once before launch.
   session row included (`sessions.ip_hash`).
 - Email addresses appear only to the owner and to admins; never in public pages, never in
   notification payloads to third parties.
-- Data export and deletion flows exist (NFR-PRIV-1/2).
+- Data export and deletion flows exist (NFR-PRIV-1/2). Settings and role writes reload the account
+  under its row lock, shared with anonymisation; late login/session writes skip tombstones,
+  so concurrent requests cannot restore cleared PII or credentials (P1-16).
 - Report evidence is private media, visible only to staff, with every access audit-logged.
 - Moderator actions on a user are visible to that user in aggregate (what and why), never the
   identity of the reporter.

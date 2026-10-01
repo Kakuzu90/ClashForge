@@ -234,6 +234,7 @@ php artisan bases:recompute-trending
 php artisan bases:aggregate-metrics
 php artisan stats:reconcile               # repairs all denormalised counters
 php artisan moderation:expire-sanctions
+php artisan auth:process-unverified --dry-run  # day-3 reminder, day-27 warning, day-30 anonymisation
 php artisan auth:refresh-disposable-domains  # newer disposable-email list into storage; the committed one stays the fallback
 php artisan notifications:prune --dry-run  # read >90 d, unread >180 d, 500 rows per account (oldest read first)
 php artisan search:reindex {type?}

@@ -38,7 +38,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P1-11 | Account deletion + Danger zone (FR-AUTH-9, NFR-PRIV-2): request with re-confirmation, `pending_deletion` + `deletion_requested_at`, cancel on sign-in, `platform:anonymize-deleted` for Phase 1 data with an `audit_logs` entry (specs/08 §6; split from P1-05) | done | P1-05, P1-06 | tasks/phase-1/P1-11-account-deletion.md |
 | P1-09 | Username change + `username_history`: once per 30 days, old names reserved 90 days, `/u/{old}` redirects (FR-PROFILE-7, specs/23 §1; split from P1-03) | done | P1-04, P1-08 | tasks/phase-1/P1-09-username-change.md |
 | P1-15 | Non-security email (specs/16 §4): `SendEmailNotificationJob` on `low`, 10 per user per day cap, List-Unsubscribe header and an unsubscribe page, bounce / complaint handling once the mail provider exists (P0-09); first user: the "Media processing failed" email (from P1-07) | done | P1-07 | tasks/phase-1/P1-15-non-security-email.md |
-| P1-16 | Unverified accounts (specs/23 §1): reminder at day 3, final warning before the purge, never-verified accounts purged at 30 days (from P1-08) | todo | P1-08 | |
+| P1-16 | Unverified accounts (specs/23 §1): reminder at day 3, final warning before the purge, never-verified accounts purged at 30 days (from P1-08) | done | P1-08 | tasks/phase-1/P1-16-unverified-account-lifecycle.md |
 
 ## Phase 2 — Verified CoC accounts
 

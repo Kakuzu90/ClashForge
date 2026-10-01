@@ -22,8 +22,9 @@ class PrivacySettingsService
         try {
             // The row lock orders concurrent saves, so the last commit is also the last cache write.
             DB::transaction(function () use ($user, $data): void {
+                $owner = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
                 $settings = PrivacySettings::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
-                Gate::forUser($user)->authorize('update', $settings);
+                Gate::forUser($owner)->authorize('update', $settings);
 
                 $settings->fill([
                     'profile_visibility' => $data->visibility,

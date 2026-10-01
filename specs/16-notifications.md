@@ -22,6 +22,7 @@ longer available", with no link.
 | Category | Event | Channels | Group key | Priority |
 |---|---|---|---|---|
 | **Security** | Email verification link | E* (P1-08) | — | immediate |
+| | Never-verified reminder / final warning | E* (P1-16; day 3 / day 27) | — | scheduled, `high` |
 | | Email confirmed | I (P1-08) | — | immediate |
 | | Someone tried to sign up with your email | E* (P1-08; at most one an hour per account) | — | immediate |
 | | Password reset | E* | — | immediate |

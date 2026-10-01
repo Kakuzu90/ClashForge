@@ -87,36 +87,59 @@ class AccountDeletionService
                 return false;
             }
 
-            UsernameHistory::query()->create([
-                'user_id' => $account->id, 'username' => $account->username,
-                'released_at' => Date::now(), 'reserved_forever' => true,
-            ]);
-            $this->profiles->anonymise($account);
-            $this->notifications->deleteFor($account);
-            $this->media->purgeOwnedBy($account->id);
-            DB::table('password_reset_tokens')->where('email', $account->email)->delete();
-            DB::table((string) config('session.table', 'sessions'))->where('user_id', $account->id)->delete();
-
-            $account->forceFill([
-                'username' => 'deleted_user_'.strtolower($account->ulid),
-                'email' => hash_hmac('sha256', $account->ulid.':'.strtolower($account->email), (string) config('app.key')),
-                'password' => null, 'remember_token' => null, 'email_verified_at' => null,
-                'pending_email' => null, 'pending_email_requested_at' => null,
-                'last_login_at' => null, 'last_login_ip_hash' => null,
-                'deletion_previous_status' => null, 'status' => UserStatus::Banned,
-                'status_reason' => null, 'status_expires_at' => null, 'deleted_at' => Date::now(),
-            ])->save();
-
-            $this->audit->record(new AuditEntryData(
-                actor: AuditActorData::console(), action: AuditAction::UserAnonymised,
-                subject: AuditSubject::User, subjectId: $account->id,
-                before: ['status' => UserStatus::PendingDeletion->value],
-                after: ['status' => UserStatus::Banned->value],
-                context: ['command' => 'platform:anonymize-deleted'],
-            ));
+            $this->anonymiseLocked($account, 'platform:anonymize-deleted');
 
             return true;
         });
+    }
+
+    public function purgeUnverified(int $userId): bool
+    {
+        return DB::transaction(function () use ($userId): bool {
+            $account = User::query()->whereKey($userId)->lockForUpdate()->first();
+            if ($account === null || ! Gate::forUser(null)->allows('expireUnverified', $account)) {
+                return false;
+            }
+
+            $this->anonymiseLocked($account, 'auth:process-unverified');
+
+            return true;
+        });
+    }
+
+    private function anonymiseLocked(User $account, string $command): void
+    {
+        $previousStatus = $account->status;
+        UsernameHistory::query()->create([
+            'user_id' => $account->id, 'username' => $account->username,
+            'released_at' => Date::now(), 'reserved_forever' => true,
+        ]);
+        $this->profiles->anonymise($account);
+        $this->notifications->deleteFor($account);
+        $this->media->purgeOwnedBy($account->id);
+        DB::table('password_reset_tokens')->where('email', $account->email)->delete();
+        DB::table((string) config('session.table', 'sessions'))->where('user_id', $account->id)->delete();
+
+        $account->forceFill([
+            'username' => 'deleted_user_'.strtolower($account->ulid),
+            'email' => hash_hmac('sha256', $account->ulid.':'.strtolower($account->email), (string) config('app.key')),
+            'password' => null, 'remember_token' => null, 'email_verified_at' => null,
+            'pending_email' => null, 'pending_email_requested_at' => null,
+            'last_login_at' => null, 'last_login_ip_hash' => null,
+            'verification_reminder_queued_at' => null, 'verification_reminder_sent_at' => null,
+            'verification_warning_queued_at' => null, 'verification_warning_sent_at' => null,
+            'verification_notice_key' => null,
+            'deletion_previous_status' => null, 'status' => UserStatus::Banned,
+            'status_reason' => null, 'status_expires_at' => null, 'deleted_at' => Date::now(),
+        ])->save();
+
+        $this->audit->record(new AuditEntryData(
+            actor: AuditActorData::console(), action: AuditAction::UserAnonymised,
+            subject: AuditSubject::User, subjectId: $account->id,
+            before: ['status' => $previousStatus->value],
+            after: ['status' => UserStatus::Banned->value],
+            context: ['command' => $command],
+        ));
     }
 
     /** @return Builder<User> */

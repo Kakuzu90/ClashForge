@@ -27,13 +27,14 @@ class RoleAssignmentService
 
     public function assign(User $target, Role $role, AuditActorData $actor): bool
     {
-        $previous = $target->role;
+        return DB::transaction(function () use ($target, $role, $actor): bool {
+            $target = User::query()->whereKey($target->id)->lockForUpdate()->firstOrFail();
+            $previous = $target->role;
 
-        if ($previous === $role) {
-            return false;
-        }
+            if ($previous === $role) {
+                return false;
+            }
 
-        DB::transaction(function () use ($target, $role, $previous, $actor): void {
             $target->forceFill(['role' => $role, 'remember_token' => Str::random(60)])->save();
 
             DB::table((string) config('session.table', 'sessions'))->where('user_id', $target->id)->delete();
@@ -46,15 +47,14 @@ class RoleAssignmentService
                 before: ['role' => $previous->value],
                 after: ['role' => $role->value],
             ));
+            Log::channel('security')->warning('auth.role_changed', [
+                'user' => $target->ulid,
+                'from' => $previous->value,
+                'to' => $role->value,
+                'actor' => $actor->via ?? $actor->id,
+            ]);
+
+            return true;
         });
-
-        Log::channel('security')->warning('auth.role_changed', [
-            'user' => $target->ulid,
-            'from' => $previous->value,
-            'to' => $role->value,
-            'actor' => $actor->via ?? $actor->id,
-        ]);
-
-        return true;
     }
 }

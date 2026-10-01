@@ -40,6 +40,12 @@ for a full temp volume does not.
 | `RefreshStaticReferenceDataJob` | Weekly | Leagues, locations |
 | `RotateCocApiKeysJob` | Weekly + on IP-change detection | Alerts on failure |
 
+### Auth (`high`)
+
+| Job | Trigger | Notes |
+|---|---|---|
+| `SendVerificationLifecycleEmailJob` | `auth:process-unverified` | P1-16: scalar account id, HMAC email binding, warning flag and dispatch ULID; re-check recipient eligibility under the account lock, render a fresh 60-minute verification link, write durable send receipt. `high`, 60s timeout, 3 attempts, 10/30/60 backoff. Security mail bypasses preferences/cap |
+
 ### Media (`media`)
 
 | Job | Trigger | Notes |
@@ -97,6 +103,7 @@ for a full temp volume does not.
 | Job | Trigger | Notes |
 |---|---|---|
 | `ReconcileCountersJob` | Nightly | Repairs every denormalised counter listed in [08 §5](08-entity-relationships.md) |
+| `auth:process-unverified` (command, runs inline) | Daily, 04:10 | P1-16: reminder at registration age 3 days, final warning at 27, anonymisation at 30; ordinary users only, excludes staff/pending deletion. Chunked by `platform.auth.unverified_batch_size` (100), policy-checked account locks, `--dry-run`, summary counts. Requires successful warning send plus three days from enqueue and send; overdue accounts get only a warning first |
 | `platform:anonymize-deleted` (command, runs inline) | Nightly, 04:00 | Executes the 30-day deletion pipeline through `AccountDeletionService`, chunked by id (`platform.auth.deletion_batch_size`, 100); locks and re-checks each account, audits once. `--dry-run` counts due accounts without changes. Media deletion remains queued after commit |
 | `GenerateSitemapJob` | Nightly | Public bases + profiles, chunked sitemap index |
 | `ExportUserDataJob` | On request | Builds a ZIP, uploads privately, emails a 7-day signed link |
@@ -123,6 +130,7 @@ daily  02:30 media:purge-deleted
 daily  03:00 stats:reconcile
 daily  03:30 moderation:detect-anomalies
 daily  04:00 platform:anonymize-deleted
+daily  04:10 auth:process-unverified       (platform.auth.unverified_schedule_time)
 daily  04:15 coc:release-banned-tags
 daily  04:30 platform:generate-sitemap
 daily  08:00 notifications:send-digests    (P5, per-user timezone aware)
@@ -162,6 +170,16 @@ In production, prefer `php artisan schedule:work` under a supervisor, or a real 
    OS-level limit.
 10. **Observable.** Every job logs start/end with a duration and the entity id; slow jobs (>10s on
     non-media queues) log a warning.
+
+P1-16 inserts each `database` queue job and its enqueue timestamp in the same application database
+transaction, explicitly using `beforeCommit()` so both become visible together. The queue database
+connection must be the application connection. This is a durable dispatch boundary, not an event;
+domain events still dispatch after commit. Send receipts and eligibility are re-checked under the
+account lock. A notice skipped for temporary ineligibility clears its unsent enqueue marker only
+when its dispatch key still matches, so cancellation of self-deletion or return from a staff role
+can queue a fresh warning; old jobs cannot clear or deliver that newer notice. An exhausted mail job remains in `failed_jobs` for retry; an unsent final warning
+prevents purge. SMTP acceptance followed by a crash before its receipt commits can duplicate a
+notice on retry (the same limitation as P1-15); provider idempotency remains a P0-09 follow-up.
 
 ## 5. Failure handling
 

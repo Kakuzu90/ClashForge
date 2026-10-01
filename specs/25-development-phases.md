@@ -259,6 +259,7 @@ user input, files, or crosses a trust boundary.
 | Admin v1 + audit log | [12](12-moderation-system.md), [07](07-database-schema.md) (audit) | [18 §4](18-design-system.md) (admin components) |
 | Notifications v1 | [16](16-notifications.md), [07](07-database-schema.md) | [20](20-jobs-and-scheduling.md) |
 | Non-security email + email preferences (P1-15) | [16 §4–5](16-notifications.md), [07](07-database-schema.md) (`notification_preferences`) | [20 §1–2, §4–5](20-jobs-and-scheduling.md), [04 §3](04-roles-and-permissions.md), [11 §2](11-security.md), [08 §6](08-entity-relationships.md), [18 §6](18-design-system.md) |
+| Never-verified lifecycle (P1-16) | [04 §4](04-roles-and-permissions.md), [07](07-database-schema.md) (`users`), [23 §1](23-edge-cases.md) | [08 §6](08-entity-relationships.md), [16 §2, §4](16-notifications.md), [20 §1, §3–5](20-jobs-and-scheduling.md), [11 §2–3](11-security.md) |
 
 ### Phase 2 — Verified CoC accounts
 

@@ -45,6 +45,11 @@ use Illuminate\Notifications\Notifiable;
  * @property CarbonImmutable|null $deletion_requested_at
  * @property UserStatus|null $deletion_previous_status
  * @property CarbonImmutable|null $username_changed_at
+ * @property CarbonImmutable|null $verification_reminder_queued_at
+ * @property CarbonImmutable|null $verification_reminder_sent_at
+ * @property CarbonImmutable|null $verification_warning_queued_at
+ * @property CarbonImmutable|null $verification_warning_sent_at
+ * @property string|null $verification_notice_key
  */
 class User extends Authenticatable implements HasAccountStanding, MustVerifyEmail
 {
@@ -67,6 +72,11 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         'deleted_at' => null,
         'deletion_requested_at' => null,
         'deletion_previous_status' => null,
+        'verification_reminder_queued_at' => null,
+        'verification_reminder_sent_at' => null,
+        'verification_warning_queued_at' => null,
+        'verification_warning_sent_at' => null,
+        'verification_notice_key' => null,
     ];
 
     /**
@@ -89,6 +99,11 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         'remember_token',
         'last_login_ip_hash',
         'pending_email',
+        'verification_reminder_queued_at',
+        'verification_reminder_sent_at',
+        'verification_warning_queued_at',
+        'verification_warning_sent_at',
+        'verification_notice_key',
     ];
 
     /**
@@ -153,6 +168,10 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
             'pending_email_requested_at' => 'immutable_datetime',
             'deletion_requested_at' => 'immutable_datetime',
             'username_changed_at' => 'immutable_datetime',
+            'verification_reminder_queued_at' => 'immutable_datetime',
+            'verification_reminder_sent_at' => 'immutable_datetime',
+            'verification_warning_queued_at' => 'immutable_datetime',
+            'verification_warning_sent_at' => 'immutable_datetime',
             'deletion_previous_status' => UserStatus::class,
             'password' => 'hashed',
             'role' => Role::class,

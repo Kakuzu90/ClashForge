@@ -189,3 +189,17 @@ owned media is claimed, including unattached and processing uploads, with quaran
 Phase 1 cleanup, tombstone schema exceptions and permanent original-username reservation were
 approved by the owner, 2026-10-01 (P1-11). Later modules extend the pipeline with their rows above
 and the dispute/order holds in [23 §1](23-edge-cases.md).
+
+P1-16 uses the same anonymisation cleanup for never-verified ordinary users at registration age
+30 days, after a day-27 final warning (or at least three days after a late warning is queued).
+Successful warning delivery and at least three days after that send are required; this does not
+start a second 30-day self-deletion window.
+Staff and accounts already pending self-deletion are excluded. Original emails are released,
+original usernames permanently reserved, and audit/sanction records retained as above.
+Owner approved, 2026-10-01.
+
+P1-16 also serialises existing settings writes (profile/avatar/privacy, email/password changes,
+session revocation), role assignment, login metadata and authenticated session persistence on
+the account lock, reloading the live identity before authorization or writing. Delayed requests
+cannot repopulate a tombstone's PII, credentials, profile or sessions. Users always lock the account
+before profile/privacy/media rows, matching cleanup order.

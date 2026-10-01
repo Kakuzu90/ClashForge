@@ -87,10 +87,17 @@ class AuthenticationService
 
     public function recordLogin(User $user, ?string $ip): void
     {
-        $user->forceFill([
-            'last_login_at' => Date::now(),
-            'last_login_ip_hash' => IpHash::of($ip),
-        ])->saveQuietly();
+        DB::transaction(function () use ($user, $ip): void {
+            $account = User::query()->whereKey($user->id)->lockForUpdate()->first();
+            if ($account === null || ! $account->effectiveStatus()->canLogIn()) {
+                return;
+            }
+            $account->forceFill([
+                'last_login_at' => Date::now(),
+                'last_login_ip_hash' => IpHash::of($ip),
+            ])->saveQuietly();
+            $user->setRawAttributes($account->getAttributes(), sync: true);
+        });
     }
 
     /**

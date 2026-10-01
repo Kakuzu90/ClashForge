@@ -84,6 +84,13 @@ Schedule::command('platform:anonymize-deleted')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'platform:anonymize-deleted']));
 
+Schedule::command('auth:process-unverified')
+    ->dailyAt((string) config('platform.auth.unverified_schedule_time'))
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'auth:process-unverified']));
+
 Schedule::command('media:reconcile-storage')
     ->weeklyOn(0, '05:00')
     ->withoutOverlapping()

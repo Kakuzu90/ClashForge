@@ -21,6 +21,19 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class SessionService
 {
+    /** @param callable(): bool $write */
+    public function persistFor(int $userId, callable $write): bool
+    {
+        return DB::transaction(function () use ($userId, $write): bool {
+            $account = User::query()->whereKey($userId)->lockForUpdate()->first();
+            if ($account === null || ! Gate::forUser($account)->allows('persistSession', $account)) {
+                return false;
+            }
+
+            return $write();
+        });
+    }
+
     /**
      * Unix time of the sign-in that started this session, kept in the session itself.
      */
@@ -56,28 +69,34 @@ class SessionService
      */
     public function revoke(User $user, string $key, ?string $currentId): void
     {
-        Gate::forUser($user)->authorize('manageSessions', $user);
+        DB::transaction(function () use ($user, $key, $currentId): void {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($user)->authorize('manageSessions', $user);
 
-        $id = $this->liveRows($user)->pluck('id')->first(fn (mixed $id): bool => $id !== $currentId && hash_equals(self::keyOf((string) $id), $key));
+            $id = $this->liveRows($user)->pluck('id')->first(fn (mixed $id): bool => $id !== $currentId && hash_equals(self::keyOf((string) $id), $key));
 
-        if ($id === null) {
-            throw new NotFoundHttpException;
-        }
+            if ($id === null) {
+                throw new NotFoundHttpException;
+            }
 
-        $this->rows($user)->where('id', $id)->delete();
-        RememberCookie::cycle($user);
+            $this->rows($user)->where('id', $id)->delete();
+            RememberCookie::cycle($user);
 
-        $this->log('auth.session_revoked', $user, ['count' => 1]);
+            $this->log('auth.session_revoked', $user, ['count' => 1]);
+        });
     }
 
     public function revokeOthers(User $user, ?string $currentId): int
     {
-        Gate::forUser($user)->authorize('manageSessions', $user);
+        return DB::transaction(function () use ($user, $currentId): int {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($user)->authorize('manageSessions', $user);
 
-        $count = $this->endOthers($user, $currentId);
-        $this->log('auth.session_revoked', $user, ['count' => $count]);
+            $count = $this->endOthers($user, $currentId);
+            $this->log('auth.session_revoked', $user, ['count' => $count]);
 
-        return $count;
+            return $count;
+        });
     }
 
     /**

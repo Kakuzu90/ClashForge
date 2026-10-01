@@ -45,6 +45,9 @@ Authentication identity and platform-level status. Deliberately thin — profile
 | verified_accounts_count | int default 0 | denormalised, drives the verified badge |
 | last_login_at / last_login_ip_hash | timestamptz / varchar(64) null | IP stored as HMAC-SHA256 keyed by `IP_HASH_SALT` (`App\Support\Privacy\IpHash`) |
 | username_changed_at | timestamptz null | enforces the 30-day rule |
+| verification_notice_key | char(26) null | P1-16: guarded/hidden dispatch ULID; changes per queued notice so stale jobs cannot clear or send a newer dispatch; cleared on anonymisation |
+| verification_reminder_queued_at / verification_reminder_sent_at | timestamptz null | P1-16: durable day-3 notice dispatch and completed-send receipt; guarded, hidden, cleared on anonymisation |
+| verification_warning_queued_at / verification_warning_sent_at | timestamptz null | P1-16: durable day-27 warning dispatch and completed-send receipt; purge requires successful send and at least three days after both enqueue and send; guarded, hidden, cleared on anonymisation |
 | two_factor_secret / two_factor_recovery_codes / two_factor_confirmed_at | text null (encrypted) / text null (encrypted) / timestamptz null | [P2] |
 | deletion_requested_at | timestamptz null | starts the 30-day window |
 | deletion_previous_status | varchar(20) null | `active` or `restricted` before the request; cancellation restores it with the existing sanction reason/end, respecting expiry |
@@ -58,6 +61,8 @@ tombstone name, and allow a null password only on a deleted, banned row.
 **Unique:** `username`, `email`, `ulid`.
 **Indexes:** `(status)` partial `WHERE status <> 'active'`; `(role)` partial `WHERE role <> 'user'`;
 `(deletion_requested_at)` partial not-null; `(created_at)`.
+P1-16 adds `(created_at, id)` partial `WHERE email_verified_at IS NULL AND deleted_at IS NULL
+AND role = 'user' AND status <> 'pending_deletion'` for lifecycle scans.
 
 ### `username_history` [M]
 Holds released usernames so old profile URLs redirect and handles cannot be sniped instantly.

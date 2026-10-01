@@ -36,6 +36,7 @@ class UserFactory extends Factory
             'username' => fake()->unique()->regexify('[a-z][a-z0-9_]{5,14}'),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'verification_notice_key' => Str::lower((string) Str::ulid()),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'role' => Role::User,
@@ -110,6 +111,15 @@ class UserFactory extends Factory
     public function moderator(): static
     {
         return $this->state(['role' => Role::Moderator]);
+    }
+
+    public function warnedUnverified(): static
+    {
+        return $this->unverified()->state([
+            'created_at' => now()->subDays((int) config('platform.auth.unverified_purge_days')),
+            'verification_warning_queued_at' => now()->subDays((int) config('platform.auth.unverified_warning_grace_days')),
+            'verification_warning_sent_at' => now()->subDays((int) config('platform.auth.unverified_warning_grace_days')),
+        ]);
     }
 
     public function admin(): static

@@ -26,6 +26,9 @@ class ProfileService
     public function createFor(User $user): void
     {
         DB::transaction(function () use ($user): void {
+            if (User::query()->whereKey($user->id)->lockForUpdate()->first() === null) {
+                return;
+            }
             if (! Profile::query()->where('user_id', $user->id)->exists()) {
                 (new Profile)->forceFill(['user_id' => $user->id])->save();
             }
@@ -40,17 +43,21 @@ class ProfileService
 
     public function update(User $user, UpdateProfileData $data): void
     {
-        $profile = $this->profileOf($user);
-        Gate::forUser($user)->authorize('update', $profile);
+        DB::transaction(function () use ($user, $data): void {
+            $owner = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $profile = $this->profileOf($owner, lock: true);
+            Gate::forUser($owner)->authorize('update', $profile);
 
-        $profile->fill([
-            'display_name' => self::plainText($data->displayName),
-            'bio' => self::plainText($data->bio),
-            'country_code' => $data->countryCode?->value,
-            'languages' => $data->languages->codes,
-            'timezone' => $data->timezone?->value,
-            'socials' => $data->socials->handles,
-        ])->save();
+            $profile->fill([
+                'display_name' => self::plainText($data->displayName),
+                'bio' => self::plainText($data->bio),
+                'country_code' => $data->countryCode?->value,
+                'languages' => $data->languages->codes,
+                'timezone' => $data->timezone?->value,
+                'socials' => $data->socials->handles,
+            ])->save();
+            DB::afterCommit(fn () => CacheInvalidator::profile($owner->username));
+        });
 
         CacheInvalidator::profile($user->username);
     }
@@ -62,17 +69,19 @@ class ProfileService
     public function setAvatar(User $user, string $mediaUlid): void
     {
         DB::transaction(function () use ($user, $mediaUlid): void {
-            $profile = $this->profileOf($user, lock: true);
-            Gate::forUser($user)->authorize('update', $profile);
+            $owner = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $profile = $this->profileOf($owner, lock: true);
+            Gate::forUser($owner)->authorize('update', $profile);
 
             $previous = $profile->avatar_media_id;
-            $mediaId = $this->attachments->attach($user, $mediaUlid, MediaCollection::Avatar, $profile);
+            $mediaId = $this->attachments->attach($owner, $mediaUlid, MediaCollection::Avatar, $profile);
 
             $profile->forceFill(['avatar_media_id' => $mediaId])->save();
 
             if ($previous !== null && $previous !== $mediaId) {
                 $this->attachments->release($previous);
             }
+            DB::afterCommit(fn () => CacheInvalidator::profile($owner->username));
         });
 
         CacheInvalidator::profile($user->username);
@@ -81,8 +90,9 @@ class ProfileService
     public function removeAvatar(User $user): void
     {
         DB::transaction(function () use ($user): void {
-            $profile = $this->profileOf($user, lock: true);
-            Gate::forUser($user)->authorize('update', $profile);
+            $owner = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $profile = $this->profileOf($owner, lock: true);
+            Gate::forUser($owner)->authorize('update', $profile);
 
             $previous = $profile->avatar_media_id;
 
@@ -92,6 +102,7 @@ class ProfileService
 
             $profile->forceFill(['avatar_media_id' => null])->save();
             $this->attachments->release($previous);
+            DB::afterCommit(fn () => CacheInvalidator::profile($owner->username));
         });
 
         CacheInvalidator::profile($user->username);

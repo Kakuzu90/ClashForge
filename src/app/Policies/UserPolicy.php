@@ -2,8 +2,11 @@
 
 namespace App\Policies;
 
+use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Enums\StaffAbility;
+use App\Domain\Auth\Enums\UserStatus;
 use App\Models\User;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -19,6 +22,12 @@ class UserPolicy
     public function manageSessions(User $actor, User $target): bool
     {
         return $actor->id === $target->id && $actor->allowsAccountWrites();
+    }
+
+    public function persistSession(User $actor, User $target): bool
+    {
+        return $actor->id === $target->id && $target->deleted_at === null
+            && $target->status !== UserStatus::PendingDeletion && $target->effectiveStatus()->canLogIn();
     }
 
     public function changePassword(User $actor, User $target): bool
@@ -48,6 +57,25 @@ class UserPolicy
     public function requestDeletion(User $actor, User $target): bool
     {
         return $actor->id === $target->id && $target->deleted_at === null && $target->allowsAccountWrites();
+    }
+
+    public function processUnverifiedLifecycle(?User $actor, User $target): bool
+    {
+        return $actor === null && $target->role === Role::User && $target->email_verified_at === null
+            && $target->deleted_at === null && $target->status !== UserStatus::PendingDeletion;
+    }
+
+    public function discardUnverifiedNotice(?User $actor, User $target): bool
+    {
+        return $actor === null && $target->deleted_at === null;
+    }
+
+    public function expireUnverified(?User $actor, User $target): bool
+    {
+        return $this->processUnverifiedLifecycle($actor, $target)
+            && $target->created_at->lessThanOrEqualTo(Date::now()->subDays((int) config('platform.auth.unverified_purge_days')))
+            && $target->verification_warning_sent_at?->lessThanOrEqualTo(Date::now()->subDays((int) config('platform.auth.unverified_warning_grace_days')))
+            && $target->verification_warning_queued_at?->lessThanOrEqualTo(Date::now()->subDays((int) config('platform.auth.unverified_warning_grace_days')));
     }
 
     public function warn(User $actor, User $target): bool

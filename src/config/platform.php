@@ -44,6 +44,13 @@ return [
         'absolute_session_days' => 30,
         'deletion_grace_days' => 30,
         'deletion_batch_size' => 100,
+        'unverified_reminder_days' => 3,
+        'unverified_warning_days' => 27,
+        'unverified_purge_days' => 30,
+        'unverified_warning_grace_days' => 3,
+        'unverified_batch_size' => 100,
+        'unverified_schedule_time' => '04:10',
+        'unverified_mail_slow_seconds' => 10,
         // The `known_devices` cookie: how long a browser stays recognised, and how many accounts it
         // remembers (specs/11 "Authentication attacks").
         'known_device_days' => 365,

@@ -43,16 +43,19 @@ class EmailChangeService
      */
     public function request(User $user, string $email, string $currentPassword, ?string $ip): void
     {
-        Gate::forUser($user)->authorize('changeEmail', $user);
-        $this->checkPassword($user, $currentPassword, $ip);
+        DB::transaction(function () use ($user, $email, $currentPassword, $ip): void {
+            $user->setRawAttributes(User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail()->getAttributes(), sync: true);
+            Gate::forUser($user)->authorize('changeEmail', $user);
+            $this->checkPassword($user, $currentPassword, $ip);
 
-        if (strtolower($email) === strtolower($user->email)) {
-            throw ValidationException::withMessages(['email' => 'That is already your email address.']);
-        }
+            if (strtolower($email) === strtolower($user->email)) {
+                throw ValidationException::withMessages(['email' => 'That is already your email address.']);
+            }
 
-        $this->limit->hit($user, $ip);
-        $user->forceFill(['pending_email' => $email, 'pending_email_requested_at' => Date::now()])->save();
-        $this->deliver($user, $email, $ip);
+            $this->limit->hit($user, $ip);
+            $user->forceFill(['pending_email' => $email, 'pending_email_requested_at' => Date::now()])->save();
+            $this->deliver($user, $email, $ip);
+        });
     }
 
     /**
@@ -60,29 +63,35 @@ class EmailChangeService
      */
     public function resend(User $user, string $currentPassword, ?string $ip): bool
     {
-        Gate::forUser($user)->authorize('changeEmail', $user);
-        $this->checkPassword($user, $currentPassword, $ip);
+        return DB::transaction(function () use ($user, $currentPassword, $ip): bool {
+            $user->setRawAttributes(User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail()->getAttributes(), sync: true);
+            Gate::forUser($user)->authorize('changeEmail', $user);
+            $this->checkPassword($user, $currentPassword, $ip);
 
-        $pending = $user->pending_email;
+            $pending = $user->pending_email;
 
-        if ($pending === null) {
-            return false;
-        }
+            if ($pending === null) {
+                return false;
+            }
 
-        $this->limit->hit($user, $ip);
-        $this->deliver($user, $pending, $ip);
+            $this->limit->hit($user, $ip);
+            $this->deliver($user, $pending, $ip);
 
-        return true;
+            return true;
+        });
     }
 
     public function cancel(User $user): void
     {
-        Gate::forUser($user)->authorize('changeEmail', $user);
+        DB::transaction(function () use ($user): void {
+            $user->setRawAttributes(User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail()->getAttributes(), sync: true);
+            Gate::forUser($user)->authorize('changeEmail', $user);
 
-        if ($user->pending_email !== null) {
-            $user->forceFill(['pending_email' => null, 'pending_email_requested_at' => null])->save();
-            Log::channel('security')->info('auth.email_change_cancelled', ['user' => $user->ulid]);
-        }
+            if ($user->pending_email !== null) {
+                $user->forceFill(['pending_email' => null, 'pending_email_requested_at' => null])->save();
+                Log::channel('security')->info('auth.email_change_cancelled', ['user' => $user->ulid]);
+            }
+        });
     }
 
     /**
@@ -113,60 +122,63 @@ class EmailChangeService
      */
     public function confirm(string $ulid, string $hash, User $viewer, ?string $sessionId, ?string $ip): EmailChangeOutcome
     {
-        $link = $this->inspect($ulid, $hash, $viewer);
+        return DB::transaction(function () use ($ulid, $hash, $viewer, $sessionId, $ip): EmailChangeOutcome {
+            $viewer->setRawAttributes(User::query()->whereKey($viewer->id)->lockForUpdate()->firstOrFail()->getAttributes(), sync: true);
+            $link = $this->inspect($ulid, $hash, $viewer);
 
-        if ($link->outcome !== EmailChangeOutcome::Pending) {
-            return $link->outcome;
-        }
+            if ($link->outcome !== EmailChangeOutcome::Pending) {
+                return $link->outcome;
+            }
 
-        Gate::forUser($viewer)->authorize('changeEmail', $viewer);
+            Gate::forUser($viewer)->authorize('changeEmail', $viewer);
 
-        $old = $viewer->email;
-        $new = (string) $viewer->pending_email;
-        $wasVerified = $viewer->email_verified_at !== null;
+            $old = $viewer->email;
+            $new = (string) $viewer->pending_email;
+            $wasVerified = $viewer->email_verified_at !== null;
 
-        if ($this->takenByAnother($new, $viewer)) {
-            return $this->rejectAtConfirm($viewer, $ip);
-        }
+            if ($this->takenByAnother($new, $viewer)) {
+                return $this->rejectAtConfirm($viewer, $ip);
+            }
 
-        try {
-            $changed = DB::transaction(function () use ($viewer, $new, $wasVerified, $sessionId): bool {
-                $updated = User::query()->whereKey($viewer->id)->where('pending_email', $new)->update([
-                    'email' => $new,
-                    'email_verified_at' => Date::now(),
-                    'pending_email' => null,
-                    'pending_email_requested_at' => null,
-                ]);
+            try {
+                $changed = DB::transaction(function () use ($viewer, $new, $wasVerified, $sessionId): bool {
+                    $updated = User::query()->whereKey($viewer->id)->where('pending_email', $new)->update([
+                        'email' => $new,
+                        'email_verified_at' => Date::now(),
+                        'pending_email' => null,
+                        'pending_email_requested_at' => null,
+                    ]);
 
-                if ($updated !== 1) {
-                    return false;
-                }
+                    if ($updated !== 1) {
+                        return false;
+                    }
 
-                $viewer->refresh();
-                $this->sessions->endOthers($viewer, $sessionId);
+                    $viewer->refresh();
+                    $this->sessions->endOthers($viewer, $sessionId);
 
-                if (! $wasVerified) {
-                    EmailVerified::dispatch($viewer->id);
-                }
+                    if (! $wasVerified) {
+                        EmailVerified::dispatch($viewer->id);
+                    }
 
-                return true;
-            });
-        } catch (UniqueConstraintViolationException) {
-            // Another account took the address between the check and the update.
-            return $this->rejectAtConfirm($viewer->refresh(), $ip);
-        }
+                    return true;
+                });
+            } catch (UniqueConstraintViolationException) {
+                // Another account took the address between the check and the update.
+                return $this->rejectAtConfirm($viewer->refresh(), $ip);
+            }
 
-        if (! $changed) {
-            return EmailChangeOutcome::Invalid;
-        }
+            if (! $changed) {
+                return EmailChangeOutcome::Invalid;
+            }
 
-        Log::channel('security')->info('auth.email_changed', ['user' => $viewer->ulid, 'ip_hash' => IpHash::of($ip)]);
+            Log::channel('security')->info('auth.email_changed', ['user' => $viewer->ulid, 'ip_hash' => IpHash::of($ip)]);
 
-        $masked = EmailMask::of($new);
-        Notification::route('mail', $old)->notify(new EmailChangedNotification($viewer->username, $masked, toOldAddress: true));
-        $viewer->notify(new EmailChangedNotification($viewer->username, $masked, toOldAddress: false));
+            $masked = EmailMask::of($new);
+            Notification::route('mail', $old)->notify(new EmailChangedNotification($viewer->username, $masked, toOldAddress: true));
+            $viewer->notify(new EmailChangedNotification($viewer->username, $masked, toOldAddress: false));
 
-        return EmailChangeOutcome::Changed;
+            return EmailChangeOutcome::Changed;
+        });
     }
 
     /**

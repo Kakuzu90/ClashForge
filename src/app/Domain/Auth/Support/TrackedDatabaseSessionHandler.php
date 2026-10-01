@@ -2,6 +2,7 @@
 
 namespace App\Domain\Auth\Support;
 
+use App\Domain\Auth\Services\SessionService;
 use App\Support\Privacy\IpHash;
 use Illuminate\Session\DatabaseSessionHandler;
 use Illuminate\Support\Facades\Date;
@@ -13,6 +14,17 @@ use Illuminate\Support\Facades\Date;
  */
 class TrackedDatabaseSessionHandler extends DatabaseSessionHandler
 {
+    public function write($sessionId, $data): bool
+    {
+        $userId = $this->userId();
+        if ($userId === null) {
+            return parent::write($sessionId, $data);
+        }
+
+        // An in-flight response must not recreate a purged account's session and IP metadata.
+        return app(SessionService::class)->persistFor((int) $userId, fn (): bool => parent::write($sessionId, $data));
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      * @return $this

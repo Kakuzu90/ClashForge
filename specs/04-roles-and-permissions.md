@@ -191,6 +191,18 @@ sets `email_verified_at`, ends every other session, cycles the remember token an
 browser a new session id. A taken address is stored and answered like a free one ([11](11-security.md)
 "Account enumeration").
 
+### Never-verified account lifecycle
+The trusted scheduler sends verification reminders at registration age 3 days and a final warning
+at 27 days, then anonymises at 30 days through the retained-record cleanup ([08 §6](08-entity-relationships.md)).
+Only ordinary `user` accounts qualify, including restricted, suspended and banned accounts; staff
+and `pending_deletion` accounts are excluded. Verification cancels eligibility. A late warning
+grants at least three days from enqueue, and purge requires successful warning delivery and at
+least three days after that send.
+This is a system operation, separate from the own-account deletion policy; no web purge route.
+System-only notice discard may clear an unsent dispatch for a live but ineligible account,
+matching its dispatch key; ordinary web users cannot invoke lifecycle/discard policies.
+Both notices are always-on security mail. Owner approved, 2026-10-01 (P1-16).
+
 ### Username change
 From `/settings/profile` (`PUT /settings/profile/username`, `UsernameChangeService`), with the current
 password typed in the same form and the registration username rules. Once per

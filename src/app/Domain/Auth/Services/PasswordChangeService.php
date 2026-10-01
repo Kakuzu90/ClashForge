@@ -23,21 +23,21 @@ class PasswordChangeService
 
     public function change(User $user, string $currentPassword, string $newPassword, ?string $currentSessionId): void
     {
-        Gate::forUser($user)->authorize('changePassword', $user);
+        $account = DB::transaction(function () use ($user, $currentPassword, $newPassword, $currentSessionId): User {
+            $current = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($current)->authorize('changePassword', $current);
+            if ($current->password === null || ! Hash::check($currentPassword, $current->password)) {
+                Log::channel('security')->warning('auth.password_change_failed', ['user' => $current->ulid, 'ip_hash' => IpHash::of(request()->ip())]);
+                throw ValidationException::withMessages(['current_password' => 'That is not your current password.']);
+            }
+            $current->forceFill(['password' => $newPassword])->save();
+            $this->sessions->endOthers($current, $currentSessionId);
 
-        if ($user->password === null || ! Hash::check($currentPassword, $user->password)) {
-            Log::channel('security')->warning('auth.password_change_failed', ['user' => $user->ulid, 'ip_hash' => IpHash::of(request()->ip())]);
-
-            throw ValidationException::withMessages(['current_password' => 'That is not your current password.']);
-        }
-
-        DB::transaction(function () use ($user, $newPassword, $currentSessionId): void {
-            $user->forceFill(['password' => $newPassword])->save();
-            $this->sessions->endOthers($user, $currentSessionId);
+            return $current;
         });
 
         Log::channel('security')->info('auth.password_changed', ['user' => $user->ulid, 'ip_hash' => IpHash::of(request()->ip())]);
-        $user->notify(new PasswordChangedNotification);
+        $account->notify(new PasswordChangedNotification);
         PasswordChanged::dispatch($user->id);
     }
 }

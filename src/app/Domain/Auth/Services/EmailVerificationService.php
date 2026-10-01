@@ -42,31 +42,23 @@ class EmailVerificationService
      */
     public function confirm(string $ulid, string $hash, ?string $ip, ?User $viewer, ?string $sessionId): EmailVerificationOutcome
     {
-        $user = $this->owner($ulid, $hash);
-
-        if ($user === null) {
-            return EmailVerificationOutcome::Invalid;
-        }
-
-        // One conditional update, so two presses at once verify once.
-        $verified = DB::transaction(function () use ($user): bool {
-            $updated = User::query()->whereKey($user->id)->whereNull('email_verified_at')->update(['email_verified_at' => Date::now()]);
-
-            if ($updated === 1) {
-                EmailVerified::dispatch($user->id);
+        return DB::transaction(function () use ($ulid, $hash, $ip, $viewer, $sessionId): EmailVerificationOutcome {
+            // Reload the identity under the same lock as purge; a stale link cannot verify a tombstone.
+            $user = User::query()->whereUlid($ulid)->lockForUpdate()->first();
+            if ($user === null || ! hash_equals(sha1(strtolower($user->email)), $hash)) {
+                return EmailVerificationOutcome::Invalid;
+            }
+            if ($user->email_verified_at !== null) {
+                return EmailVerificationOutcome::AlreadyVerified;
             }
 
-            return $updated === 1;
+            $user->forceFill(['email_verified_at' => Date::now()])->save();
+            $this->sessions->endOthers($user, $viewer?->is($user) ? $sessionId : null);
+            EmailVerified::dispatch($user->id);
+            Log::channel('security')->info('auth.email_verified', ['user' => $user->ulid, 'ip_hash' => IpHash::of($ip)]);
+
+            return EmailVerificationOutcome::Verified;
         });
-
-        if (! $verified) {
-            return EmailVerificationOutcome::AlreadyVerified;
-        }
-
-        $this->sessions->endOthers($user, $viewer?->is($user) ? $sessionId : null);
-        Log::channel('security')->info('auth.email_verified', ['user' => $user->ulid, 'ip_hash' => IpHash::of($ip)]);
-
-        return EmailVerificationOutcome::Verified;
     }
 
     /**
