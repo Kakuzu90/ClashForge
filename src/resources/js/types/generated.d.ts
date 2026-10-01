@@ -54,6 +54,7 @@ last30Days: App.Domain.Auth.Data.SignupCountData,
 };
 }
 namespace Enums {
+export type EmailChangeOutcome = 'pending' | 'changed' | 'already_changed' | 'taken' | 'wrong_account' | 'invalid';
 export type EmailVerificationOutcome = 'pending' | 'verified' | 'already_verified' | 'invalid';
 export type Role = 'user' | 'moderator' | 'admin' | 'super_admin';
 export type StaffAbility = 'access-admin' | 'view-users' | 'view-platform-stats' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
@@ -429,6 +430,13 @@ profile: App.Domain.Users.Data.PublicProfileData,
 };
 }
 namespace Settings {
+export type EmailChangeConfirmPageData = {
+outcome: string,
+message: string,
+username: string | null,
+newEmail: string | null,
+confirmUrl: string | null,
+};
 export type PrivacySettingsPageData = {
 settings: App.Domain.Users.Data.PrivacyFormData,
 visibilityOptions: App.Domain.Users.Data.VisibilityOptionData[],
@@ -457,6 +465,9 @@ languagesMax: number,
 };
 export type SecuritySettingsPageData = {
 passwordMinLength: number,
+email: string,
+pendingEmail: string | null,
+linkMinutes: number,
 };
 }
 }

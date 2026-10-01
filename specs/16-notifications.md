@@ -26,7 +26,9 @@ longer available", with no link.
 | | Someone tried to sign up with your email | E* (P1-08; at most one an hour per account) | — | immediate |
 | | Password reset | E* | — | immediate |
 | | Password changed | I + E* (email since P1-05; in-app since P1-07) | — | immediate |
-| | Email address changed (to old + new) | E* | — | immediate |
+| | Email change link (to the new address) | E* (P1-10) | — | immediate |
+| | Email address changed (to old + new) | E* (P1-10; the new address masked) | — | immediate |
+| | Someone tried to use your email on another account / the change could not be made | E* (P1-10; to the taken address's owner and to the requester, at most one an hour each) | — | immediate |
 | | New sign-in from an unrecognised device | I + E* (email since P1-05; in-app since P1-07). An account's first sign-in gets a "first sign-in" email instead, with no in-app copy (P1-08) | — | immediate |
 | | 2FA enabled/disabled | I + E* | — | immediate |
 | | Account suspended / banned | I + E* (email since P1-14; in-app since P1-07) | — | immediate |

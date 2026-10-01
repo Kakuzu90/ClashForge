@@ -33,6 +33,8 @@ Authentication identity and platform-level status. Deliberately thin — profile
 | username | citext | public handle: 3 to 20 of `[a-z0-9_]`, stored lowercase, unique ignoring case; a deleted account keeps its name taken |
 | email | citext | |
 | email_verified_at | timestamptz null | required for writes |
+| pending_email | citext null | an email change waiting for its link (FR-AUTH-8); a new request replaces it, confirming or cancelling clears it. Not unique: an address may be pending on several accounts, the first to confirm gets it |
+| pending_email_requested_at | timestamptz null | when the pending change was asked for |
 | password | varchar(255) | bcrypt/argon2id |
 | remember_token | varchar(100) null | remember-me recaller; cycled on logout, password reset, password change and session revocation |
 | role | varchar(20) | `user`\|`moderator`\|`admin`\|`super_admin`, default `user` |

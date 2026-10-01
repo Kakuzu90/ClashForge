@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::edit
-* @see app/Http/Controllers/Settings/SecurityController.php:22
+* @see app/Http/Controllers/Settings/SecurityController.php:24
 * @route '/settings/security'
 */
 export const edit = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ edit.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::edit
-* @see app/Http/Controllers/Settings/SecurityController.php:22
+* @see app/Http/Controllers/Settings/SecurityController.php:24
 * @route '/settings/security'
 */
 edit.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ edit.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::edit
-* @see app/Http/Controllers/Settings/SecurityController.php:22
+* @see app/Http/Controllers/Settings/SecurityController.php:24
 * @route '/settings/security'
 */
 edit.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ edit.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::edit
-* @see app/Http/Controllers/Settings/SecurityController.php:22
+* @see app/Http/Controllers/Settings/SecurityController.php:24
 * @route '/settings/security'
 */
 edit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ edit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::updatePassword
-* @see app/Http/Controllers/Settings/SecurityController.php:35
+* @see app/Http/Controllers/Settings/SecurityController.php:42
 * @route '/settings/security/password'
 */
 export const updatePassword = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -60,7 +60,7 @@ updatePassword.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::updatePassword
-* @see app/Http/Controllers/Settings/SecurityController.php:35
+* @see app/Http/Controllers/Settings/SecurityController.php:42
 * @route '/settings/security/password'
 */
 updatePassword.url = (options?: RouteQueryOptions) => {
@@ -69,7 +69,7 @@ updatePassword.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::updatePassword
-* @see app/Http/Controllers/Settings/SecurityController.php:35
+* @see app/Http/Controllers/Settings/SecurityController.php:42
 * @route '/settings/security/password'
 */
 updatePassword.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -79,7 +79,7 @@ updatePassword.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroyOtherSessions
-* @see app/Http/Controllers/Settings/SecurityController.php:59
+* @see app/Http/Controllers/Settings/SecurityController.php:66
 * @route '/settings/security/sessions'
 */
 export const destroyOtherSessions = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -94,7 +94,7 @@ destroyOtherSessions.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroyOtherSessions
-* @see app/Http/Controllers/Settings/SecurityController.php:59
+* @see app/Http/Controllers/Settings/SecurityController.php:66
 * @route '/settings/security/sessions'
 */
 destroyOtherSessions.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ destroyOtherSessions.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroyOtherSessions
-* @see app/Http/Controllers/Settings/SecurityController.php:59
+* @see app/Http/Controllers/Settings/SecurityController.php:66
 * @route '/settings/security/sessions'
 */
 destroyOtherSessions.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -113,7 +113,7 @@ destroyOtherSessions.delete = (options?: RouteQueryOptions): RouteDefinition<'de
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroySession
-* @see app/Http/Controllers/Settings/SecurityController.php:52
+* @see app/Http/Controllers/Settings/SecurityController.php:59
 * @route '/settings/security/sessions/{key}'
 */
 export const destroySession = (args: { key: string | number } | [key: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -128,7 +128,7 @@ destroySession.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroySession
-* @see app/Http/Controllers/Settings/SecurityController.php:52
+* @see app/Http/Controllers/Settings/SecurityController.php:59
 * @route '/settings/security/sessions/{key}'
 */
 destroySession.url = (args: { key: string | number } | [key: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -155,7 +155,7 @@ destroySession.url = (args: { key: string | number } | [key: string | number ] |
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroySession
-* @see app/Http/Controllers/Settings/SecurityController.php:52
+* @see app/Http/Controllers/Settings/SecurityController.php:59
 * @route '/settings/security/sessions/{key}'
 */
 destroySession.delete = (args: { key: string | number } | [key: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({

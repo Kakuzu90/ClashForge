@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SettingsEmailSection from '@/Components/settings/SettingsEmailSection.vue';
 import SettingsSessionList from '@/Components/settings/SettingsSessionList.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiCard from '@/Components/ui/UiCard.vue';
@@ -17,6 +18,9 @@ type Props = App.Http.Data.Settings.SecuritySettingsPageData;
 
 defineProps<{
     passwordMinLength: Props['passwordMinLength'];
+    email: Props['email'];
+    pendingEmail: Props['pendingEmail'];
+    linkMinutes: Props['linkMinutes'];
     sessions?: App.Domain.Auth.Data.SessionData[];
 }>();
 
@@ -77,6 +81,10 @@ function submit() {
                     <span v-if="form.recentlySuccessful" role="status" class="text-sm text-fg-secondary">Saved.</span>
                 </div>
             </form>
+        </UiCard>
+
+        <UiCard variant="flat" class="p-4 sm:p-6">
+            <SettingsEmailSection :email="email" :pending-email="pendingEmail" :link-minutes="linkMinutes" />
         </UiCard>
 
         <UiCard variant="flat" class="p-4 sm:p-6">

@@ -59,8 +59,14 @@ return [
         'verify_resend_per_hour' => 3,
         'register_min_seconds' => 3,
         'register_max_form_age_minutes' => 120,
-        // Verification links stay valid this long (FR-AUTH-3).
+        // Verification links stay valid this long (FR-AUTH-3); email-change links too (FR-AUTH-8).
         'verification_link_minutes' => 60,
+        // Email change (FR-AUTH-8): accepted requests and resends per account (typos are free),
+        // and how many "taken address" notices each inbox gets an hour.
+        'email_change_per_hour' => 3,
+        'email_change_notice_per_hour' => 1,
+        // Change links any one address receives an hour, from every account together.
+        'email_change_links_per_address_per_hour' => 3,
         // Names nobody may register (FR-AUTH-1), matched exactly after lowercasing.
         'reserved_usernames' => [
             'about', 'account', 'accounts', 'admin', 'administrator', 'api', 'base', 'bases', 'clan', 'clans',

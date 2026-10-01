@@ -168,6 +168,7 @@ require __DIR__.'/web/accounts.php';
 | `/search` | search |
 | `/register` `/register/sent` | sign-up (guests) |
 | `/email/verify/{ulid}/{hash}` `/email/verified` | email confirmation: GET shows the account, POST confirms |
+| `/settings/email/confirm/{ulid}/{hash}` `/settings/email/confirmed` | email change: signed in to that account; GET shows the account and new address, POST changes it |
 | `/notifications` `/settings/*` `/dashboard` `/confirm-password` `/email/verify` | authenticated |
 | `/account/suspended` | suspension notice (a suspended account is sent here, [04 §1](04-roles-and-permissions.md)) |
 | `/admin/*` | staff |

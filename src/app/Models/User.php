@@ -29,6 +29,8 @@ use Illuminate\Notifications\Notifiable;
  * @property string $username
  * @property string $email
  * @property CarbonImmutable|null $email_verified_at
+ * @property string|null $pending_email
+ * @property CarbonImmutable|null $pending_email_requested_at
  * @property string $password
  * @property string|null $remember_token
  * @property Role $role
@@ -56,11 +58,13 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         'status' => 'active',
         'status_reason' => null,
         'status_expires_at' => null,
+        'pending_email' => null,
+        'pending_email_requested_at' => null,
     ];
 
     /**
-     * Verification, login tracking, the remember token, role and status are set by Auth services
-     * only (specs/11 "Mass assignment").
+     * Verification, a pending email change, login tracking, the remember token, role and status
+     * are set by Auth services only (specs/11 "Mass assignment").
      *
      * @var list<string>
      */
@@ -77,6 +81,7 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         'password',
         'remember_token',
         'last_login_ip_hash',
+        'pending_email',
     ];
 
     /**
@@ -138,6 +143,7 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         return [
             'email_verified_at' => 'immutable_datetime',
             'last_login_at' => 'immutable_datetime',
+            'pending_email_requested_at' => 'immutable_datetime',
             'password' => 'hashed',
             'role' => Role::class,
             'status' => UserStatus::class,

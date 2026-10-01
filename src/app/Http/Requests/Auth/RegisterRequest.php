@@ -3,9 +3,9 @@
 namespace App\Http\Requests\Auth;
 
 use App\Domain\Auth\Contracts\TurnstileVerifier;
+use App\Domain\Auth\Data\EmailFieldRules;
 use App\Domain\Auth\Data\RegistrationData;
 use App\Domain\Auth\Data\UsernameFieldRules;
-use App\Domain\Auth\Services\DisposableEmailDomains;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
@@ -40,11 +40,7 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email:rfc', 'max:255', function (string $attribute, mixed $value, Closure $fail): void {
-                if (is_string($value) && app(DisposableEmailDomains::class)->isDisposable($value)) {
-                    $fail('Use an email address you will keep. Throwaway inboxes are not accepted.');
-                }
-            }],
+            'email' => EmailFieldRules::rules(),
             'username' => UsernameFieldRules::forRegistration(),
             'password' => ['required', 'string', Password::defaults(), 'confirmed'],
             'turnstile_token' => ['nullable', 'string', 'max:'.(int) config('services.turnstile.max_token_length')],

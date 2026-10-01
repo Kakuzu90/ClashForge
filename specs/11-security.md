@@ -62,7 +62,8 @@ mechanism and the test that proves it.
 - Shared props (`HandleInertiaRequests::share`, typed by `App\Http\Data\SharedPropsData`) are limited
   to: `auth.user` summary (username, avatar, verification flags; no role, since Vue never reads it),
   `auth.can`, `flash`, `unreadCount` and client-safe `features`. Page props may add `meta.title`. The
-  confirm-your-email page shows its owner a masked address (`C***@example.com`). Never email, IP data, 2FA state or anything from `coc_accounts` beyond
+  confirm-your-email page, the Security page (current and pending address) and the email-change
+  confirm page show their owner masked addresses (`C***@example.com`). Never email, IP data, 2FA state or anything from `coc_accounts` beyond
   public fields.
 - Lazy/deferred props are authorised exactly like the page that declares them.
 - **Test:** a stored-XSS test posts `<img src=x onerror=...>` into every text field and asserts the
@@ -75,7 +76,8 @@ mechanism and the test that proves it.
 - `SameSite=Lax` session cookies; `Secure` and `HttpOnly` set.
 - No route is exempted. If a webhook ever needs exemption, it authenticates by signature instead.
 - Sensitive actions (email change, password change, account deletion, ownership transfer) require
-  password re-confirmation within the last 15 minutes.
+  password re-confirmation within the last 15 minutes; the password and email forms take the
+  current password inline instead.
 
 ### IDOR / broken object-level authorization
 - Public identifiers are ULIDs or natural keys; sequential ids never appear in URLs.
@@ -140,7 +142,15 @@ mechanism and the test that proves it.
   account's first sign-in has no earlier device, so it gets a "first sign-in" email instead.
 
 ### Account enumeration
-- Generic messages on login, register, reset and email change.
+- Generic messages on login, register, reset and email change. A taken address in an email change
+  is stored as pending and answered like a free one (same redirect, flash and page); no link is
+  sent, its owner gets "someone tried to use your email on another account" and the requester's
+  current address gets "that address cannot be used", each at most once an hour
+  (`platform.auth.email_change_notice_per_hour`). Confirming re-checks and answers "taken".
+  Accepted risk (owner, P1-10): the requester's own inbox learns that an address has an account, at
+  most once an hour per account, as specs/23 §1 asks for both addresses to be notified. Change links
+  to any one address are capped at `platform.auth.email_change_links_per_address_per_hour` across
+  all accounts, so nobody can flood an inbox with them.
 - Username availability check is rate-limited (10/min) and returns only a boolean.
 - Profile visibility settings respected in search and in direct URL access (`private`, and
   `members` for a guest, → 404, not 403, so existence is not confirmed). Every miss on
@@ -241,7 +251,9 @@ HSTS (1 year, includeSubDomains, preload), TLS 1.2+, `X-Content-Type-Options: no
 
 **Security events logged** (structured, to a dedicated channel):
 failed and successful logins, password/email changes (`auth.password_changed`,
-`auth.password_change_failed`, `auth.password_confirm_failed`), new devices (`auth.new_device`),
+`auth.password_change_failed`, `auth.password_confirm_failed`, `auth.email_change_requested` with
+whether the address was taken, `auth.email_changed`, `auth.email_change_cancelled`,
+`auth.email_change_taken`), new devices (`auth.new_device`),
 session revocation and expiry (`auth.session_revoked`, `auth.session_expired`), 2FA changes, role
 changes, permission denials,
 CoC claim attempts and verification failures, ownership transfers, admin data access

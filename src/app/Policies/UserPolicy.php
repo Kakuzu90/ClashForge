@@ -26,6 +26,11 @@ class UserPolicy
         return $actor->id === $target->id && $actor->allowsAccountWrites();
     }
 
+    public function changeEmail(User $actor, User $target): bool
+    {
+        return $actor->id === $target->id && $actor->allowsAccountWrites();
+    }
+
     public function warn(User $actor, User $target): bool
     {
         return $this->staffOver($actor, StaffAbility::WarnUser, $target);

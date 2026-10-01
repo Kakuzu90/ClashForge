@@ -167,6 +167,19 @@ required for content writes (FR-AUTH-4). The verification link is signed for 60 
 a page naming the account whose button confirms (POST), and confirming ends every other session of
 the account and cycles its remember token.
 
+### Email change
+From `/settings/security`, with the current password typed in the same form (`EmailChangeService`);
+sending the link again takes it too, so a copied cookie cannot finish a stale change later. Both
+share the `password-confirm` limiter.
+The new address (the registration email rules, disposable blocklist included) waits in
+`users.pending_email` and gets a link signed for `platform.auth.verification_link_minutes`,
+addressed by ULID and a hash of the pending address, so a newer request or a cancel kills the older
+link. The link needs the account signed in on that browser (a guest signs in and comes back);
+opening it shows the account and the masked new address, and its button (POST) changes the email,
+sets `email_verified_at`, ends every other session, cycles the remember token and gives this
+browser a new session id. A taken address is stored and answered like a free one ([11](11-security.md)
+"Account enumeration").
+
 ### Password policy
 - Minimum 10 characters, no composition rules (they harm more than help).
 - Rejected if present in the Have-I-Been-Pwned range API (`Password::uncompromised()`), checked
@@ -175,15 +188,15 @@ the account and cycles its remember token.
 - Hash: bcrypt cost 12, rehash on login when the cost changes.
 
 ### Session security
-- Regenerate the session id on login, logout, privilege change, password change and "sign out every
-  other device" (a copy of this browser's cookie is another device too).
+- Regenerate the session id on login, logout, privilege change, password change, email change and
+  "sign out every other device" (a copy of this browser's cookie is another device too).
 - Absolute session lifetime 30 days from the password sign-in (`platform.auth.absolute_session_days`,
   clock kept in the session as `auth.signed_in_at`), idle lifetime 14 days.
 - Session records store device label, hashed IP, CDN country and last-active for the
   session-management UI (`/settings/security`); listing and counts skip rows past the idle lifetime.
 - Password change, email change and 2FA change invalidate all other sessions.
 - Sensitive actions re-confirm the password within 15 minutes (`auth.password_timeout`) through the
-  `password.confirm` page; the password form asks for the current password inline instead.
+  `password.confirm` page; the password and email forms ask for the current password inline instead.
 
 ### Rate limits (named limiters)
 
@@ -193,6 +206,7 @@ the account and cycles its remember token.
 | `register` | 3 accepted / hour (counted after validation, so typos are free); every attempt 20 / hour (`platform.auth.register_attempts_per_hour`) | ip |
 | `password-reset` | 3 / hour; 20 / hour per ip (link requests only) | ip + email; ip |
 | `verify-email-resend` | 3 / hour; a breach is a flash error on the notice page | user |
+| `email-change` | 3 accepted requests and resends / hour (`platform.auth.email_change_per_hour`), counted after validation (`EmailChangeLimit`), so typos are free | user |
 | `coc-attach` | 5 / hour | user |
 | `coc-refresh` | 1 / 10 min | user + account |
 | `base-publish` | 5 / day, 20 / week | user |
@@ -201,7 +215,7 @@ the account and cycles its remember token.
 | `upload-intent` | 30 / hour | user |
 | `search` | 60 / min | ip |
 | `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
-| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page and password form share it | user |
+| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form and email form share it | user |
 | `admin-search` | 60 / min (`platform.rate_limits.admin_search_per_minute`); admin user list and audit log share it, deferred rows count; a breach is a bare 429 shown inline | user |
 
 All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their

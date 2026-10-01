@@ -161,7 +161,7 @@ Account deletion (FR-AUTH-9) is a 30-day soft delete, then:
 
 | Data | Fate |
 |---|---|
-| `users` row | retained, anonymised: `username → deleted_user_{ulid}`, email hashed, password nulled, `status='banned'`-equivalent tombstone |
+| `users` row | retained, anonymised: `username → deleted_user_{ulid}`, email hashed, `pending_email` nulled, password nulled, `status='banned'`-equivalent tombstone |
 | `profiles` | bio, socials, country cleared; avatar media deleted |
 | `coc_accounts` | `user_id` nulled, `status='released'`, snapshots retained, tag reclaimable |
 | `base_layouts` | deleted (cascade), media swept |

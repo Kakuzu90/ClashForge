@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroyOthers
-* @see app/Http/Controllers/Settings/SecurityController.php:59
+* @see app/Http/Controllers/Settings/SecurityController.php:66
 * @route '/settings/security/sessions'
 */
 export const destroyOthers = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -16,7 +16,7 @@ destroyOthers.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroyOthers
-* @see app/Http/Controllers/Settings/SecurityController.php:59
+* @see app/Http/Controllers/Settings/SecurityController.php:66
 * @route '/settings/security/sessions'
 */
 destroyOthers.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ destroyOthers.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroyOthers
-* @see app/Http/Controllers/Settings/SecurityController.php:59
+* @see app/Http/Controllers/Settings/SecurityController.php:66
 * @route '/settings/security/sessions'
 */
 destroyOthers.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -35,7 +35,7 @@ destroyOthers.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> 
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroy
-* @see app/Http/Controllers/Settings/SecurityController.php:52
+* @see app/Http/Controllers/Settings/SecurityController.php:59
 * @route '/settings/security/sessions/{key}'
 */
 export const destroy = (args: { key: string | number } | [key: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -50,7 +50,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroy
-* @see app/Http/Controllers/Settings/SecurityController.php:52
+* @see app/Http/Controllers/Settings/SecurityController.php:59
 * @route '/settings/security/sessions/{key}'
 */
 destroy.url = (args: { key: string | number } | [key: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -77,7 +77,7 @@ destroy.url = (args: { key: string | number } | [key: string | number ] | string
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroy
-* @see app/Http/Controllers/Settings/SecurityController.php:52
+* @see app/Http/Controllers/Settings/SecurityController.php:59
 * @route '/settings/security/sessions/{key}'
 */
 destroy.delete = (args: { key: string | number } | [key: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({

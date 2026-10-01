@@ -96,6 +96,17 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * An email change waiting for the new address to confirm it (FR-AUTH-8).
+     */
+    public function withPendingEmail(string $email): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'pending_email' => $email,
+            'pending_email_requested_at' => now(),
+        ]);
+    }
+
     public function moderator(): static
     {
         return $this->state(['role' => Role::Moderator]);

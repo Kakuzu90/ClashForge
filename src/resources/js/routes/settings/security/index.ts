@@ -1,9 +1,10 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../wayfinder'
 import password from './password'
 import sessions from './sessions'
+import email from './email'
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::edit
-* @see app/Http/Controllers/Settings/SecurityController.php:22
+* @see app/Http/Controllers/Settings/SecurityController.php:24
 * @route '/settings/security'
 */
 export const edit = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -18,7 +19,7 @@ edit.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::edit
-* @see app/Http/Controllers/Settings/SecurityController.php:22
+* @see app/Http/Controllers/Settings/SecurityController.php:24
 * @route '/settings/security'
 */
 edit.url = (options?: RouteQueryOptions) => {
@@ -27,7 +28,7 @@ edit.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::edit
-* @see app/Http/Controllers/Settings/SecurityController.php:22
+* @see app/Http/Controllers/Settings/SecurityController.php:24
 * @route '/settings/security'
 */
 edit.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -37,7 +38,7 @@ edit.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::edit
-* @see app/Http/Controllers/Settings/SecurityController.php:22
+* @see app/Http/Controllers/Settings/SecurityController.php:24
 * @route '/settings/security'
 */
 edit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -49,6 +50,7 @@ const security = {
     edit: Object.assign(edit, edit),
     password: Object.assign(password, password),
     sessions: Object.assign(sessions, sessions),
+    email: Object.assign(email, email),
 }
 
 export default security

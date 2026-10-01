@@ -456,6 +456,9 @@ page linking to `/email/verify` (masked address, "Send a new link").
 ### Settings (`/settings/*`)
 Left sub-nav (Profile · Privacy · Accounts · Security · Notifications · Danger zone) with plain,
 dense forms. Danger zone is visually separated with a red border and requires password confirmation.
+*Security:* Password, Email address (the masked current address, a pending change with "Send the
+link again" and "Cancel the change", and the new-email form with the current password, which "Send the link again" uses too) and Where you're signed in, each a flat card. The email-change link lands on
+`Settings/EmailChangeConfirm`, shaped like the verification result page.
 *Privacy:* a visibility radio group (Everyone · Signed-in members · Only me, each with a one-line
 description) and toggles for show accounts, show clan, recruitment contact and search. The
 stored `show_activity` and `allow_marketplace_contact` stay off the form until P2 / Phase 6.
