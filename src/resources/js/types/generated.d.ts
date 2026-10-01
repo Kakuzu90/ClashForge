@@ -43,10 +43,19 @@ lastActiveAt: string,
 signedInAt: string | null,
 isCurrent: boolean,
 };
+export type SignupCountData = {
+total: number,
+verified: number,
+};
+export type SignupStatsData = {
+last24Hours: App.Domain.Auth.Data.SignupCountData,
+last7Days: App.Domain.Auth.Data.SignupCountData,
+last30Days: App.Domain.Auth.Data.SignupCountData,
+};
 }
 namespace Enums {
 export type Role = 'user' | 'moderator' | 'admin' | 'super_admin';
-export type StaffAbility = 'access-admin' | 'view-users' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
+export type StaffAbility = 'access-admin' | 'view-users' | 'view-platform-stats' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
 export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pending_deletion';
 }
 }
@@ -69,6 +78,21 @@ export type Village = 'home' | 'builderBase';
 }
 namespace Media {
 namespace Data {
+export type MediaCollectionUsageData = {
+collection: string,
+label: string,
+bytes: number,
+objects: number,
+};
+export type MediaStorageData = {
+totalBytes: number,
+totalObjects: number,
+collections: App.Domain.Media.Data.MediaCollectionUsageData[],
+awaitingPurgeBytes: number,
+awaitingPurgeObjects: number,
+purgeAfterDays: number,
+quarantinedCount: number,
+};
 export type MediaVariantData = {
 name: App.Domain.Media.Enums.VariantName,
 url: string,
@@ -236,6 +260,9 @@ endsAt: string | null,
 };
 }
 namespace Admin {
+export type AdminDashboardPageData = {
+platformStats: boolean,
+};
 export type AdminUserFiltersData = {
 search: string | null,
 role: string | null,
@@ -369,6 +396,18 @@ passwordMinLength: number,
 }
 namespace Support {
 namespace Health {
+export type FailedJobClassData = {
+name: string | null,
+count: number,
+lastFailedAt: string,
+};
+export type FailedJobsSummaryData = {
+lastHour: number,
+last24Hours: number,
+alertPerHour: number,
+overThreshold: boolean,
+topClasses: App.Support.Health.FailedJobClassData[],
+};
 export type HealthStatus = 'ok' | 'degraded' | 'down' | 'unknown';
 }
 }

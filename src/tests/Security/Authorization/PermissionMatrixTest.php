@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Gate;
 const MATRIX = [
     'access-admin' => [false, true, true, true],
     'view-users' => [false, false, true, true],
+    'view-platform-stats' => [false, false, true, true],
     'view-report-queue' => [false, true, true, true],
     'claim-report-case' => [false, true, true, true],
     'hide-content' => [false, true, true, true],
@@ -72,10 +73,10 @@ it('takes every staff ability from a suspended account', function () {
     }
 });
 
-it('marks exactly the admin area, user list, queue and logs as read abilities', function () {
+it('marks exactly the admin area, user list, platform stats, queue and logs as read abilities', function () {
     $reads = array_values(array_filter(StaffAbility::cases(), fn (StaffAbility $a): bool => $a->isReadOnly()));
 
-    expect($reads)->toBe([StaffAbility::AccessAdmin, StaffAbility::ViewUsers, StaffAbility::ViewReportQueue, StaffAbility::ViewModerationLog, StaffAbility::ViewAuditLog]);
+    expect($reads)->toBe([StaffAbility::AccessAdmin, StaffAbility::ViewUsers, StaffAbility::ViewPlatformStats, StaffAbility::ViewReportQueue, StaffAbility::ViewModerationLog, StaffAbility::ViewAuditLog]);
 });
 
 it('gives staff powers back once a timed sanction has passed', function () {

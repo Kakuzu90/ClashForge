@@ -276,6 +276,12 @@ correct for ≤60 s clips), multiple resolutions, subtitles, GIF output.
 
 Quota changes are config values, not code.
 
+**Platform storage on the admin dashboard** (P1-13, FR-ADMIN-5) is read from the database, not the
+bucket: `media` + `media_variants` `size_bytes` for every row except `pending` (declared size, no
+object yet). Soft-deleted media counts, since its objects stay until `media:purge-deleted`, and is
+also shown apart as "awaiting purge"; quarantined media is never in that part, deleted parent or
+not (§9). The `game/` pack has no rows and is not counted.
+
 ## 9. Cleanup & orphan handling
 
 Scheduled commands (`app/Console/Commands/Media`, backed by `MediaLifecycleService` and

@@ -115,6 +115,9 @@ return [
         'per_page' => 50,
         // Latest audit entries about an account on the admin user detail.
         'audit_trail_limit' => 10,
+        // Dashboard failed-jobs panel: the specs/20 §6 alert line, and how many job classes it lists.
+        'failed_jobs_alert_per_hour' => 20,
+        'failed_jobs_top_classes' => 5,
     ],
 
     'security_log' => [

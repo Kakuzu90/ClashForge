@@ -3,6 +3,7 @@ import AdminActionPanel from '@/Components/admin/AdminActionPanel.vue';
 import AdminAuditTrailList from '@/Components/admin/AdminAuditTrailList.vue';
 import AdminDiffViewer from '@/Components/admin/AdminDiffViewer.vue';
 import AdminFilterBar from '@/Components/admin/AdminFilterBar.vue';
+import AdminPanel from '@/Components/admin/AdminPanel.vue';
 import AdminSanctionHistory from '@/Components/admin/AdminSanctionHistory.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
@@ -533,6 +534,18 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                         :abilities="{ suspend: false, ban: false, lift: false, activeType: null }"
                         :options="sanctionOptions"
                     />
+                    <AdminPanel title="Panel" description="A dashboard panel with a one-line description.">
+                        <dl class="grid grid-cols-2 gap-3">
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-sm text-fg-secondary">Last hour</dt>
+                                <dd class="text-h3 text-fg tabular-nums">12</dd>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-sm text-fg-secondary">Last 24 hours</dt>
+                                <dd class="text-h3 text-fg tabular-nums">1,204</dd>
+                            </div>
+                        </dl>
+                    </AdminPanel>
                     <AdminSanctionHistory :sanctions="sanctionSamples" />
                     <AdminSanctionHistory :sanctions="[]" />
                     <AdminAuditTrailList :entries="trailEntries" />

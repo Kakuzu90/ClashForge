@@ -15,6 +15,7 @@ enum StaffAbility: string implements HasLabelAndColor
 
     case AccessAdmin = 'access-admin';
     case ViewUsers = 'view-users';
+    case ViewPlatformStats = 'view-platform-stats';
     case ViewReportQueue = 'view-report-queue';
     case ClaimReportCase = 'claim-report-case';
     case HideContent = 'hide-content';
@@ -42,6 +43,7 @@ enum StaffAbility: string implements HasLabelAndColor
         return match ($this) {
             self::AccessAdmin => 'Open the admin area',
             self::ViewUsers => 'View user accounts',
+            self::ViewPlatformStats => 'View platform stats',
             self::ViewReportQueue => 'View report queue',
             self::ClaimReportCase => 'Claim or assign a report case',
             self::HideContent => 'Hide content',
@@ -91,6 +93,8 @@ enum StaffAbility: string implements HasLabelAndColor
             self::ViewModerationLog => Role::Moderator,
             // Admin user list and detail show email, which only admins see (specs/11 §5).
             self::ViewUsers,
+            // Dashboard sign-ups, failed jobs and media storage (FR-ADMIN-5).
+            self::ViewPlatformStats,
             self::RemoveContent,
             self::SuspendUser,
             self::BanUser,
@@ -113,7 +117,7 @@ enum StaffAbility: string implements HasLabelAndColor
      */
     public function isReadOnly(): bool
     {
-        return in_array($this, [self::AccessAdmin, self::ViewUsers, self::ViewReportQueue, self::ViewModerationLog, self::ViewAuditLog], true);
+        return in_array($this, [self::AccessAdmin, self::ViewUsers, self::ViewPlatformStats, self::ViewReportQueue, self::ViewModerationLog, self::ViewAuditLog], true);
     }
 
     public function grantedTo(Role $role): bool

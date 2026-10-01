@@ -328,7 +328,8 @@ when a table needs them), `AdminFilterBar` (a GET search form with Apply and Cle
 `AdminDiffViewer` (each change spelled out in words, colour only backs it up) and `AdminNav`;
 `AdminAuditTrailList` (P1-12: the latest entries about one record, who acted and what changed);
 `AdminActionPanel` (P1-14: actions from the server's ability flags, each a dialog with reason,
-note and a live "What they will see" preview) and `AdminSanctionHistory`.
+note and a live "What they will see" preview) and `AdminSanctionHistory`; `AdminPanel` (P1-13: a
+titled plain box for the dashboard panels, numbers in the body font at `--text-h3`, not StatBlock).
 
 ## 5. Layout
 
@@ -454,6 +455,12 @@ prop, so the first response carries the filters and the skeleton shows until the
 *Error:* inline error with the request id, for support correlation (`useVisitError`: a 5xx or a
 network failure becomes an inline alert with the `X-Request-Id` instead of Inertia's error modal;
 a 429 from `admin-search` becomes a "wait a moment" warning).
+*Dashboard (`/admin`):* one panel per FR-ADMIN-5 surface, each its own deferred prop in its own
+group, with its own skeleton, empty state ("No failed jobs in the last 24 hours") and inline error;
+a failed panel's "Try again" reloads every panel still missing. Panels sit behind
+`view-platform-stats` (admin+) and are left out of the response for anyone else; moderators see an
+empty state until the report queue lands (P3-06). Sizes in decimal units (1 GB = 1000 MB), as
+the bucket bills. Nothing on it is cached or polled.
 
 ## 7. Motion
 

@@ -64,6 +64,7 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 | View moderation log | – | ○ own actions | ✓ | ✓ |
 | View audit log | – | – | ✓ | ✓ |
 | View user accounts (admin list and detail, with email) | – | – | ✓ | ✓ |
+| View platform stats (dashboard sign-ups, failed jobs, media storage) | – | – | ✓ | ✓ |
 | Change user roles | – | – | – | ✓ |
 | Manage feature flags / settings | – | – | – | ✓ |
 | Hard-delete a user | – | – | – | ✓ |
@@ -105,7 +106,7 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
   role holds. There is no `Gate::before` hook, so ownership policies (the `○` rows above) and rule 1
   still apply to super admins and the matrix holds exactly.
 - A staff ability also needs the account's status to allow it: the read abilities (`access-admin`,
-  `view-users`, `view-report-queue`, `view-moderation-log`, `view-audit-log`) stay open to restricted and
+  `view-users`, `view-platform-stats`, `view-report-queue`, `view-moderation-log`, `view-audit-log`) stay open to restricted and
   pending-deletion staff, every other staff ability needs an active account, and a suspended
   account has none. A timed sanction stops counting once `status_expires_at` passes.
 

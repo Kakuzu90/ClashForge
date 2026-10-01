@@ -31,7 +31,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P1-06 | Audit log + admin viewer: `Domain/Audit` (`audit_logs`, `AuditLogger`, append-only), the `audit_logs` entry for role changes from `RoleAssignmentService` (from P1-02), `/admin/audit` with filters, admin nav (split: user admin → P1-12, dashboard → P1-13) | done | P1-02 | tasks/phase-1/P1-06-audit-log-and-viewer.md |
 | P1-12 | Admin user list + detail (FR-ADMIN-2 users, read): search, filters, detail with status and audit trail, `view-users` ability (admin+), `admin.user_viewed` security log (split from P1-06; sanctions → P1-14) | done | P1-06 | tasks/phase-1/P1-12-admin-user-list-and-detail.md |
 | P1-14 | Sanctions (FR-ADMIN-3, FR-MOD-5/6/8): suspend / ban / lift via `SanctionService`, `user_sanctions` + `moderation_actions`, status applied in the same transaction, `moderation:expire-sanctions`, suspended / banned / lifted emails, sanction `audit_logs` entries, history + action panel on the user detail (split from P1-12) | done | P1-12 | tasks/phase-1/P1-14-sanctions.md |
-| P1-13 | Admin dashboard v1 (FR-ADMIN-5): new signups, failed jobs, media storage usage; open reports, disputes and API health added as their modules land (split from P1-06) | todo | P1-12 | |
+| P1-13 | Admin dashboard v1 (FR-ADMIN-5): new signups, failed jobs, media storage usage; open reports, disputes and API health added as their modules land (split from P1-06) | done | P1-12 | tasks/phase-1/P1-13-admin-dashboard.md |
 | P1-07 | Notifications v1 (+ in-app copies of "Password changed" and "New sign-in", from P1-05) | todo | P1-01 | |
 | P1-08 | Registration + email verification: username rules + reserved list, disposable-email blocklist, HIBP, Turnstile (register and `/forgot-password`, specs/11), honeypot + min fill time, existing-email notice, signed 60-min link, resend limiter, `UserRegistered`/`EmailVerified` (split from P1-01) (+ set the `known_devices` cookie at registration, from P1-05) | todo | P1-01 | |
 | P1-10 | Email change (FR-AUTH-8): re-confirmation, verification link to the new address, notice to the old one, generic error when taken (split from P1-05) | todo | P1-05, P1-08 | |
@@ -42,11 +42,12 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
-| P2-01 | API client, decorators, key pool | todo | P0-02 | |
+| P2-01 | API client, decorators, key pool (+ the dashboard's API sync health panel, from P1-13) | todo | P0-02 | |
 | P2-02 | Attach + token verification flow (+ the attach CTA in the own profile's Accounts empty state, from P1-04) | todo | P2-01, P1-02 | |
-| P2-03 | Conflicts, disputes, ownership transfer | todo | P2-02, P1-06 | |
+| P2-03 | Conflicts, disputes, ownership transfer (+ the dashboard's pending disputes panel, from P1-13) | todo | P2-02, P1-06 | |
 | P2-04 | PlayerCard, account detail, progression | todo | P2-02, P0-06 | |
 | P2-05 | Asset pack v1 | todo | P0-06 | |
+| P2-06 | System health page (specs/20 §5–6, NFR-OBS-6): queue depth, oldest pending job, failed jobs grouped by class with retry / delete (audited), CoC key pool and sync success rate; linked from the dashboard's failed-jobs panel (from P1-13) | todo | P2-01, P1-13 | |
 
 ## Phase 3 — Bases + moderation (MVP)
 
@@ -57,7 +58,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P3-03 | Feed, trending, landing pages | todo | P3-01 | |
 | P3-04 | Likes, bookmarks, comments, counters (+ `user_stats` listeners and nightly recompute calling `CacheInvalidator::profile()`, StatBlock count-up, from P1-04) | todo | P3-01 | |
 | P3-05 | Search v1 | todo | P3-01 | |
-| P3-06 | Moderation v1 (incl. 30-day quarantine purge with `audit_logs` entry, specs/10 §9; from P0-08) | todo | P3-01, P1-06 | |
+| P3-06 | Moderation v1 (incl. 30-day quarantine purge with `audit_logs` entry, specs/10 §9; from P0-08) (+ the dashboard's open reports panel, the moderators' view of it replacing their empty state, from P1-13) | todo | P3-01, P1-06 | |
 | P3-07 | SEO surfaces | todo | P3-03 | |
 
 ## Phases 4–6

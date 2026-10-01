@@ -214,7 +214,8 @@ ownership transfers, role changes and data exports. Two-year retention, never ed
 ## 11. Operational requirements
 
 - **Admin dashboard** surfaces: open cases by priority, oldest unactioned case, SLA breaches,
-  cases per moderator, auto-action precision, quarantined media count, open disputes.
+  cases per moderator, auto-action precision, quarantined media count, open disputes. The
+  quarantined media count is live on the storage panel (P1-13); the rest join with P3-06 and P2-03.
 - **Staffing signal:** if median time-to-first-response exceeds the SLA for two consecutive weeks,
   the platform either recruits moderators or tightens automated restrictions. This is a documented
   operational trigger, not an ad-hoc decision.

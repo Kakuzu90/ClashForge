@@ -193,4 +193,8 @@ connection entry with its own `retry_after`.
 | Worker liveness | Any worker container restarting more than twice in 10 min |
 
 An admin "System Health" page shows all of the above plus the CoC key-pool status, so a moderator
-can tell the difference between "the user is lying" and "sync has been broken since Tuesday".
+can tell the difference between "the user is lying" and "sync has been broken since Tuesday"
+(P2-06, with the failed-job list and its retry / delete). Until then the admin dashboard's
+failed-jobs panel (P1-13) shows failures in the last hour and 24 h, flags the hour above the
+alert line (`platform.admin.failed_jobs_alert_per_hour`) and lists the most failed job classes by
+the payload's `displayName`; payloads and exception text never reach the page.
