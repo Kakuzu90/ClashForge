@@ -5,9 +5,11 @@ namespace App\Domain\Auth\Services;
 use App\Domain\Auth\Jobs\SendPasswordResetLinkJob;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 
 /**
@@ -25,6 +27,15 @@ class PasswordResetService implements ResetsUserPasswords
         SendPasswordResetLinkJob::dispatch(Str::lower(trim($email)));
     }
 
+    public function sendLink(string $email): void
+    {
+        DB::transaction(function () use ($email): void {
+            if (User::query()->where('email', $email)->lockForUpdate()->first() !== null) {
+                PasswordBroker::broker()->sendResetLink(['email' => $email]);
+            }
+        });
+    }
+
     /**
      * @param  User  $user
      * @param  array<string, mixed>  $input
@@ -36,7 +47,11 @@ class PasswordResetService implements ResetsUserPasswords
         ])->validate();
 
         DB::transaction(function () use ($user, $input): void {
-            $user->forceFill(['password' => (string) $input['password']])->save();
+            $current = User::query()->whereKey($user->id)->lockForUpdate()->first();
+            if ($current === null) {
+                throw ValidationException::withMessages(['email' => __('passwords.user')]);
+            }
+            $current->forceFill(['password' => (string) $input['password']])->save();
 
             DB::table((string) config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
         });

@@ -95,7 +95,9 @@ class MediaProcessingService
             return;
         }
 
-        $this->markFailed($media, MediaStatus::Failed, MediaFailureReason::ProcessingError);
+        if (! $this->markFailed($media, MediaStatus::Failed, MediaFailureReason::ProcessingError)) {
+            return;
+        }
 
         if ($media->processing_attempts >= (int) config('media.lifecycle.retry_max_attempts')) {
             Log::warning('media.retry_exhausted', ['media' => $media->ulid, 'attempts' => $media->processing_attempts]);
@@ -169,31 +171,33 @@ class MediaProcessingService
 
     private function store(Filesystem $disk, Media $media, ProcessedMedia $result, string $checksum): void
     {
-        $written = [];
+        $stored = DB::transaction(function () use ($disk, $media, $result, $checksum): bool {
+            $current = Media::query()->whereKey($media->id)->lockForUpdate()->first();
 
-        foreach ($result->variants as $variant) {
-            $path = MediaPaths::variant($media->collection, $media->ulid, $variant->name, $variant->extension);
+            if ($current === null || $current->status !== MediaStatus::Processing) {
+                return false;
+            }
 
-            $disk->put($path, $variant->contents, [
-                'ContentType' => $variant->mimeType,
-                'CacheControl' => (string) config("media.{$media->visibility->value}_cache_control"),
-            ]);
-
-            $written[] = [
-                'variant' => $variant->name,
-                'path' => $path,
-                'width' => $variant->width,
-                'height' => $variant->height,
-                'size_bytes' => strlen($variant->contents),
-                'mime_type' => $variant->mimeType,
-            ];
-        }
-
-        DB::transaction(function () use ($media, $result, $checksum, $written): void {
-            $media->variants()->delete();
-            $media->variants()->createMany($written);
-
-            $media->forceFill([
+            // Hold the deletion claim off until all written keys have their variant rows.
+            $written = [];
+            foreach ($result->variants as $variant) {
+                $path = MediaPaths::variant($current->collection, $current->ulid, $variant->name, $variant->extension);
+                $disk->put($path, $variant->contents, [
+                    'ContentType' => $variant->mimeType,
+                    'CacheControl' => (string) config("media.{$current->visibility->value}_cache_control"),
+                ]);
+                $written[] = [
+                    'variant' => $variant->name,
+                    'path' => $path,
+                    'width' => $variant->width,
+                    'height' => $variant->height,
+                    'size_bytes' => strlen($variant->contents),
+                    'mime_type' => $variant->mimeType,
+                ];
+            }
+            $current->variants()->delete();
+            $current->variants()->createMany($written);
+            $current->forceFill([
                 'status' => MediaStatus::Ready,
                 'failure_reason' => null,
                 'mime_type' => $result->mimeType,
@@ -203,7 +207,13 @@ class MediaProcessingService
                 'checksum_sha256' => $checksum,
                 'processed_at' => Date::now(),
             ])->save();
+
+            return true;
         });
+
+        if (! $stored) {
+            return;
+        }
 
         $this->deleteOriginal($disk, $media);
         $this->recheckQuarantineKey($media);
@@ -231,7 +241,9 @@ class MediaProcessingService
 
         Log::info('media.rejected', ['media' => $media->ulid, 'reason' => $rejected->reason->value, 'detail' => $rejected->detail]);
 
-        $this->markFailed($media, MediaStatus::Failed, $rejected->reason);
+        if (! $this->markFailed($media, MediaStatus::Failed, $rejected->reason)) {
+            return;
+        }
         $this->deleteOriginal($disk, $media);
         $this->recheckQuarantineKey($media);
     }
@@ -246,11 +258,18 @@ class MediaProcessingService
         PurgeQuarantineObjectJob::dispatch($media->id)->delay($at->isFuture() ? $at : null);
     }
 
-    private function markFailed(Media $media, MediaStatus $status, MediaFailureReason $reason): void
+    private function markFailed(Media $media, MediaStatus $status, MediaFailureReason $reason): bool
     {
-        $media->forceFill(['status' => $status, 'failure_reason' => $reason])->save();
+        return DB::transaction(function () use ($media, $status, $reason): bool {
+            $current = Media::query()->whereKey($media->id)->lockForUpdate()->first();
+            if ($current === null || ! in_array($current->status, [MediaStatus::Uploaded, MediaStatus::Processing], true)) {
+                return false;
+            }
+            $current->forceFill(['status' => $status, 'failure_reason' => $reason])->save();
+            DB::afterCommit(fn () => MediaFailed::dispatch($current->ulid, $current->user_id, $current->collection, $status, $reason));
 
-        MediaFailed::dispatch($media->ulid, $media->user_id, $media->collection, $status, $reason);
+            return true;
+        });
     }
 
     private function deleteOriginal(Filesystem $disk, Media $media): void

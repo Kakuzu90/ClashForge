@@ -31,7 +31,7 @@ use Illuminate\Notifications\Notifiable;
  * @property CarbonImmutable|null $email_verified_at
  * @property string|null $pending_email
  * @property CarbonImmutable|null $pending_email_requested_at
- * @property string $password
+ * @property string|null $password
  * @property string|null $remember_token
  * @property Role $role
  * @property UserStatus $status
@@ -42,6 +42,8 @@ use Illuminate\Notifications\Notifiable;
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  * @property CarbonImmutable|null $deleted_at
+ * @property CarbonImmutable|null $deletion_requested_at
+ * @property UserStatus|null $deletion_previous_status
  */
 class User extends Authenticatable implements HasAccountStanding, MustVerifyEmail
 {
@@ -60,6 +62,9 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         'status_expires_at' => null,
         'pending_email' => null,
         'pending_email_requested_at' => null,
+        'deleted_at' => null,
+        'deletion_requested_at' => null,
+        'deletion_previous_status' => null,
     ];
 
     /**
@@ -144,6 +149,8 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
             'email_verified_at' => 'immutable_datetime',
             'last_login_at' => 'immutable_datetime',
             'pending_email_requested_at' => 'immutable_datetime',
+            'deletion_requested_at' => 'immutable_datetime',
+            'deletion_previous_status' => UserStatus::class,
             'password' => 'hashed',
             'role' => Role::class,
             'status' => UserStatus::class,

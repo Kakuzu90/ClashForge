@@ -77,6 +77,13 @@ Schedule::command('media:purge-deleted')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'media:purge-deleted']));
 
+Schedule::command('platform:anonymize-deleted')
+    ->dailyAt('04:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'platform:anonymize-deleted']));
+
 Schedule::command('media:reconcile-storage')
     ->weeklyOn(0, '05:00')
     ->withoutOverlapping()

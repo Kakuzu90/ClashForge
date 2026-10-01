@@ -2,11 +2,14 @@
 
 namespace App\Domain\Auth\Services;
 
+use App\Domain\Auth\Enums\UserStatus;
 use App\Domain\Auth\Exceptions\AccountBanned;
+use App\Domain\Users\Services\CacheInvalidator;
 use App\Models\User;
 use App\Support\Privacy\IpHash;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -26,9 +29,14 @@ class AuthenticationService
      */
     public function attempt(string $email, string $password): ?User
     {
-        $user = User::query()->where('email', $email)->first();
+        return DB::transaction(fn (): ?User => $this->checkCredentials($email, $password));
+    }
 
-        if ($user === null) {
+    private function checkCredentials(string $email, string $password): ?User
+    {
+        $user = User::query()->where('email', $email)->lockForUpdate()->first();
+
+        if ($user === null || $user->password === null) {
             Hash::check($password, $this->timingHash());
             $this->logFailure(null);
 
@@ -55,7 +63,26 @@ class AuthenticationService
             $user->forceFill(['password' => $password])->save();
         }
 
+        $this->cancelDeletion($user);
+
         return $user;
+    }
+
+    private function cancelDeletion(User $account): void
+    {
+        if ($account->status !== UserStatus::PendingDeletion) {
+            return;
+        }
+
+        $status = ($account->deletion_previous_status ?? UserStatus::Active)->effective($account->status_expires_at);
+        $account->forceFill([
+            'status' => $status, 'deletion_requested_at' => null, 'deletion_previous_status' => null,
+            'status_reason' => $status === UserStatus::Active ? null : $account->status_reason,
+            'status_expires_at' => $status === UserStatus::Active ? null : $account->status_expires_at,
+        ])->save();
+
+        DB::afterCommit(fn () => CacheInvalidator::profile($account->username));
+        Log::channel('security')->info('auth.deletion_cancelled', ['user' => $account->ulid]);
     }
 
     public function recordLogin(User $user, ?string $ip): void

@@ -25,7 +25,7 @@ class PasswordChangeService
     {
         Gate::forUser($user)->authorize('changePassword', $user);
 
-        if (! Hash::check($currentPassword, $user->password)) {
+        if ($user->password === null || ! Hash::check($currentPassword, $user->password)) {
             Log::channel('security')->warning('auth.password_change_failed', ['user' => $user->ulid, 'ip_hash' => IpHash::of(request()->ip())]);
 
             throw ValidationException::withMessages(['current_password' => 'That is not your current password.']);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AccountDeletionController;
 use App\Http\Controllers\Settings\EmailChangeController;
 use App\Http\Controllers\Settings\PrivacyController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -12,6 +13,7 @@ Route::middleware(['auth', 'account.active'])->prefix('settings')->name('setting
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/privacy', [PrivacyController::class, 'edit'])->name('privacy.edit');
     Route::get('/security', [SecurityController::class, 'edit'])->name('security.edit');
+    Route::get('/danger-zone', [AccountDeletionController::class, 'edit'])->name('danger-zone.edit');
     // The link in the email-change message: it needs the account signed in on this browser, so a
     // guest signs in and comes back. Opening it changes nothing; the page's button confirms.
     Route::get('/email/confirm/{ulid}/{hash}', [EmailChangeController::class, 'show'])
@@ -19,6 +21,7 @@ Route::middleware(['auth', 'account.active'])->prefix('settings')->name('setting
         ->name('email.show');
     Route::get('/email/confirmed', [EmailChangeController::class, 'result'])->name('email.result');
     Route::middleware('throttle:global-write')->group(function (): void {
+        Route::delete('/danger-zone', [AccountDeletionController::class, 'destroy'])->middleware('throttle:password-confirm')->name('danger-zone.destroy');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::put('/profile/avatar', [ProfileController::class, 'setAvatar'])->name('profile.avatar.update');
         Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.destroy');

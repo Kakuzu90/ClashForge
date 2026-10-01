@@ -84,7 +84,7 @@ describe('SettingsAvatarField', () => {
 });
 
 describe('settings nav', () => {
-    it('lists Profile, Privacy, Security', () => {
-        expect(settingsNav.map((link) => link.key)).toEqual(['profile', 'privacy', 'security']);
+    it('lists Profile, Privacy, Security and Danger zone', () => {
+        expect(settingsNav.map((link) => link.key)).toEqual(['profile', 'privacy', 'security', 'danger-zone']);
     });
 });

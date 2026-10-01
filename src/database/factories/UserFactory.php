@@ -137,9 +137,12 @@ class UserFactory extends Factory
         return $this->withStatus(UserStatus::Banned, $reason, null);
     }
 
-    public function pendingDeletion(): static
+    public function pendingDeletion(?CarbonInterface $requestedAt = null): static
     {
-        return $this->withStatus(UserStatus::PendingDeletion, null, null);
+        return $this->withStatus(UserStatus::PendingDeletion, null, null)->state([
+            'deletion_requested_at' => $requestedAt ?? now(),
+            'deletion_previous_status' => UserStatus::Active,
+        ]);
     }
 
     private function withStatus(UserStatus $status, ?string $reason, ?CarbonInterface $until): static

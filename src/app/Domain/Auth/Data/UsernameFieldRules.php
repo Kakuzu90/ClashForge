@@ -2,6 +2,7 @@
 
 namespace App\Domain\Auth\Data;
 
+use App\Domain\Auth\Models\UsernameHistory;
 use Closure;
 use Illuminate\Validation\Rule;
 
@@ -33,6 +34,11 @@ final class UsernameFieldRules
                 }
             },
             Rule::unique('users', 'username'),
+            function (string $attribute, mixed $value, Closure $fail): void {
+                if (is_string($value) && self::isPermanentlyReserved($value)) {
+                    $fail('That username is taken. Pick another.');
+                }
+            },
         ];
     }
 
@@ -42,6 +48,12 @@ final class UsernameFieldRules
         $reserved = config('platform.auth.reserved_usernames');
 
         return in_array(strtolower($username), $reserved, true);
+    }
+
+    /** @phpstan-impure Reservations may commit while a registration insert waits. */
+    public static function isPermanentlyReserved(string $username): bool
+    {
+        return UsernameHistory::query()->where('username', $username)->where('reserved_forever', true)->exists();
     }
 
     /**

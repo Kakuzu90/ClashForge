@@ -76,8 +76,8 @@ mechanism and the test that proves it.
 - `SameSite=Lax` session cookies; `Secure` and `HttpOnly` set.
 - No route is exempted. If a webhook ever needs exemption, it authenticates by signature instead.
 - Sensitive actions (email change, password change, account deletion, ownership transfer) require
-  password re-confirmation within the last 15 minutes; the password and email forms take the
-  current password inline instead.
+  password re-confirmation within the last 15 minutes; the password, email and account-deletion forms take the
+  current password inline on each submission instead, sharing the `password-confirm` limiter.
 
 ### IDOR / broken object-level authorization
 - Public identifiers are ULIDs or natural keys; sequential ids never appear in URLs.
@@ -255,7 +255,7 @@ failed and successful logins, password/email changes (`auth.password_changed`,
 whether the address was taken, `auth.email_changed`, `auth.email_change_cancelled`,
 `auth.email_change_taken`), new devices (`auth.new_device`),
 session revocation and expiry (`auth.session_revoked`, `auth.session_expired`), 2FA changes, role
-changes, permission denials,
+changes, deletion requests/cancellations (`auth.deletion_requested`, `auth.deletion_cancelled`), permission denials,
 CoC claim attempts and verification failures, ownership transfers, admin data access
 (`admin.user_viewed` on each admin user detail: actor and target ULID, `ip_hash`;
 `admin.users_listed` on each load of the user list rows: actor, which filters were used, row count,

@@ -3,6 +3,7 @@
 namespace App\Domain\Auth\Services;
 
 use App\Domain\Auth\Data\RegistrationData;
+use App\Domain\Auth\Data\UsernameFieldRules;
 use App\Domain\Auth\Events\UserRegistered;
 use App\Domain\Auth\Notifications\RegistrationAttemptNotification;
 use App\Models\User;
@@ -71,12 +72,20 @@ class RegistrationService
 
         try {
             $user = DB::transaction(function () use ($data, $hash): User {
+                if (UsernameFieldRules::isPermanentlyReserved($data->username)) {
+                    throw ValidationException::withMessages(['username' => 'That username is taken. Pick another.']);
+                }
                 $user = (new User)->forceFill([
                     'email' => $data->email,
                     'username' => $data->username,
                     'password' => $hash,
                 ]);
                 $user->save();
+
+                // The insert can wait for an anonymisation that reserves and releases this handle.
+                if (UsernameFieldRules::isPermanentlyReserved($data->username)) {
+                    throw ValidationException::withMessages(['username' => 'That username is taken. Pick another.']);
+                }
 
                 UserRegistered::dispatch($user->id);
 

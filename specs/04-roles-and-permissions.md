@@ -27,7 +27,7 @@ says otherwise (e.g. moderators cannot suspend users; admins cannot change roles
 | `restricted` | yes | yes | no publishing/commenting/messaging | Soft sanction, time-boxed |
 | `suspended` | yes | own data only | no | Every page except the notice, logout, `/settings/*` and `/notifications` redirects to a suspension notice with reason and end date; the appeal link is added with appeals (P5-02) |
 | `banned` | no | no | no | Every session ends and the remember token cycles when the ban is applied; content hidden (the public profile 404s), tags released after 30 days |
-| `pending_deletion` | yes (cancels deletion) | yes | no | 30-day window; the public profile 404s |
+| `pending_deletion` | yes (fresh sign-in cancels deletion) | yes | no | 30-day window; requesting deletion ends all sessions and remember-me; the public profile 404s |
 
 Additional flags gating capabilities: `email_verified_at` (required for content writes: publishing,
 commenting, attaching CoC accounts, uploads; FR-AUTH-4),
@@ -180,6 +180,19 @@ sets `email_verified_at`, ends every other session, cycles the remember token an
 browser a new session id. A taken address is stored and answered like a free one ([11](11-security.md)
 "Account enumeration").
 
+### Account deletion
+Own-account deletion requires the current password entered inline on every submission, checked against the locked account row; it does not redirect through the password-confirmation page. Guesses share the `password-confirm` limiter. Active and restricted
+accounts may request it, including those with unverified email; suspended and banned accounts
+cannot. The request sets `pending_deletion` and `deletion_requested_at`, ends every session
+(including this browser), cycles the remember token and clears this browser's remember-me cookies.
+Only a fresh sign-in cancels the pending request. Cancellation clears the deletion request and
+restores any still-effective sanction, otherwise `active`; deletion never lifts a sanction.
+The request saves `deletion_previous_status` and keeps the sanction reason/end. Password sign-in
+and anonymisation both lock the account row before changing it. `deleted_at` is set only on the
+anonymised tombstone; the grace-period account is hidden by its status.
+After 30 days, the nightly pipeline anonymises the retained account and its Phase 1 data
+([08 §6](08-entity-relationships.md)). These decisions were approved by the owner, 2026-10-01 (P1-11).
+
 ### Password policy
 - Minimum 10 characters, no composition rules (they harm more than help).
 - Rejected if present in the Have-I-Been-Pwned range API (`Password::uncompromised()`), checked
@@ -196,7 +209,7 @@ browser a new session id. A taken address is stored and answered like a free one
   session-management UI (`/settings/security`); listing and counts skip rows past the idle lifetime.
 - Password change, email change and 2FA change invalidate all other sessions.
 - Sensitive actions re-confirm the password within 15 minutes (`auth.password_timeout`) through the
-  `password.confirm` page; the password and email forms ask for the current password inline instead.
+  `password.confirm` page; the password, email and account-deletion forms ask for the current password inline instead.
 
 ### Rate limits (named limiters)
 
@@ -215,7 +228,7 @@ browser a new session id. A taken address is stored and answered like a free one
 | `upload-intent` | 30 / hour | user |
 | `search` | 60 / min | ip |
 | `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
-| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form and email form share it | user |
+| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form, email form and account-deletion form share it | user |
 | `admin-search` | 60 / min (`platform.rate_limits.admin_search_per_minute`); admin user list and audit log share it, deferred rows count; a breach is a bare 429 shown inline | user |
 
 All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their

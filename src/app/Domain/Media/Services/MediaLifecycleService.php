@@ -24,6 +24,13 @@ use Throwable;
  */
 class MediaLifecycleService
 {
+    /** Account anonymisation; quarantine remains available for staff review. */
+    public function purgeOwnedBy(int $userId): int
+    {
+        return $this->claim(fn () => Media::withTrashed()->where('user_id', $userId)
+            ->whereNotIn('status', [MediaStatus::Quarantined, MediaStatus::Deleting]), false);
+    }
+
     /**
      * Unattached media past its expiry: never completed, never processed, never attached, or
      * failed. `processing` rows are left to their job.
@@ -162,8 +169,7 @@ class MediaLifecycleService
     }
 
     /**
-     * Re-reads the row under a lock: processing may have moved it out of `deleting` since the
-     * claim (to `ready` and attached, or to `quarantined`), and then it is no longer ours.
+     * Re-reads the row under a lock; only rows still claimed for deletion may be removed.
      */
     private function deleteOne(int $id): int
     {
@@ -213,7 +219,7 @@ class MediaLifecycleService
             });
 
             if ($ids !== []) {
-                DeleteMediaObjectsJob::dispatch($ids);
+                DeleteMediaObjectsJob::dispatch($ids)->afterCommit();
             }
 
             $claimed += count($ids);

@@ -6,6 +6,7 @@ use App\Domain\Notifications\Data\InAppMessageData;
 use App\Domain\Notifications\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Writes in-app notifications (specs/16 §1). Called from queued work only, never in a request the
@@ -18,18 +19,26 @@ class Notifier
         return "notif:unread:{$userId}";
     }
 
-    public function send(User $user, InAppMessageData $message): string
+    public function send(User $user, InAppMessageData $message): ?string
     {
-        $notification = Notification::query()->create([
-            'type' => $message->type->value,
-            'notifiable_type' => $user->getMorphClass(),
-            'notifiable_id' => $user->id,
-            'data' => ['params' => $message->params],
-            'group_key' => $message->groupKey,
-        ]);
+        return DB::transaction(function () use ($user, $message): ?string {
+            // Serialize with anonymisation, so delayed work cannot recreate cleared rows.
+            $owner = User::query()->lockForUpdate()->find($user->id);
+            if ($owner === null) {
+                return null;
+            }
 
-        Cache::forget(self::unreadCacheKey($user->id));
+            $notification = Notification::query()->create([
+                'type' => $message->type->value,
+                'notifiable_type' => $owner->getMorphClass(),
+                'notifiable_id' => $owner->id,
+                'data' => ['params' => $message->params],
+                'group_key' => $message->groupKey,
+            ]);
 
-        return $notification->id;
+            DB::afterCommit(fn () => Cache::forget(self::unreadCacheKey($owner->id)));
+
+            return $notification->id;
+        });
     }
 }

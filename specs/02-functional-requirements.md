@@ -17,7 +17,7 @@ Priority: **M** = MVP, **P2** = phase 4–5, **P3** = phase 6–7.
 | FR-AUTH-6 | M | Password reset via signed, single-use, 60-minute token; all sessions are invalidated on reset. |
 | FR-AUTH-7 | M | Users can see active sessions (device, IP region as a country from Cloudflare's `CF-IPCountry`, last active) and revoke any or all of them. |
 | FR-AUTH-8 | M | Users can change email after re-confirming their password; the new address gets a signed 60-minute link, and the change happens only when that link's button is pressed by the account signed in on that browser. The old address gets a change notice. |
-| FR-AUTH-9 | M | Users can delete their account: 30-day soft delete, then anonymisation of profile fields, release of CoC account tags, retention of moderation and audit records. |
+| FR-AUTH-9 | M | Users can delete their own account after password re-confirmation: the request ends all sessions and remember-me and starts a 30-day soft delete. A fresh sign-in cancels it while preserving effective sanctions. Then profile fields are anonymised, CoC account tags released, the original username permanently reserved, and moderation and audit records retained. |
 | FR-AUTH-10 | P2 | Optional TOTP two-factor auth, mandatory for moderator and above. |
 | FR-AUTH-11 | M | Registration is protected by an invisible captcha (Cloudflare Turnstile) and a disposable-email-domain blocklist. |
 

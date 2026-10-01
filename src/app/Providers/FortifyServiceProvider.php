@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Domain\Auth\Actions\CompletePasswordReset as CompleteAccountPasswordReset;
 use App\Domain\Auth\Exceptions\AccountBanned;
 use App\Domain\Auth\Services\AuthenticationService;
 use App\Domain\Auth\Services\PasswordResetService;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Inertia\Response;
+use Laravel\Fortify\Actions\CompletePasswordReset;
 use Laravel\Fortify\Contracts\FailedPasswordConfirmationResponse;
 use Laravel\Fortify\Contracts\FailedPasswordResetResponse;
 use Laravel\Fortify\Contracts\PasswordResetResponse;
@@ -36,6 +38,8 @@ class FortifyServiceProvider extends ServiceProvider
 
         // Fortify's controller type-hints its own request; ours adds the email format check.
         $this->app->bind(FortifyLoginRequest::class, LoginRequest::class);
+
+        $this->app->bind(CompletePasswordReset::class, CompleteAccountPasswordReset::class);
 
         $this->app->bind(FailedPasswordResetResponse::class, PasswordResetFailedResponse::class);
         $this->app->bind(PasswordResetResponse::class, PasswordResetDoneResponse::class);

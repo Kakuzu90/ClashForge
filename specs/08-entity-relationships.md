@@ -157,12 +157,18 @@ Every denormalised value has one authoritative writer and one repair job.
 
 ## 6. Delete and anonymisation semantics
 
-Account deletion (FR-AUTH-9) is a 30-day soft delete, then:
+Account deletion (FR-AUTH-9) is a 30-day soft delete. Requesting it ends all sessions and
+remember-me; a fresh sign-in cancels it while preserving any still-effective sanction
+([04 §4](04-roles-and-permissions.md)). After the window, anonymisation applies:
 
 | Data | Fate |
 |---|---|
-| `users` row | retained, anonymised: `username → deleted_user_{ulid}`, email hashed, `pending_email` nulled, password nulled, `status='banned'`-equivalent tombstone |
-| `profiles` | bio, socials, country cleared; avatar media deleted |
+| `users` row | retained, anonymised: `username → deleted_user_{ulid}` (lowercase internal name), email replaced by a keyed hash of account ULID + original email (unique even when an email is reused); password, remember token, email verification, pending email and its request timestamp, and login metadata nulled; `status='banned'`-equivalent tombstone |
+| `username_history` | original username permanently reserved (`reserved_forever = true`); its profile URL returns 404 |
+| `profiles` | display name, bio, socials, country, languages and timezone cleared; avatar reference cleared and media deleted through Media's lifecycle |
+| `privacy_settings`, `user_stats` | rows retained with privacy defaults and zero counters |
+| `sessions`, `password_reset_tokens` | deleted for the account; reset-token lookup uses the original email before hashing |
+| `notifications`, `notification_preferences` | account's rows deleted; Phase 1 deletes notifications, preferences join when their table ships |
 | `coc_accounts` | `user_id` nulled, `status='released'`, snapshots retained, tag reclaimable |
 | `base_layouts` | deleted (cascade), media swept |
 | `base_comments` | body replaced with a tombstone, row retained so threads stay readable |
@@ -171,4 +177,13 @@ Account deletion (FR-AUTH-9) is a 30-day soft delete, then:
 | `moderation_actions`, `user_sanctions`, `audit_logs` | fully retained — these are the compliance record |
 | `marketplace_orders` | retained; buyer/seller pseudonymised after any dispute window closes |
 
-The anonymisation job is idempotent and logs to `audit_logs`.
+The anonymisation job is idempotent and logs to `audit_logs` without copying the removed PII.
+Cancellation and anonymisation serialize on the account so a cancelled request is never processed.
+Password-reset writes, reset completion and reset-token creation lock and reload the account, skipping tombstones. Registration checks permanent username reservations after insertion as well as before: an insert waiting for anonymisation must not claim the released handle.
+
+In-app notification writers use the same account lock and skip deleted accounts, so delayed
+notifications cannot recreate cleared rows. Media deletion is queued only after commit; all
+owned media is claimed, including unattached and processing uploads, with quarantine retained.
+Phase 1 cleanup, tombstone schema exceptions and permanent original-username reservation were
+approved by the owner, 2026-10-01 (P1-11). Later modules extend the pipeline with their rows above
+and the dispute/order holds in [23 §1](23-edge-cases.md).

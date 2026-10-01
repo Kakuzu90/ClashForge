@@ -97,7 +97,7 @@ for a full temp volume does not.
 | Job | Trigger | Notes |
 |---|---|---|
 | `ReconcileCountersJob` | Nightly | Repairs every denormalised counter listed in [08 §5](08-entity-relationships.md) |
-| `AnonymizeDeletedUsersJob` | Nightly | Executes the 30-day deletion pipeline |
+| `platform:anonymize-deleted` (command, runs inline) | Nightly, 04:00 | Executes the 30-day deletion pipeline through `AccountDeletionService`, chunked by id (`platform.auth.deletion_batch_size`, 100); locks and re-checks each account, audits once. `--dry-run` counts due accounts without changes. Media deletion remains queued after commit |
 | `GenerateSitemapJob` | Nightly | Public bases + profiles, chunked sitemap index |
 | `ExportUserDataJob` | On request | Builds a ZIP, uploads privately, emails a 7-day signed link |
 | `PruneOperationalTablesJob` | Nightly | `sessions`, `cache` expired rows, `coc_api_requests` >7d, `failed_jobs` >30d, `base_view_events` >30d |

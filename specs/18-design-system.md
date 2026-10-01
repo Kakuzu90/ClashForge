@@ -456,6 +456,13 @@ page linking to `/email/verify` (masked address, "Send a new link").
 ### Settings (`/settings/*`)
 Left sub-nav (Profile · Privacy · Accounts · Security · Notifications · Danger zone) with plain,
 dense forms. Danger zone is visually separated with a red border and requires password confirmation.
+*Danger zone:* `/settings/danger-zone`, a plain red-bordered section in the settings layout.
+Explains hiding the profile, signing out every device, the 30-day cancellation window, permanent
+username reservation and retained moderation/audit records. A native checkbox confirms the
+consequences; an inline current-password field and the danger button request deletion without
+leaving the form for password confirmation. Password errors appear inline; the field clears after
+each request and is disabled while submitting. Suspended accounts see the explanation
+and an unavailable message, with no form; the ability comes from the server policy.
 *Security:* Password, Email address (the masked current address, a pending change with "Send the
 link again" and "Cancel the change", and the new-email form with the current password, which "Send the link again" uses too) and Where you're signed in, each a flat card. The email-change link lands on
 `Settings/EmailChangeConfirm`, shaped like the verification result page.

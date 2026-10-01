@@ -42,6 +42,8 @@ return [
         'hibp_timeout' => 2,
         // A session ends this long after sign-in even while active (specs/04 §4); idle is session.lifetime.
         'absolute_session_days' => 30,
+        'deletion_grace_days' => 30,
+        'deletion_batch_size' => 100,
         // The `known_devices` cookie: how long a browser stays recognised, and how many accounts it
         // remembers (specs/11 "Authentication attacks").
         'known_device_days' => 365,

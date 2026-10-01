@@ -288,7 +288,7 @@ Scheduled commands (`app/Console/Commands/Media`, backed by `MediaLifecycleServi
 `StorageReconciler`). Every one of them is the reason the storage bill stays predictable.
 Deletion is two-step: the command claims rows by flipping them to `deleting` (attachment refuses
 that state), then `DeleteMediaObjectsJob` removes the original, every variant and the row. It
-re-reads each row under a lock and skips any that processing has moved out of `deleting`. No job
+re-reads each row under a lock and only removes rows still in `deleting`. Processing finalisation locks and rechecks `processing` before writing public variants, holding the lock until their database rows are saved. If deletion won, no variants are written; failure handlers likewise cannot overwrite the deletion claim. No job
 here ever selects `quarantined` media. Every command that deletes accepts `--dry-run`.
 
 | Job | Schedule | Action |
@@ -302,7 +302,7 @@ here ever selects `quarantined` media. Every command that deletes accepts `--dry
 Cascade rules:
 - Deleting a base → its media soft-deleted → purged after 7 days (a window for accidental-delete
   recovery and for moderation review).
-- Deleting a user → 30-day soft delete → anonymisation → media purge.
+- Deleting a user → 30-day soft delete → anonymisation → media purge. `MediaLifecycleService::purgeOwnedBy()` claims all owned media (attached, unattached, processing and soft-deleted included), except quarantined/already-deleting rows; deletion jobs are dispatched after the anonymisation transaction commits.
 - **Quarantined media is never auto-deleted**; it is retained 30 days for moderator review and then
   purged by a separate job that logs to `audit_logs` (P3-06, after `audit_logs` lands in P1-06).
 

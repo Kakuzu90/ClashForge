@@ -16,6 +16,9 @@ Grouped by domain. Each has a defined behaviour; anything marked **decide** is a
 | User changes email to one already registered | Not changed, with the same answer as a free address (the address shows as pending, no link is sent); the address's owner and the requester's current address are each emailed, at most once an hour. If another account takes a pending address before it is confirmed, confirming says it is taken. A soft-deleted account's address counts as taken |
 | Username released and immediately re-registered by someone else | Blocked for 90 days via `username_history`; old profile URLs redirect until then, and afterwards return 404 rather than the new person's profile |
 | User deletes their account, then registers again with the same email | Allowed after the 30-day window; no data is restored |
+| A deleted account's original username is requested again | Permanently blocked via `username_history.reserved_forever`; the old profile URL returns 404 |
+| User signs in after requesting deletion | Only a fresh sign-in cancels; requesting deletion ended all sessions and remember-me. Restore any still-effective sanction, otherwise active; suspended accounts cannot request self-deletion |
+| Sign-in cancellation races the anonymisation pipeline | Serialize on the account; re-check the pending request before anonymising, so a completed cancellation cannot be overwritten |
 | User requests deletion while a dispute or an open order involves them | Deletion queued but held until those resolve; the user is told why and can cancel |
 | Session hijack suspected (IP/UA changes drastically) | Not auto-invalidated (mobile networks change IPs constantly); a new-device email is sent and the session is listed for manual revocation |
 | Staff member loses 2FA device | Recovery codes only. No support-driven bypass — the role can be re-granted by a super admin after re-enrolment |

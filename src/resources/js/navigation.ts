@@ -4,6 +4,7 @@ import { index as adminUsers } from '@/routes/admin/users';
 import { edit as privacySettings } from '@/routes/settings/privacy';
 import { edit as profileSettings } from '@/routes/settings/profile';
 import { edit as securitySettings } from '@/routes/settings/security';
+import { edit as dangerZone } from '@/routes/settings/danger-zone';
 
 export type NavIconName = 'home' | 'bases' | 'recruit' | 'search' | 'market' | 'profile';
 
@@ -67,6 +68,7 @@ export const settingsNav: SettingsLink[] = [
     { key: 'profile', label: 'Profile', href: () => profileSettings().url },
     { key: 'privacy', label: 'Privacy', href: () => privacySettings().url },
     { key: 'security', label: 'Security', href: () => securitySettings().url },
+    { key: 'danger-zone', label: 'Danger zone', href: () => dangerZone().url },
 ];
 
 export interface AdminNavItem {

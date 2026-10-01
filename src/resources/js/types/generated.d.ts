@@ -2,7 +2,7 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised';
 export type AuditSubject = 'user';
 }
 }
@@ -430,6 +430,10 @@ profile: App.Domain.Users.Data.PublicProfileData,
 };
 }
 namespace Settings {
+export type DangerZonePageData = {
+graceDays: number,
+canRequestDeletion: boolean,
+};
 export type EmailChangeConfirmPageData = {
 outcome: string,
 message: string,

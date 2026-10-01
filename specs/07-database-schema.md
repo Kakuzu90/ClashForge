@@ -30,12 +30,12 @@ Authentication identity and platform-level status. Deliberately thin — profile
 |---|---|---|
 | id | bigserial PK | |
 | ulid | char(26) | non-enumerable external id |
-| username | citext | public handle: 3 to 20 of `[a-z0-9_]`, stored lowercase, unique ignoring case; a deleted account keeps its name taken |
+| username | citext | public handle: 3 to 20 of `[a-z0-9_]`, stored lowercase, unique ignoring case; anonymised rows instead use the internal `deleted_user_{ulid}` name (39 chars, lowercase). The original name stays permanently reserved via `username_history` |
 | email | citext | |
 | email_verified_at | timestamptz null | required for writes |
 | pending_email | citext null | an email change waiting for its link (FR-AUTH-8); a new request replaces it, confirming or cancelling clears it. Not unique: an address may be pending on several accounts, the first to confirm gets it |
 | pending_email_requested_at | timestamptz null | when the pending change was asked for |
-| password | varchar(255) | bcrypt/argon2id |
+| password | varchar(255) null | bcrypt/argon2id; required for a live account, null only on an anonymised tombstone |
 | remember_token | varchar(100) null | remember-me recaller; cycled on logout, password reset, password change and session revocation |
 | role | varchar(20) | `user`\|`moderator`\|`admin`\|`super_admin`, default `user` |
 | status | varchar(20) | `active`\|`restricted`\|`suspended`\|`banned`\|`pending_deletion` |
@@ -47,7 +47,13 @@ Authentication identity and platform-level status. Deliberately thin — profile
 | username_changed_at | timestamptz null | enforces the 30-day rule |
 | two_factor_secret / two_factor_recovery_codes / two_factor_confirmed_at | text null (encrypted) / text null (encrypted) / timestamptz null | [P2] |
 | deletion_requested_at | timestamptz null | starts the 30-day window |
+| deletion_previous_status | varchar(20) null | `active` or `restricted` before the request; cancellation restores it with the existing sanction reason/end, respecting expiry |
 | created_at / updated_at / deleted_at | timestamptz | |
+
+During the grace period `status = pending_deletion` hides the account; `deleted_at` stays null
+so password sign-in can find and restore it. Anonymisation sets `deleted_at` and the banned
+tombstone together. Postgres CHECKs allow only public username shapes or the exact internal
+tombstone name, and allow a null password only on a deleted, banned row.
 
 **Unique:** `username`, `email`, `ulid`.
 **Indexes:** `(status)` partial `WHERE status <> 'active'`; `(role)` partial `WHERE role <> 'user'`;
@@ -55,6 +61,8 @@ Authentication identity and platform-level status. Deliberately thin — profile
 
 ### `username_history` [M]
 Holds released usernames so old profile URLs redirect and handles cannot be sniped instantly.
+Created with deletion reservations in P1-11; username changes use it in P1-09. A deletion
+reservation lasts forever and its profile URL returns 404; ordinary changes keep the 90-day rule.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -62,6 +70,7 @@ Holds released usernames so old profile URLs redirect and handles cannot be snip
 | user_id | bigint FK → users | cascade |
 | username | citext | |
 | released_at | timestamptz | reserved 90 days from here |
+| reserved_forever | bool default false | true for the original username on account anonymisation; never expires |
 
 **Unique:** `(username, released_at)`. **Index:** `(username)`.
 
@@ -635,6 +644,8 @@ the retention differs (audit: 2 years; moderation: indefinite).
   monthly partitions, which row triggers do not block.
 - Never holds an IP address, a token or a password in `before`, `after` or `context`: the admin
   viewer shows them as recorded.
+- Account anonymisation records `user.anonymised`, with status before/after and the command name,
+  no removed profile fields or addresses; the actor is the console (P1-11).
 
 **Indexes:** `(auditable_type, auditable_id, created_at)`; `(actor_id, created_at)`;
 `(action, created_at)`, ascending (Postgres scans them backwards for newest-first). The viewer pages

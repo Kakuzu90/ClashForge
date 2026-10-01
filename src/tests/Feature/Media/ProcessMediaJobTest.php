@@ -1,14 +1,20 @@
 <?php
 
+use App\Domain\Auth\Services\AccountDeletionService;
+use App\Domain\Media\Contracts\MediaProcessor;
+use App\Domain\Media\Contracts\MediaScanner;
 use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Enums\MediaFailureReason;
 use App\Domain\Media\Enums\MediaStatus;
 use App\Domain\Media\Events\MediaFailed;
 use App\Domain\Media\Events\MediaReady;
+use App\Domain\Media\Exceptions\MediaRejected;
 use App\Domain\Media\Jobs\ProcessMediaJob;
 use App\Domain\Media\Jobs\PurgeQuarantineObjectJob;
 use App\Domain\Media\Models\Media;
+use App\Domain\Media\Services\MediaLifecycleService;
 use App\Domain\Media\Services\MediaProcessingService;
+use App\Models\User;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -249,3 +255,30 @@ it('keeps quarantined and in-flight originals when the purge runs', function (st
 
     $this->mediaDisk()->assertExists($media->path);
 })->with(['quarantined', 'uploaded', 'processing']);
+
+it('does not publish or change failure state when account cleanup wins during processing', function (bool $removed, bool $rejected) {
+    Queue::fake();
+    $owner = User::factory()->pendingDeletion(now()->subDays((int) config('platform.auth.deletion_grace_days')))->create();
+    $media = $this->uploadedMedia(MediaFiles::jpeg(), owner: $owner);
+    $processor = app(MediaProcessor::class);
+    $lateProcessor = Mockery::mock(MediaProcessor::class);
+    $lateProcessor->shouldReceive('process')->once()->andReturnUsing(function ($local, $collection) use ($processor, $owner, $media, $removed, $rejected) {
+        $result = $processor->process($local, $collection);
+        app(AccountDeletionService::class)->anonymise($owner->id);
+        if ($removed) {
+            app(MediaLifecycleService::class)->deleteMedia([$media->id]);
+        }
+        if ($rejected) {
+            throw MediaRejected::suspicious('late scan failure');
+        }
+
+        return $result;
+    });
+    (new MediaProcessingService($lateProcessor, app(MediaScanner::class)))->process($media->id);
+    app(MediaProcessingService::class)->giveUp($media->id);
+    $current = Media::withTrashed()->find($media->id);
+    expect($current?->status)->toBe($removed ? null : MediaStatus::Deleting);
+    expect($this->mediaDisk()->allFiles('public'))->toBe([]);
+    Event::assertNotDispatched(MediaReady::class);
+    Event::assertNotDispatched(MediaFailed::class);
+})->with([false, true])->with([false, true]);

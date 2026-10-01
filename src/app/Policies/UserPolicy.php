@@ -31,6 +31,16 @@ class UserPolicy
         return $actor->id === $target->id && $actor->allowsAccountWrites();
     }
 
+    public function viewDangerZone(User $actor, User $target): bool
+    {
+        return $actor->id === $target->id && $target->deleted_at === null && $target->effectiveStatus()->canLogIn();
+    }
+
+    public function requestDeletion(User $actor, User $target): bool
+    {
+        return $actor->id === $target->id && $target->deleted_at === null && $target->allowsAccountWrites();
+    }
+
     public function warn(User $actor, User $target): bool
     {
         return $this->staffOver($actor, StaffAbility::WarnUser, $target);

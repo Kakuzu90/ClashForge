@@ -2,9 +2,9 @@
 
 namespace App\Domain\Auth\Jobs;
 
+use App\Domain\Auth\Services\PasswordResetService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Password;
 
 /**
  * Looks the email up and sends the link off the request path. The request only validates and
@@ -19,9 +19,9 @@ class SendPasswordResetLinkJob implements ShouldQueue
         $this->onQueue('high');
     }
 
-    public function handle(): void
+    public function handle(PasswordResetService $passwords): void
     {
         // Unknown email or the broker's per-account minute: nothing to send, nothing to report.
-        Password::broker()->sendResetLink(['email' => $this->email]);
+        $passwords->sendLink($this->email);
     }
 }
