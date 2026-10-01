@@ -72,8 +72,8 @@ class RegistrationService
 
         try {
             $user = DB::transaction(function () use ($data, $hash): User {
-                if (UsernameFieldRules::isPermanentlyReserved($data->username)) {
-                    throw ValidationException::withMessages(['username' => 'That username is taken. Pick another.']);
+                if (UsernameFieldRules::isHeld($data->username)) {
+                    throw ValidationException::withMessages(['username' => UsernameFieldRules::TAKEN]);
                 }
                 $user = (new User)->forceFill([
                     'email' => $data->email,
@@ -82,9 +82,10 @@ class RegistrationService
                 ]);
                 $user->save();
 
-                // The insert can wait for an anonymisation that reserves and releases this handle.
-                if (UsernameFieldRules::isPermanentlyReserved($data->username)) {
-                    throw ValidationException::withMessages(['username' => 'That username is taken. Pick another.']);
+                // The insert can wait for an anonymisation or a username change that holds and
+                // releases this handle.
+                if (UsernameFieldRules::isHeld($data->username)) {
+                    throw ValidationException::withMessages(['username' => UsernameFieldRules::TAKEN]);
                 }
 
                 UserRegistered::dispatch($user->id);

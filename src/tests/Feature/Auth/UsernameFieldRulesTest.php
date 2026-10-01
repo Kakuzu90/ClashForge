@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Auth\Data\UsernameFieldRules;
+use App\Domain\Auth\Models\UsernameHistory;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 
@@ -32,4 +33,30 @@ it('refuses a taken name, deleted accounts included', function () {
     User::factory()->create(['username' => 'chief'])->delete();
 
     expect(usernameErrors('chief'))->toBe(['That username is taken. Pick another.']);
+});
+
+it('holds a changed-away name for other accounts until the hold ends, never for its owner', function () {
+    $days = (int) config('platform.auth.username_reservation_days');
+    $owner = User::factory()->create();
+    UsernameHistory::factory()->create(['user_id' => $owner->id, 'username' => 'old_chief', 'released_at' => now()->subDays($days)->addMinute()]);
+
+    expect(usernameErrors('old_chief'))->toBe(['That username is taken. Pick another.'])
+        ->and(UsernameFieldRules::isHeld('OLD_CHIEF'))->toBeTrue()
+        ->and(UsernameFieldRules::isHeld('old_chief', $owner->id))->toBeFalse();
+
+    $this->travel(2)->minutes();
+    expect(UsernameFieldRules::isHeld('old_chief'))->toBeFalse();
+});
+
+it('holds a deleted account\'s name forever, for everyone', function () {
+    $owner = User::factory()->create();
+    UsernameHistory::factory()->permanent()->create(['user_id' => $owner->id, 'username' => 'gone_chief', 'released_at' => now()->subYears(5)]);
+
+    expect(UsernameFieldRules::isHeld('gone_chief'))->toBeTrue()
+        ->and(UsernameFieldRules::isHeld('gone_chief', $owner->id))->toBeTrue();
+});
+
+it('reads the username change windows from config', function () {
+    expect(config('platform.auth.username_change_days'))->toBe(30)
+        ->and(config('platform.auth.username_reservation_days'))->toBe(90);
 });

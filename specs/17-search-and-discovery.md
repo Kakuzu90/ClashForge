@@ -134,7 +134,8 @@ images (the base screenshot), an XML sitemap regenerated nightly for public base
 Profiles (`/u/{username}`): title `{display name} (@{username})`, or `@{username}` without a
 display name; description from the bio (cut to `platform.profile.meta_description_max`), else
 `{name} on Clash Commons.`; `Person` JSON-LD with `sameAs` from the social links; `noindex` unless
-the profile is `public` and `searchable`.
+the profile is `public` and `searchable`. The canonical URL is the current username; an old name answers 301 to
+it during its 90-day hold (FR-PROFILE-7).
 
 ## 7. Migration trigger and path
 

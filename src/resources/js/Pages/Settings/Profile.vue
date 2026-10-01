@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SettingsAvatarField from '@/Components/settings/SettingsAvatarField.vue';
+import SettingsUsernameSection from '@/Components/settings/SettingsUsernameSection.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiCard from '@/Components/ui/UiCard.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
@@ -18,6 +19,7 @@ type Props = App.Http.Data.Settings.ProfileSettingsPageData;
 
 const props = defineProps<{
     profile: Props['profile'];
+    username: Props['username'];
     avatarUpload: Props['avatarUpload'];
     countries: Props['countries'];
     languages: Props['languages'];
@@ -70,6 +72,10 @@ function submit() {
 
         <UiCard variant="flat" class="p-4 sm:p-6">
             <SettingsAvatarField :name="avatarName" :avatar="profile.avatar" :rules="avatarUpload" :error="errors.media" />
+        </UiCard>
+
+        <UiCard variant="flat" class="p-4 sm:p-6">
+            <SettingsUsernameSection :settings="username" />
         </UiCard>
 
         <UiCard variant="flat" class="p-4 sm:p-6">

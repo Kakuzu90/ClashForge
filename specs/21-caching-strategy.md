@@ -44,7 +44,7 @@ of defence, not the first.
 | `feed:category:{cat}:th{n}:p{page}` | Base card DTO list | 5 min | Trending recompute |
 | `base:{ulid}:view` | Rendered detail view-model (not HTML) | 5 min | Base update, like, comment, moderation |
 | `base:{ulid}:related` | Related base ids | 15 min | Trending recompute |
-| `profile:{username}` | Public profile view-model (viewer-independent; `user_stats` values up to 5 min old). Key lowercased (usernames are case-insensitive); stored with the version in `profile:{username}:version`, so a reader that started before a change cannot serve its stale build | 5 min (`platform.profile.cache_ttl`) | Profile update, avatar set/remove/ready, privacy update, account verify/detach, base publish, `user_stats` writes (P3-04) |
+| `profile:{username}` | Public profile view-model (viewer-independent; `user_stats` values up to 5 min old). Key lowercased (usernames are case-insensitive); stored with the version in `profile:{username}:version`, so a reader that started before a change cannot serve its stale build | 5 min (`platform.profile.cache_ttl`) | Profile update, username change (old and new name), avatar set/remove/ready, privacy update, account verify/detach, base publish, `user_stats` writes (P3-04) |
 | `account:{ulid}:card` | PlayerCard DTO | 5 min | Account sync, verification |
 | `user:{id}:privacy` | Privacy settings row, as scalars. A missing row reads as `private` (fail closed) | 1 h (`platform.profile.privacy_cache_ttl`) | Settings update writes the new row through (readers only add on a miss) |
 | `user:{id}:permissions` | Derived capability flags (can publish, can recruit) | 10 min | Role/status change, verification, sanction |

@@ -44,6 +44,7 @@ use Illuminate\Notifications\Notifiable;
  * @property CarbonImmutable|null $deleted_at
  * @property CarbonImmutable|null $deletion_requested_at
  * @property UserStatus|null $deletion_previous_status
+ * @property CarbonImmutable|null $username_changed_at
  */
 class User extends Authenticatable implements HasAccountStanding, MustVerifyEmail
 {
@@ -62,6 +63,7 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         'status_expires_at' => null,
         'pending_email' => null,
         'pending_email_requested_at' => null,
+        'username_changed_at' => null,
         'deleted_at' => null,
         'deletion_requested_at' => null,
         'deletion_previous_status' => null,
@@ -150,6 +152,7 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
             'last_login_at' => 'immutable_datetime',
             'pending_email_requested_at' => 'immutable_datetime',
             'deletion_requested_at' => 'immutable_datetime',
+            'username_changed_at' => 'immutable_datetime',
             'deletion_previous_status' => UserStatus::class,
             'password' => 'hashed',
             'role' => Role::class,

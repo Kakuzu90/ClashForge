@@ -12,14 +12,21 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * The public profile (FR-PROFILE-5), server-rendered for search engines (specs/17 §6). Who may
- * see it is decided by PrivacyPolicyResolver inside the read model.
+ * The public profile (FR-PROFILE-5), server-rendered for search engines (specs/17 §6), and the
+ * redirect from a changed name (FR-PROFILE-7). Who may see it is decided by PrivacyPolicyResolver
+ * inside the read model.
  */
 class ProfileController extends Controller
 {
     public function show(Request $request, string $username, PublicProfileReadModel $profiles): Response
     {
         $view = $profiles->find($username, $request->user());
+
+        if ($view === null && ($current = $profiles->redirectFor($username, $request->user())) !== null) {
+            // A changed name points at the new one during the hold (FR-PROFILE-7). Not cached, so
+            // the end of the hold and a privacy change apply at once.
+            return redirect()->route('profile.show', ['username' => $current], 301)->header('Cache-Control', 'no-store');
+        }
 
         // One response for an unknown, hidden, banned or pending-deletion profile (specs/11).
         if ($view === null) {

@@ -76,7 +76,7 @@ mechanism and the test that proves it.
 - `SameSite=Lax` session cookies; `Secure` and `HttpOnly` set.
 - No route is exempted. If a webhook ever needs exemption, it authenticates by signature instead.
 - Sensitive actions (email change, password change, account deletion, ownership transfer) require
-  password re-confirmation within the last 15 minutes; the password, email and account-deletion forms take the
+  password re-confirmation within the last 15 minutes; the password, email, username and account-deletion forms take the
   current password inline on each submission instead, sharing the `password-confirm` limiter.
 
 ### IDOR / broken object-level authorization
@@ -151,11 +151,15 @@ mechanism and the test that proves it.
   most once an hour per account, as specs/23 §1 asks for both addresses to be notified. Change links
   to any one address are capped at `platform.auth.email_change_links_per_address_per_hour` across
   all accounts, so nobody can flood an inbox with them.
-- Username availability check is rate-limited (10/min) and returns only a boolean.
+- Username availability check, when one is added, is rate-limited (10/min) and returns only a
+  boolean; none exists yet, names are checked on submit (owner, P1-09).
 - Profile visibility settings respected in search and in direct URL access (`private`, and
   `members` for a guest, → 404, not 403, so existence is not confirmed). Every miss on
   `/u/{username}` (unknown, hidden, banned, pending deletion, or a name that cannot be stored)
-  renders the one `Profile/NotFound` page with status 404 and `noindex`, so the bodies match.
+  renders the one `Profile/NotFound` page with status 404 and `noindex`, so the bodies match. An
+  old name inside its hold redirects (301, `no-store`) only when the current profile would render
+  for this viewer; otherwise it gets that same 404, so a redirect never links a hidden account to
+  its old name.
 
 ### File upload attacks
 Fully specified in [10-media-storage.md](10-media-storage.md). Summary of controls:
@@ -253,7 +257,8 @@ HSTS (1 year, includeSubDomains, preload), TLS 1.2+, `X-Content-Type-Options: no
 failed and successful logins, password/email changes (`auth.password_changed`,
 `auth.password_change_failed`, `auth.password_confirm_failed`, `auth.email_change_requested` with
 whether the address was taken, `auth.email_changed`, `auth.email_change_cancelled`,
-`auth.email_change_taken`), new devices (`auth.new_device`),
+`auth.email_change_taken`), username changes (`auth.username_changed`: account ULID, from, to,
+`ip_hash`), new devices (`auth.new_device`),
 session revocation and expiry (`auth.session_revoked`, `auth.session_expired`), 2FA changes, role
 changes, deletion requests/cancellations (`auth.deletion_requested`, `auth.deletion_cancelled`), permission denials,
 CoC claim attempts and verification failures, ownership transfers, admin data access

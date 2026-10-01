@@ -69,6 +69,10 @@ return [
         'email_change_notice_per_hour' => 1,
         // Change links any one address receives an hour, from every account together.
         'email_change_links_per_address_per_hour' => 3,
+        // Username change (FR-PROFILE-7): days between changes, and how long a released name stays
+        // held for its old owner (the old profile URL redirects meanwhile).
+        'username_change_days' => 30,
+        'username_reservation_days' => 90,
         // Names nobody may register (FR-AUTH-1), matched exactly after lowercasing.
         'reserved_usernames' => [
             'about', 'account', 'accounts', 'admin', 'administrator', 'api', 'base', 'bases', 'clan', 'clans',

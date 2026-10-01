@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::update
-* @see app/Http/Controllers/Settings/ProfileController.php:50
+* @see app/Http/Controllers/Settings/ProfileController.php:67
 * @route '/settings/profile/avatar'
 */
 export const update = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -16,7 +16,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::update
-* @see app/Http/Controllers/Settings/ProfileController.php:50
+* @see app/Http/Controllers/Settings/ProfileController.php:67
 * @route '/settings/profile/avatar'
 */
 update.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ update.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::update
-* @see app/Http/Controllers/Settings/ProfileController.php:50
+* @see app/Http/Controllers/Settings/ProfileController.php:67
 * @route '/settings/profile/avatar'
 */
 update.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -35,7 +35,7 @@ update.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::destroy
-* @see app/Http/Controllers/Settings/ProfileController.php:57
+* @see app/Http/Controllers/Settings/ProfileController.php:74
 * @route '/settings/profile/avatar'
 */
 export const destroy = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -50,7 +50,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::destroy
-* @see app/Http/Controllers/Settings/ProfileController.php:57
+* @see app/Http/Controllers/Settings/ProfileController.php:74
 * @route '/settings/profile/avatar'
 */
 destroy.url = (options?: RouteQueryOptions) => {
@@ -59,7 +59,7 @@ destroy.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::destroy
-* @see app/Http/Controllers/Settings/ProfileController.php:57
+* @see app/Http/Controllers/Settings/ProfileController.php:74
 * @route '/settings/profile/avatar'
 */
 destroy.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({

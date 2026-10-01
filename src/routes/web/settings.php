@@ -23,6 +23,8 @@ Route::middleware(['auth', 'account.active'])->prefix('settings')->name('setting
     Route::middleware('throttle:global-write')->group(function (): void {
         Route::delete('/danger-zone', [AccountDeletionController::class, 'destroy'])->middleware('throttle:password-confirm')->name('danger-zone.destroy');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        // Username change (FR-PROFILE-7): the current password inline, guesses in `password-confirm`.
+        Route::put('/profile/username', [ProfileController::class, 'updateUsername'])->middleware('throttle:password-confirm')->name('profile.username.update');
         Route::put('/profile/avatar', [ProfileController::class, 'setAvatar'])->name('profile.avatar.update');
         Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.destroy');
         Route::patch('/privacy', [PrivacyController::class, 'update'])->name('privacy.update');

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::edit
-* @see app/Http/Controllers/Settings/ProfileController.php:25
+* @see app/Http/Controllers/Settings/ProfileController.php:28
 * @route '/settings/profile'
 */
 export const edit = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ edit.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::edit
-* @see app/Http/Controllers/Settings/ProfileController.php:25
+* @see app/Http/Controllers/Settings/ProfileController.php:28
 * @route '/settings/profile'
 */
 edit.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ edit.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::edit
-* @see app/Http/Controllers/Settings/ProfileController.php:25
+* @see app/Http/Controllers/Settings/ProfileController.php:28
 * @route '/settings/profile'
 */
 edit.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ edit.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::edit
-* @see app/Http/Controllers/Settings/ProfileController.php:25
+* @see app/Http/Controllers/Settings/ProfileController.php:28
 * @route '/settings/profile'
 */
 edit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ edit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::update
-* @see app/Http/Controllers/Settings/ProfileController.php:43
+* @see app/Http/Controllers/Settings/ProfileController.php:48
 * @route '/settings/profile'
 */
 export const update = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -60,7 +60,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::update
-* @see app/Http/Controllers/Settings/ProfileController.php:43
+* @see app/Http/Controllers/Settings/ProfileController.php:48
 * @route '/settings/profile'
 */
 update.url = (options?: RouteQueryOptions) => {
@@ -69,7 +69,7 @@ update.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::update
-* @see app/Http/Controllers/Settings/ProfileController.php:43
+* @see app/Http/Controllers/Settings/ProfileController.php:48
 * @route '/settings/profile'
 */
 update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -78,8 +78,42 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Settings\ProfileController::updateUsername
+* @see app/Http/Controllers/Settings/ProfileController.php:55
+* @route '/settings/profile/username'
+*/
+export const updateUsername = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+    url: updateUsername.url(options),
+    method: 'put',
+})
+
+updateUsername.definition = {
+    methods: ["put"],
+    url: '/settings/profile/username',
+} satisfies RouteDefinition<["put"]>
+
+/**
+* @see \App\Http\Controllers\Settings\ProfileController::updateUsername
+* @see app/Http/Controllers/Settings/ProfileController.php:55
+* @route '/settings/profile/username'
+*/
+updateUsername.url = (options?: RouteQueryOptions) => {
+    return updateUsername.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Settings\ProfileController::updateUsername
+* @see app/Http/Controllers/Settings/ProfileController.php:55
+* @route '/settings/profile/username'
+*/
+updateUsername.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+    url: updateUsername.url(options),
+    method: 'put',
+})
+
+/**
 * @see \App\Http\Controllers\Settings\ProfileController::setAvatar
-* @see app/Http/Controllers/Settings/ProfileController.php:50
+* @see app/Http/Controllers/Settings/ProfileController.php:67
 * @route '/settings/profile/avatar'
 */
 export const setAvatar = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -94,7 +128,7 @@ setAvatar.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::setAvatar
-* @see app/Http/Controllers/Settings/ProfileController.php:50
+* @see app/Http/Controllers/Settings/ProfileController.php:67
 * @route '/settings/profile/avatar'
 */
 setAvatar.url = (options?: RouteQueryOptions) => {
@@ -103,7 +137,7 @@ setAvatar.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::setAvatar
-* @see app/Http/Controllers/Settings/ProfileController.php:50
+* @see app/Http/Controllers/Settings/ProfileController.php:67
 * @route '/settings/profile/avatar'
 */
 setAvatar.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -113,7 +147,7 @@ setAvatar.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::removeAvatar
-* @see app/Http/Controllers/Settings/ProfileController.php:57
+* @see app/Http/Controllers/Settings/ProfileController.php:74
 * @route '/settings/profile/avatar'
 */
 export const removeAvatar = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -128,7 +162,7 @@ removeAvatar.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::removeAvatar
-* @see app/Http/Controllers/Settings/ProfileController.php:57
+* @see app/Http/Controllers/Settings/ProfileController.php:74
 * @route '/settings/profile/avatar'
 */
 removeAvatar.url = (options?: RouteQueryOptions) => {
@@ -137,7 +171,7 @@ removeAvatar.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\ProfileController::removeAvatar
-* @see app/Http/Controllers/Settings/ProfileController.php:57
+* @see app/Http/Controllers/Settings/ProfileController.php:74
 * @route '/settings/profile/avatar'
 */
 removeAvatar.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -145,6 +179,6 @@ removeAvatar.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> =
     method: 'delete',
 })
 
-const ProfileController = { edit, update, setAvatar, removeAvatar }
+const ProfileController = { edit, update, updateUsername, setAvatar, removeAvatar }
 
 export default ProfileController

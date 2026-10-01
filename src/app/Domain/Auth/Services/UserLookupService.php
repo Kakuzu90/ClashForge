@@ -3,7 +3,9 @@
 namespace App\Domain\Auth\Services;
 
 use App\Domain\Auth\Enums\UserStatus;
+use App\Domain\Auth\Models\UsernameHistory;
 use App\Models\User;
+use Illuminate\Support\Facades\Date;
 
 /**
  * Finds accounts by their public identifier for other modules, which may not query `users`
@@ -32,6 +34,31 @@ class UserLookupService
 
         return User::query()
             ->where('username', $username)
+            ->whereNotIn('status', [UserStatus::Banned->value, UserStatus::PendingDeletion->value])
+            ->first();
+    }
+
+    /**
+     * The listed account that changed away from `$username` inside the hold (FR-PROFILE-7), for
+     * the `/u/{old}` redirect; the latest release wins. Null once the hold is over, for a name
+     * someone holds now (whatever their status), and for names deleted accounts keep forever.
+     */
+    public function renamedFrom(string $username): ?User
+    {
+        if (preg_match(self::STORABLE, $username) !== 1 || User::withTrashed()->where('username', $username)->exists()) {
+            return null;
+        }
+
+        $since = Date::now()->subDays((int) config('platform.auth.username_reservation_days'));
+        $release = UsernameHistory::query()
+            ->where('username', $username)
+            ->where('reserved_forever', false)
+            ->where('released_at', '>', $since)
+            ->latest('released_at')
+            ->first();
+
+        return $release === null ? null : User::query()
+            ->whereKey($release->user_id)
             ->whereNotIn('status', [UserStatus::Banned->value, UserStatus::PendingDeletion->value])
             ->first();
     }

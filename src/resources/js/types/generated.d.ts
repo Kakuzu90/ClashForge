@@ -2,7 +2,7 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed';
 export type AuditSubject = 'user';
 }
 }
@@ -51,6 +51,16 @@ export type SignupStatsData = {
 last24Hours: App.Domain.Auth.Data.SignupCountData,
 last7Days: App.Domain.Auth.Data.SignupCountData,
 last30Days: App.Domain.Auth.Data.SignupCountData,
+};
+export type UsernameSettingsData = {
+username: string,
+canChange: boolean,
+needsVerifiedEmail: boolean,
+nextChangeAt: string | null,
+changeDays: number,
+reservationDays: number,
+minLength: number,
+maxLength: number,
 };
 }
 namespace Enums {
@@ -448,6 +458,7 @@ username: string,
 };
 export type ProfileSettingsPageData = {
 profile: App.Domain.Users.Data.ProfileFormData,
+username: App.Domain.Auth.Data.UsernameSettingsData,
 avatarUpload: App.Domain.Media.Data.UploadCollectionData,
 countries: {
 value: string,

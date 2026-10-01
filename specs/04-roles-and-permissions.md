@@ -126,7 +126,9 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
 Three middlewares, applied in order, each with a dedicated denial page:
 1. `EnsureEmailIsVerified` (Laravel's `verified`) — blocks content writes for an unverified email
    (FR-AUTH-4): uploads check it in `MediaPolicy`, later content routes add the middleware.
-   Account, settings and notification writes stay open, so a mistyped address can be fixed.
+   Account, settings and notification writes stay open, so a mistyped address can be fixed;
+   the one exception is a username change (`UserPolicy::changeUsername`), since each change holds a
+   name for 90 days (owner decision, 2026-10-01, P1-09).
 2. `EnsureAccountIsActive` — `account.active` blocks `suspended`, `banned` and `pending_deletion`
    writes; `account.active:content` also blocks `restricted` on content writes (uploads, publishing,
    commenting, applying, messaging). Profile and settings writes stay open to restricted users.
@@ -160,7 +162,8 @@ Email + username + password (+ confirmation) + Turnstile, plus a hidden honeypot
 single-use encrypted form token ([11](11-security.md) "Spam and fake accounts"). Disposable-domain
 blocklist. Usernames are lowercased and trimmed, then 3 to 20 of `[a-z0-9_]`, unique ignoring case
 against every account (deleted ones included), and not on the reserved list
-(`platform.auth.reserved_usernames`: `admin`, `mod`, `support`, `api`, `u`, `base`, ...).
+(`platform.auth.reserved_usernames`: `admin`, `mod`, `support`, `api`, `u`, `base`, ...), and not held
+in `username_history` (a deleted account's name forever, a changed-away name for 90 days).
 Registration never signs anyone in: every outcome ends on "Check your email". A verified email is
 required for content writes (FR-AUTH-4). The verification link is signed for 60 minutes
 (`platform.auth.verification_link_minutes`) and addressed by ULID and a hash of the email; it opens
@@ -179,6 +182,19 @@ opening it shows the account and the masked new address, and its button (POST) c
 sets `email_verified_at`, ends every other session, cycles the remember token and gives this
 browser a new session id. A taken address is stored and answered like a free one ([11](11-security.md)
 "Account enumeration").
+
+### Username change
+From `/settings/profile` (`PUT /settings/profile/username`, `UsernameChangeService`), with the current
+password typed in the same form and the registration username rules. Once per
+`platform.auth.username_change_days` (30, from `users.username_changed_at`; the first change is open at
+once); active and restricted accounts with a verified email may change, suspended ones cannot. The old
+name goes into `username_history`, held for `platform.auth.username_reservation_days` (90) against every
+other account; the releaser may take it back. During the hold `/u/{old}` answers 301 to the current name
+with `Cache-Control: no-store`, only when that profile would render for the viewer; otherwise the same
+404 as an unknown name. The change locks the account row, authorizes that row, and re-checks the hold
+after its update (specs/08 §6). Records `user.username_changed` in `audit_logs` and
+`auth.username_changed` in the security log; no email or in-app notice. Approved by the owner,
+2026-10-01 (P1-09).
 
 ### Account deletion
 Own-account deletion requires the current password entered inline on every submission, checked against the locked account row; it does not redirect through the password-confirmation page. Guesses share the `password-confirm` limiter. Active and restricted
@@ -209,7 +225,7 @@ After 30 days, the nightly pipeline anonymises the retained account and its Phas
   session-management UI (`/settings/security`); listing and counts skip rows past the idle lifetime.
 - Password change, email change and 2FA change invalidate all other sessions.
 - Sensitive actions re-confirm the password within 15 minutes (`auth.password_timeout`) through the
-  `password.confirm` page; the password, email and account-deletion forms ask for the current password inline instead.
+  `password.confirm` page; the password, email, username and account-deletion forms ask for the current password inline instead.
 
 ### Rate limits (named limiters)
 
@@ -228,7 +244,7 @@ After 30 days, the nightly pipeline anonymises the retained account and its Phas
 | `upload-intent` | 30 / hour | user |
 | `search` | 60 / min | ip |
 | `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
-| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form, email form and account-deletion form share it | user |
+| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form, email form, username form and account-deletion form share it | user |
 | `admin-search` | 60 / min (`platform.rate_limits.admin_search_per_minute`); admin user list and audit log share it, deferred rows count; a breach is a bare 429 shown inline | user |
 
 All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their

@@ -112,6 +112,22 @@ it('enforces CSRF on account deletion', function () {
     expect($user->refresh()->status)->toBe(UserStatus::Active);
 });
 
+it('rolls registration back when a username change releases the name during the insert', function () {
+    $owner = User::factory()->create();
+    $started = RegistrationGuard::startToken();
+    $this->travel((int) config('platform.auth.register_min_seconds') + 1)->seconds();
+    Event::listen('eloquent.created: '.User::class, function (User $user) use ($owner): void {
+        if ($user->username === 'changed_chief') {
+            UsernameHistory::factory()->create(['user_id' => $owner->id, 'username' => $user->username, 'released_at' => now()]);
+        }
+    });
+    expect(fn () => app(RegistrationService::class)->submit(
+        new RegistrationData('new@example.com', 'changed_chief', 'password'),
+        '', $started, '127.0.0.1',
+    ))->toThrow(ValidationException::class);
+    expect(User::query()->where('email', 'new@example.com')->exists())->toBeFalse();
+});
+
 it('rolls registration back when a permanent reservation appears during the insert', function () {
     $owner = User::factory()->create();
     $started = RegistrationGuard::startToken();

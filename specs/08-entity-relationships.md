@@ -179,7 +179,7 @@ remember-me; a fresh sign-in cancels it while preserving any still-effective san
 
 The anonymisation job is idempotent and logs to `audit_logs` without copying the removed PII.
 Cancellation and anonymisation serialize on the account so a cancelled request is never processed.
-Password-reset writes, reset completion and reset-token creation lock and reload the account, skipping tombstones. Registration checks permanent username reservations after insertion as well as before: an insert waiting for anonymisation must not claim the released handle.
+Password-reset writes, reset completion and reset-token creation lock and reload the account, skipping tombstones. Registration and username changes check held usernames (permanent and 90-day) after the write as well as before: an insert or update waiting for an anonymisation or another account's change must not claim the released handle.
 
 In-app notification writers use the same account lock and skip deleted accounts, so delayed
 notifications cannot recreate cleared rows. Media deletion is queued only after commit; all

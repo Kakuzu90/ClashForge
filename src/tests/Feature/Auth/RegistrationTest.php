@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Auth\Events\UserRegistered;
+use App\Domain\Auth\Models\UsernameHistory;
 use App\Domain\Auth\Notifications\RegistrationAttemptNotification;
 use App\Domain\Auth\Notifications\VerifyEmailNotification;
 use App\Domain\Users\Models\PrivacySettings;
@@ -112,6 +113,16 @@ it('counts deleted accounts\' usernames as taken', function () {
     User::factory()->create(['username' => 'chief'])->delete();
 
     $this->register(['username' => 'chief'])->assertSessionHasErrors('username');
+});
+
+it('refuses a name another account changed away from until its hold ends', function () {
+    UsernameHistory::factory()->create(['username' => 'chief', 'released_at' => now()->subDays((int) config('platform.auth.username_reservation_days'))->addMinute()]);
+
+    $this->register(['username' => 'chief'])->assertSessionHasErrors(['username' => 'That username is taken. Pick another.']);
+
+    $this->travel(2)->minutes();
+    $this->register(['username' => 'chief'])->assertSessionHasNoErrors();
+    expect(User::query()->where('username', 'chief')->exists())->toBeTrue();
 });
 
 it('refuses a failed Turnstile check, asking Cloudflare only once the rest is valid', function () {

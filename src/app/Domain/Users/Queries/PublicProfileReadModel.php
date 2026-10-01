@@ -53,6 +53,18 @@ class PublicProfileReadModel
     }
 
     /**
+     * The current username to send `/u/{old}` to after a change (FR-PROFILE-7), only when that
+     * profile would render for this viewer; otherwise null, so the old URL gets the same 404 and
+     * never links a hidden account to its old name (specs/11 "Account enumeration").
+     */
+    public function redirectFor(string $username, ?User $viewer): ?string
+    {
+        $owner = $this->users->renamedFrom($username);
+
+        return $owner !== null && $this->privacy->canView($viewer, $owner) ? $owner->username : null;
+    }
+
+    /**
      * `profile:{username}`, accepted only when it was built under the current version, so a stale
      * entry written after an invalidation is rebuilt instead of served.
      *

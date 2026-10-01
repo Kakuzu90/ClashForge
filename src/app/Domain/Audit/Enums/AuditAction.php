@@ -18,6 +18,7 @@ enum AuditAction: string implements HasLabelAndColor
     case SanctionLifted = 'sanction.lifted';
     case SanctionExpired = 'sanction.expired';
     case UserAnonymised = 'user.anonymised';
+    case UsernameChanged = 'user.username_changed';
 
     public function label(): string
     {
@@ -27,6 +28,7 @@ enum AuditAction: string implements HasLabelAndColor
             self::SanctionLifted => 'Sanction lifted',
             self::SanctionExpired => 'Sanction ended',
             self::UserAnonymised => 'Account anonymised',
+            self::UsernameChanged => 'Username changed',
         };
     }
 
@@ -36,6 +38,7 @@ enum AuditAction: string implements HasLabelAndColor
             self::RoleChanged => 'state-warning',
             self::SanctionApplied, self::UserAnonymised => 'state-danger',
             self::SanctionLifted, self::SanctionExpired => 'state-success',
+            self::UsernameChanged => 'state-info',
         };
     }
 }

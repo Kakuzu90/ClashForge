@@ -463,6 +463,9 @@ consequences; an inline current-password field and the danger button request del
 leaving the form for password confirmation. Password errors appear inline; the field clears after
 each request and is disabled while submitting. Suspended accounts see the explanation
 and an unavailable message, with no form; the ability comes from the server policy.
+*Profile:* avatar, then a Username flat card (current `@name`, the 30-day and 90-day rules, the new-name
+field and the current password; instead of the form, the date the next change opens, a link to
+confirm the email, or "unavailable while suspended"), then the profile form.
 *Security:* Password, Email address (the masked current address, a pending change with "Send the
 link again" and "Cancel the change", and the new-email form with the current password, which "Send the link again" uses too) and Where you're signed in, each a flat card. The email-change link lands on
 `Settings/EmailChangeConfirm`, shaped like the verification result page.

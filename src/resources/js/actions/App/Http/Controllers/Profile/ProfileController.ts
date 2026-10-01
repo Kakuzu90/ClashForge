@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Profile\ProfileController::show
-* @see app/Http/Controllers/Profile/ProfileController.php:20
+* @see app/Http/Controllers/Profile/ProfileController.php:21
 * @route '/u/{username}'
 */
 export const show = (args: { username: string | number } | [username: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Profile\ProfileController::show
-* @see app/Http/Controllers/Profile/ProfileController.php:20
+* @see app/Http/Controllers/Profile/ProfileController.php:21
 * @route '/u/{username}'
 */
 show.url = (args: { username: string | number } | [username: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -43,7 +43,7 @@ show.url = (args: { username: string | number } | [username: string | number ] |
 
 /**
 * @see \App\Http\Controllers\Profile\ProfileController::show
-* @see app/Http/Controllers/Profile/ProfileController.php:20
+* @see app/Http/Controllers/Profile/ProfileController.php:21
 * @route '/u/{username}'
 */
 show.get = (args: { username: string | number } | [username: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -53,7 +53,7 @@ show.get = (args: { username: string | number } | [username: string | number ] |
 
 /**
 * @see \App\Http\Controllers\Profile\ProfileController::show
-* @see app/Http/Controllers/Profile/ProfileController.php:20
+* @see app/Http/Controllers/Profile/ProfileController.php:21
 * @route '/u/{username}'
 */
 show.head = (args: { username: string | number } | [username: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({

@@ -31,6 +31,15 @@ class UserPolicy
         return $actor->id === $target->id && $actor->allowsAccountWrites();
     }
 
+    /**
+     * A verified email too: every change holds the old name for 90 days, so throwaway accounts
+     * must not churn through names (FR-PROFILE-7).
+     */
+    public function changeUsername(User $actor, User $target): bool
+    {
+        return $actor->id === $target->id && $actor->allowsAccountWrites() && $actor->hasVerifiedEmail();
+    }
+
     public function viewDangerZone(User $actor, User $target): bool
     {
         return $actor->id === $target->id && $target->deleted_at === null && $target->effectiveStatus()->canLogIn();

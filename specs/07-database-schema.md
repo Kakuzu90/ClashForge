@@ -61,8 +61,11 @@ tombstone name, and allow a null password only on a deleted, banned row.
 
 ### `username_history` [M]
 Holds released usernames so old profile URLs redirect and handles cannot be sniped instantly.
-Created with deletion reservations in P1-11; username changes use it in P1-09. A deletion
-reservation lasts forever and its profile URL returns 404; ordinary changes keep the 90-day rule.
+Created with deletion reservations in P1-11; username changes use it since P1-09. A deletion
+reservation lasts forever, holds the name against everyone and its profile URL returns 404. A
+changed-away name is held for `platform.auth.username_reservation_days` (90) against every account but
+the one that released it, and its URL redirects to that account's current name meanwhile (latest
+release wins).
 
 | Column | Type | Notes |
 |---|---|---|
@@ -644,6 +647,8 @@ the retention differs (audit: 2 years; moderation: indefinite).
   monthly partitions, which row triggers do not block.
 - Never holds an IP address, a token or a password in `before`, `after` or `context`: the admin
   viewer shows them as recorded.
+- A username change records `user.username_changed`, actor the account itself, with the username
+  before/after (P1-09).
 - Account anonymisation records `user.anonymised`, with status before/after and the command name,
   no removed profile fields or addresses; the actor is the console (P1-11).
 
