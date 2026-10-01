@@ -1,11 +1,15 @@
 <?php
 
+use App\Domain\Audit\Enums\AuditAction;
+use App\Domain\Audit\Enums\AuditSubject;
+use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Auth\Enums\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\Auth\CapturesSecurityLog;
 
-// specs/04 §1: roles change from the console only, and a change ends the account's sessions (§4).
+// specs/04 §1: roles change from the console only, and a change ends the account's sessions (§4)
+// and writes an audit entry (specs/11 "Broken authorization").
 
 uses(CapturesSecurityLog::class);
 
@@ -32,6 +36,22 @@ it('sets the role, ends the sessions, cycles the remember token and logs the cha
         ]);
 });
 
+it('writes an audit entry with the role before and after', function () {
+    $user = User::factory()->moderator()->create(['username' => 'chief']);
+
+    $this->artisan('platform:assign-role', ['username' => 'chief', 'role' => 'admin'])->assertSuccessful();
+
+    $entry = AuditLog::query()->sole();
+    expect($entry->action)->toBe(AuditAction::RoleChanged)
+        ->and($entry->auditable_type)->toBe(AuditSubject::User)
+        ->and($entry->auditable_id)->toBe($user->id)
+        ->and($entry->actor_id)->toBeNull()
+        ->and($entry->before)->toBe(['role' => 'moderator'])
+        ->and($entry->after)->toBe(['role' => 'admin'])
+        ->and($entry->context)->toBe(['via' => 'console'])
+        ->and($entry->ip_hash)->toBeNull();
+});
+
 it('grants super admin', function () {
     User::factory()->create(['username' => 'founder']);
 
@@ -47,7 +67,8 @@ it('changes nothing when the role is already set', function () {
     $this->artisan('platform:assign-role', ['username' => 'mod', 'role' => 'moderator'])->assertSuccessful();
 
     expect(DB::table('sessions')->where('user_id', $user->id)->count())->toBe(1)
-        ->and($this->securityEvents())->toBe([]);
+        ->and($this->securityEvents())->toBe([])
+        ->and(AuditLog::query()->count())->toBe(0);
 });
 
 it('rejects an unknown role and an unknown username', function () {

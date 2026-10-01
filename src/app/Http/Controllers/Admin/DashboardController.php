@@ -10,7 +10,7 @@ use Inertia\Response;
 
 /**
  * The admin landing page. Its panels (open reports, disputes, sign-ups, FR-ADMIN-5) arrive with
- * Admin v1 (P1-06).
+ * the admin dashboard (P1-13).
  */
 class DashboardController extends Controller
 {

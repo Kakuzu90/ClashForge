@@ -7,7 +7,7 @@ defineOptions({ inheritAttrs: false });
 const props = withDefaults(
     defineProps<{
         label: string;
-        type?: 'text' | 'email' | 'password' | 'search' | 'url' | 'tel' | 'number';
+        type?: 'text' | 'email' | 'password' | 'search' | 'url' | 'tel' | 'number' | 'date';
         hint?: string;
         error?: string;
         prefix?: string;

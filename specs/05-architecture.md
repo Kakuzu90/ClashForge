@@ -73,7 +73,7 @@ talks to it through **(a)** its public service classes, **(b)** its read-model/D
 | **GameAssets** | — (config + manifest, no tables) | `GameAssetResolver` (unit / TH / clan badge / league emblem → URL + accessible name), `GameAssetPolicy` flag | — (edge module). The only place Supercell assets are referenced ([18 §2](18-design-system.md)) |
 | **Notifications** | `notifications`, `notification_preferences` | `Notifier` (facade over channels), `NotificationReadModel` | Users |
 | **Moderation** | `reports`, `report_cases`, `moderation_actions`, `user_sanctions` | `ReportService`, `CaseService`, `SanctionService`, `Moderatable` contract | Users, Notifications, Audit |
-| **Audit** | `audit_logs` | `AuditLogger` | — |
+| **Audit** | `audit_logs` | `AuditLogger`, `AuditLogQuery` (admin viewer read model) | — |
 | **Search** | (no tables; owns `search_documents` materialised view) | `SearchService` (interface), `IndexableContract` | reads other modules' read models |
 | **Admin** | — | Admin controllers, Inertia pages and Gates only | all modules' public surfaces |
 

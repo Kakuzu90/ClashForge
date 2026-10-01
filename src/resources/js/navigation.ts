@@ -1,5 +1,5 @@
 import { home } from '@/routes';
-import { dashboard as adminDashboard } from '@/routes/admin';
+import { audit as adminAudit, dashboard as adminDashboard } from '@/routes/admin';
 import { edit as privacySettings } from '@/routes/settings/privacy';
 import { edit as profileSettings } from '@/routes/settings/profile';
 import { edit as securitySettings } from '@/routes/settings/security';
@@ -67,3 +67,22 @@ export const settingsNav: SettingsLink[] = [
     { key: 'privacy', label: 'Privacy', href: () => privacySettings().url },
     { key: 'security', label: 'Security', href: () => securitySettings().url },
 ];
+
+export interface AdminNavItem {
+    key: string;
+    label: string;
+    href: () => string;
+    /** Shared `auth.can` ability required to see the item. */
+    can: string;
+}
+
+// specs/18 §6 admin nav: Dashboard · Reports · Disputes · Users · Content · Media · Marketplace · Logs.
+// Each section joins when its page ships (Users P1-12, Reports P3-06, Disputes P2-03).
+export const adminNav: AdminNavItem[] = [
+    { key: 'dashboard', label: 'Dashboard', href: () => adminDashboard().url, can: 'accessAdmin' },
+    { key: 'logs', label: 'Logs', href: () => adminAudit().url, can: 'viewAuditLog' },
+];
+
+export function visibleAdminNav(items: AdminNavItem[], can: Record<string, boolean>): (AdminNavItem & { url: string })[] {
+    return items.filter((item) => can[item.can] === true).map((item) => ({ ...item, url: item.href() }));
+}

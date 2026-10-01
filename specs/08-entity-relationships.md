@@ -80,6 +80,7 @@
 | user → moderation_actions (as actor) | 1:N | user | restrict |
 | user → user_sanctions | 1:N | user | restrict |
 | anything → audit_logs | 1:N polymorphic | — | never deleted |
+| user → audit_logs (as actor) | 1:N | user | restrict |
 
 ## 3. The three relationships that carry the product
 

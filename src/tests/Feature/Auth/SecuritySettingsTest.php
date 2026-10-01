@@ -244,6 +244,8 @@ it('validates the new password', function (array $input, string $field) {
 ]);
 
 it('limits current-password guesses on the password form', function () {
+    // Frozen, so the wait in the message cannot tick from 60 to 59 between requests.
+    $this->freezeTime();
     $limit = (int) config('platform.auth.password_confirm_per_minute');
     $payload = ['current_password' => 'wrong-guess', 'password' => 'a-brand-new-passphrase', 'password_confirmation' => 'a-brand-new-passphrase'];
 
@@ -289,6 +291,8 @@ it('answers an expired Inertia write with a 303 and a JSON call with a 401', fun
 });
 
 it('limits password guesses on the confirm page, sharing the password form\'s bucket', function () {
+    // Frozen, so the wait in the message cannot tick from 60 to 59 between requests.
+    $this->freezeTime();
     $limit = (int) config('platform.auth.password_confirm_per_minute');
 
     for ($i = 0; $i < $limit; $i++) {

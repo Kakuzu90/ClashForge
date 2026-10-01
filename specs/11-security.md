@@ -86,10 +86,13 @@ mechanism and the test that proves it.
 - Role changes are only possible through a dedicated service that (a) requires super admin,
   (b) requires 2FA on the target account for staff roles, (c) writes an audit log, (d) cannot be
   invoked from a web form that takes the role from the request without an explicit allowlist.
-  Until P1-06 and Phase 2 land, (c) is a `security` log entry (`auth.role_changed`) and (b) is not
-  yet enforced; each task adds its check.
+  (c) is the `role.changed` `audit_logs` entry, written in the same transaction, plus the
+  `security` log line (`auth.role_changed`) that feeds the role-change alert. (b) is not yet
+  enforced; Phase 2 adds it.
 - `users.role` is **guarded** against mass assignment and is not in `$fillable`.
-- Admin routes sit behind a role middleware **and** a Gate check in each controller action.
+- Admin routes sit behind a role middleware **and** a Gate check in each controller action. An
+  admin Form Request also authorizes with the Gate, so a request without the ability gets a 403
+  before any validation feedback (e.g. `/admin/audit` filters).
 - No impersonation feature exists.
 - **Test:** a matrix test iterates every role × every admin ability and asserts the permission
   matrix in [04](04-roles-and-permissions.md) exactly.

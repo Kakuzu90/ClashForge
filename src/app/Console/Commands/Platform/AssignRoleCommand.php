@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Platform;
 
+use App\Domain\Audit\Data\AuditActorData;
 use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Services\RoleAssignmentService;
 use App\Models\User;
@@ -35,7 +36,7 @@ class AssignRoleCommand extends Command
             return self::FAILURE;
         }
 
-        $changed = $roles->assign($user, $role, actor: 'console');
+        $changed = $roles->assign($user, $role, AuditActorData::console());
 
         $this->components->info($changed ? "Role set to {$role->value}; the account's sessions were ended." : "Already {$role->value}; nothing changed.");
         Log::info('platform.assign_role', ['user' => $user->ulid, 'role' => $role->value, 'changed' => $changed]);

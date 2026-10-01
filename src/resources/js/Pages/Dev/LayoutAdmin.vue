@@ -10,7 +10,7 @@ defineOptions({ layout: AdminLayout });
         name="Admin"
         :notes="[
             'Intentionally plain: body font, dense, no lift or glow',
-            'Optional admin nav column via the nav slot',
+            'Admin nav column from the ability flags; folds behind Menu below 768px',
             'Footer disclaimer still present',
         ]"
     />

@@ -108,6 +108,11 @@ return [
         'global_write_per_minute' => 120,
     ],
 
+    'admin' => [
+        // Rows per page in the admin tables, e.g. the audit log (FR-ADMIN-4).
+        'per_page' => 50,
+    ],
+
     'security_log' => [
         // auth.permission_denied lines per account (or IP) and route per minute (specs/11 §3).
         'denials_per_minute' => 20,

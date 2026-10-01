@@ -1,5 +1,11 @@
 declare namespace App {
 namespace Domain {
+namespace Audit {
+namespace Enums {
+export type AuditAction = 'role.changed';
+export type AuditSubject = 'user';
+}
+}
 namespace Auth {
 namespace Data {
 export type SessionData = {
@@ -171,6 +177,44 @@ export type AccountStatusPageData = {
 status: App.Domain.Auth.Enums.UserStatus,
 reason: string | null,
 endsAt: string | null,
+};
+}
+namespace Admin {
+export type AuditLogEntryData = {
+id: number,
+action: string,
+actionLabel: string,
+actorUsername: string | null,
+actorRoleLabel: string | null,
+actorVia: string | null,
+subjectLabel: string,
+subjectName: string | null,
+before: Record<string, any> | null,
+after: Record<string, any> | null,
+context: Record<string, any>,
+userAgent: string | null,
+requestId: string | null,
+createdAt: string,
+};
+export type AuditLogFiltersData = {
+actor: string | null,
+target: string | null,
+action: string | null,
+from: string | null,
+to: string | null,
+};
+export type AuditLogListData = {
+entries: App.Http.Data.Admin.AuditLogEntryData[],
+newerCursor: string | null,
+olderCursor: string | null,
+};
+export type AuditLogPageData = {
+filters: App.Http.Data.Admin.AuditLogFiltersData,
+actions: App.Http.Data.Admin.FilterOptionData[],
+};
+export type FilterOptionData = {
+value: string,
+label: string,
 };
 }
 namespace Auth {

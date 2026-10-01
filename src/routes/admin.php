@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -7,4 +8,5 @@ use Illuminate\Support\Facades\Route;
 // action still runs its Gate (specs/11 "Broken authorization").
 Route::middleware(['auth', 'account.active', 'can:access-admin'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
+    Route::get('/audit', AuditLogController::class)->name('audit');
 });

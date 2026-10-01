@@ -97,6 +97,8 @@ it('refuses a reset link the second time', function () {
 
 describe('named limiters (specs/04 §4)', function () {
     it('stops sign-in attempts after the per-minute limit, even with the right password', function () {
+        // Frozen, so the wait in the message cannot tick down between requests.
+        $this->freezeTime();
         $limit = (int) config('platform.auth.login_per_minute');
 
         foreach (range(1, $limit) as $attempt) {
@@ -149,6 +151,8 @@ describe('named limiters (specs/04 §4)', function () {
     });
 
     it('limits reset-link requests per ip and email', function () {
+        // Frozen, so the wait in the message cannot tick down between requests.
+        $this->freezeTime();
         Notification::fake();
 
         foreach (range(1, (int) config('platform.auth.password_reset_per_hour')) as $request) {

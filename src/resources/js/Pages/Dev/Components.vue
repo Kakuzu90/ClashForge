@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AdminDiffViewer from '@/Components/admin/AdminDiffViewer.vue';
+import AdminFilterBar from '@/Components/admin/AdminFilterBar.vue';
+import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
@@ -84,6 +87,21 @@ const menuItems: MenuItem[] = [
     { key: 'third', label: 'Another button item' },
 ];
 const pillTab = ref('second');
+const day = ref('2026-10-01');
+interface SampleRow {
+    id: number;
+    name: string;
+    status: string;
+}
+const tableColumns: AdminColumn[] = [
+    { key: 'name', label: 'Name', class: 'w-48' },
+    { key: 'status', label: 'Status' },
+];
+const tableRows: SampleRow[] = [
+    { id: 1, name: 'First row', status: 'Open' },
+    { id: 2, name: 'Second row', status: 'Closed' },
+];
+const filterText = ref('');
 const { push } = useToast();
 
 // Specimens report their click, so the gallery also proves each variant's handler fires.
@@ -108,6 +126,7 @@ const sections = [
     'Progress',
     'Game assets',
     'Empty state',
+    'Admin',
 ];
 const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 </script>
@@ -165,6 +184,7 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiInput label="Error" model-value="bad value" error="This value is not valid." />
                     <UiInput label="Disabled" model-value="Cannot edit" disabled />
                     <UiInput label="Read only" model-value="Read only value" readonly />
+                    <UiInput v-model="day" label="Date" type="date" hint="Native date picker." />
                     <UiTextarea v-model="bio" label="Textarea with counter" :maxlength="160" counter class="sm:col-span-2" />
                     <UiSelect v-model="pickedCategory" label="Select (native)" :options="categories" placeholder="Choose a category" />
                     <UiSelect
@@ -414,6 +434,34 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                         </template>
                     </UiEmptyState>
                 </UiCard>
+            </section>
+            <section :id="anchor('Admin')" aria-labelledby="h-admin" class="font-body">
+                <h2 id="h-admin" class="font-display text-h1">Admin</h2>
+                <p class="mt-2 text-sm text-fg-secondary">Plain on purpose: body font, small radius, no lift (specs/18 §4).</p>
+                <div class="mt-4 flex flex-col gap-6">
+                    <AdminFilterBar label="Sample filters" can-clear @apply="clicked('Apply')" @clear="clicked('Clear')">
+                        <UiInput v-model="filterText" label="Filter field" />
+                    </AdminFilterBar>
+                    <AdminTable
+                        :columns="tableColumns"
+                        :rows="tableRows"
+                        :row-key="(row: SampleRow) => row.id"
+                        caption="Table with expandable rows"
+                        expandable
+                    >
+                        <template #detail="{ row }">
+                            <p class="text-sm text-fg-secondary">Detail for {{ row.name }}.</p>
+                        </template>
+                    </AdminTable>
+                    <AdminTable :columns="tableColumns" :rows="[]" :row-key="() => 0" caption="Table loading" loading :skeleton-rows="2" />
+                    <AdminTable :columns="tableColumns" :rows="[]" :row-key="() => 0" caption="Table empty">
+                        <template #empty>No rows match.</template>
+                    </AdminTable>
+                    <AdminDiffViewer
+                        :before="{ role: 'user', note: 'kept', removed: true }"
+                        :after="{ role: 'moderator', note: 'kept', added: [1, 2] }"
+                    />
+                </div>
             </section>
         </main>
     </div>

@@ -610,11 +610,22 @@ Everything privileged or ownership-changing. Append-only; a separate table from
 `moderation_actions` because the audiences differ (compliance/forensics vs moderator workflow) and
 the retention differs (audit: 2 years; moderation: indefinite).
 
-`id (bigserial)`, `actor_id null FK users`, `actor_role`, `action (varchar 60)`,
+`id (bigserial)`, `actor_id null FK users` (`ON DELETE RESTRICT`), `actor_role null`, `action (varchar 60)`,
 `auditable_type/auditable_id`, `before jsonb null`, `after jsonb null`, `context jsonb`,
 `ip_hash`, `user_agent`, `request_id`, `created_at`.
-**Indexes:** `(auditable_type, auditable_id, created_at DESC)`; `(actor_id, created_at DESC)`;
-`(action, created_at DESC)`. Partition by month after year one.
+- A null actor is the console or the scheduler; `context.via` names which (`console`), and
+  `actor_role` is null too. Staff who acted are anonymised, never deleted, so the FK restricts.
+- `auditable_type` is a short subject name (`App\Domain\Audit\Enums\AuditSubject`, e.g. `user`),
+  not a class name, so the log survives refactors and Audit stays a leaf module.
+- Append-only in the database too: a trigger rejects `UPDATE` and `DELETE` (Postgres also
+  `TRUNCATE`; SQLite has the same row triggers for the test suite). The two-year retention drops
+  monthly partitions, which row triggers do not block.
+- Never holds an IP address, a token or a password in `before`, `after` or `context`: the admin
+  viewer shows them as recorded.
+
+**Indexes:** `(auditable_type, auditable_id, created_at)`; `(actor_id, created_at)`;
+`(action, created_at)`, ascending (Postgres scans them backwards for newest-first). The viewer pages
+by `id`, which follows insertion order. Partition by month after year one.
 
 ---
 

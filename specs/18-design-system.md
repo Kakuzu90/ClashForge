@@ -254,7 +254,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 |---|---|---|
 | **Button** | primary (gold), secondary (surface+border), ghost, danger, success | default, hover, active(compressed), focus-visible, disabled, loading(spinner, width-locked) |
 | | sizes: sm 32px, md 40px, lg 48px; `block`, `icon-only` (square, aria-label required) | |
-| **Input / Textarea** | default, with-prefix, with-suffix, with-counter | default, focus, error, disabled, readonly |
+| **Input / Textarea** | default, with-prefix, with-suffix, with-counter, date (native picker) | default, focus, error, disabled, readonly |
 | **Select** | native-styled, searchable (Vue combobox) | same |
 | **Checkbox / Radio / Toggle** | — | default, checked, indeterminate, focus, disabled |
 | **Pill / Tag** | neutral, category (per-category hue), th, status, removable | default, hover, selected |
@@ -322,6 +322,10 @@ DataTable (sortable, filterable, bulk-select, sticky header), FilterBar, DetailP
 ActionPanel (with mandatory reason field), AuditTrailList, DiffViewer (before/after JSON),
 EvidenceGallery, AssignmentControl, PriorityBadge, SlaIndicator.
 These use body font, `--radius-sm`, no lift, no glow, denser spacing (`--space-2` rhythm).
+Built so far (P1-06): `AdminTable` (sticky header inside its own keyboard-scrollable region,
+skeleton rows that keep the column classes, expandable detail rows; sorting and bulk-select join
+when a table needs them), `AdminFilterBar` (a GET search form with Apply and Clear),
+`AdminDiffViewer` (each change spelled out in words, colour only backs it up) and `AdminNav`.
 
 ## 5. Layout
 
@@ -438,10 +442,14 @@ stored `show_activity` and `allow_marketplace_contact` stay off the form until P
 ### Admin (`/admin/*`)
 Left nav (Dashboard · Reports · Disputes · Users · Content · Media · Marketplace · Logs) →
 DataTable views → detail/action panels. No game styling, no animation beyond 120ms fades,
-information-dense, keyboard-first.
+information-dense, keyboard-first. Each nav item appears once its page exists and the viewer
+holds its ability (`auth.can`, `adminNav` in `navigation.ts`); the longest matching link is the
+current one.
 *Empty:* "No open cases" — a genuinely good state, presented as such.
-*Loading:* table row skeletons that preserve column widths.
-*Error:* inline error with the request id, for support correlation.
+*Loading:* table row skeletons that preserve column widths. A table's rows arrive as a deferred
+prop, so the first response carries the filters and the skeleton shows until the rows load.
+*Error:* inline error with the request id, for support correlation (`useVisitError`: a 5xx or a
+network failure becomes an inline alert with the `X-Request-Id` instead of Inertia's error modal).
 
 ## 7. Motion
 
