@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import AdminActionPanel from '@/Components/admin/AdminActionPanel.vue';
 import AdminAuditTrailList from '@/Components/admin/AdminAuditTrailList.vue';
 import AdminDiffViewer from '@/Components/admin/AdminDiffViewer.vue';
 import AdminFilterBar from '@/Components/admin/AdminFilterBar.vue';
+import AdminSanctionHistory from '@/Components/admin/AdminSanctionHistory.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
@@ -103,6 +105,45 @@ const tableRows: SampleRow[] = [
     { id: 2, name: 'Second row', status: 'Closed' },
 ];
 const filterText = ref('');
+const sanctionOptions: App.Http.Data.Admin.SanctionFormData = {
+    reasons: [
+        { value: 'spam', label: 'Spam' },
+        { value: 'other', label: 'Other' },
+    ],
+    maxDays: 90,
+    publicReasonMax: 255,
+    noteMax: 2000,
+};
+const sanctionSamples: App.Domain.Moderation.Data.SanctionData[] = [
+    {
+        typeLabel: 'Suspension',
+        reasonLabel: 'Spam',
+        publicReason: 'Message shown to the account holder.',
+        internalNote: 'Note for staff.',
+        issuedBy: 'sample_admin',
+        startsAt: '2026-10-01T10:00:00+00:00',
+        endsAt: '2026-10-08T10:00:00+00:00',
+        state: 'active',
+        stateLabel: 'Active',
+        liftedBy: null,
+        liftedAt: null,
+        liftNote: null,
+    },
+    {
+        typeLabel: 'Suspension',
+        reasonLabel: 'Other',
+        publicReason: 'An earlier message.',
+        internalNote: 'An earlier note.',
+        issuedBy: 'sample_admin',
+        startsAt: '2026-09-01T10:00:00+00:00',
+        endsAt: '2026-09-04T10:00:00+00:00',
+        state: 'lifted',
+        stateLabel: 'Lifted',
+        liftedBy: 'sample_admin',
+        liftedAt: '2026-09-02T10:00:00+00:00',
+        liftNote: 'Why it was lifted.',
+    },
+];
 const trailEntries: App.Http.Data.Admin.AuditTrailEntryData[] = [
     {
         id: 2,
@@ -480,6 +521,20 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <AdminTable :columns="tableColumns" :rows="[]" :row-key="() => 0" caption="Table empty">
                         <template #empty>No rows match.</template>
                     </AdminTable>
+                    <AdminActionPanel
+                        ulid="01hzzzzzzzzzzzzzzzzzzzzzzz"
+                        username="sample_user"
+                        :abilities="{ suspend: true, ban: true, lift: true, activeType: 'suspension' }"
+                        :options="sanctionOptions"
+                    />
+                    <AdminActionPanel
+                        ulid="01hzzzzzzzzzzzzzzzzzzzzzzz"
+                        username="sample_user"
+                        :abilities="{ suspend: false, ban: false, lift: false, activeType: null }"
+                        :options="sanctionOptions"
+                    />
+                    <AdminSanctionHistory :sanctions="sanctionSamples" />
+                    <AdminSanctionHistory :sanctions="[]" />
                     <AdminAuditTrailList :entries="trailEntries" />
                     <AdminAuditTrailList :entries="[]" />
                     <AdminDiffViewer

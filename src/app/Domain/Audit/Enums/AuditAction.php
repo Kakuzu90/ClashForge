@@ -14,11 +14,17 @@ enum AuditAction: string implements HasLabelAndColor
     use EnumHelpers;
 
     case RoleChanged = 'role.changed';
+    case SanctionApplied = 'sanction.applied';
+    case SanctionLifted = 'sanction.lifted';
+    case SanctionExpired = 'sanction.expired';
 
     public function label(): string
     {
         return match ($this) {
             self::RoleChanged => 'Role changed',
+            self::SanctionApplied => 'Sanction applied',
+            self::SanctionLifted => 'Sanction lifted',
+            self::SanctionExpired => 'Sanction ended',
         };
     }
 
@@ -26,6 +32,8 @@ enum AuditAction: string implements HasLabelAndColor
     {
         return match ($this) {
             self::RoleChanged => 'state-warning',
+            self::SanctionApplied => 'state-danger',
+            self::SanctionLifted, self::SanctionExpired => 'state-success',
         };
     }
 }

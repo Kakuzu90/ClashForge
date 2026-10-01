@@ -1,7 +1,10 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import suspension from './suspension'
+import ban from './ban'
+import sanction from './sanction'
 /**
 * @see \App\Http\Controllers\Admin\UserController::index
-* @see app/Http/Controllers/Admin/UserController.php:35
+* @see app/Http/Controllers/Admin/UserController.php:39
 * @route '/admin/users'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +19,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\UserController::index
-* @see app/Http/Controllers/Admin/UserController.php:35
+* @see app/Http/Controllers/Admin/UserController.php:39
 * @route '/admin/users'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +28,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\UserController::index
-* @see app/Http/Controllers/Admin/UserController.php:35
+* @see app/Http/Controllers/Admin/UserController.php:39
 * @route '/admin/users'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +38,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\UserController::index
-* @see app/Http/Controllers/Admin/UserController.php:35
+* @see app/Http/Controllers/Admin/UserController.php:39
 * @route '/admin/users'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +48,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\UserController::show
-* @see app/Http/Controllers/Admin/UserController.php:76
+* @see app/Http/Controllers/Admin/UserController.php:80
 * @route '/admin/users/{ulid}'
 */
 export const show = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -60,7 +63,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\UserController::show
-* @see app/Http/Controllers/Admin/UserController.php:76
+* @see app/Http/Controllers/Admin/UserController.php:80
 * @route '/admin/users/{ulid}'
 */
 show.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -87,7 +90,7 @@ show.url = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Admin\UserController::show
-* @see app/Http/Controllers/Admin/UserController.php:76
+* @see app/Http/Controllers/Admin/UserController.php:80
 * @route '/admin/users/{ulid}'
 */
 show.get = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +100,7 @@ show.get = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Admin\UserController::show
-* @see app/Http/Controllers/Admin/UserController.php:76
+* @see app/Http/Controllers/Admin/UserController.php:80
 * @route '/admin/users/{ulid}'
 */
 show.head = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -108,6 +111,9 @@ show.head = (args: { ulid: string | number } | [ulid: string | number ] | string
 const users = {
     index: Object.assign(index, index),
     show: Object.assign(show, show),
+    suspension: Object.assign(suspension, suspension),
+    ban: Object.assign(ban, ban),
+    sanction: Object.assign(sanction, sanction),
 }
 
 export default users

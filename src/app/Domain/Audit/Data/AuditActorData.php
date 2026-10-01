@@ -3,7 +3,7 @@
 namespace App\Domain\Audit\Data;
 
 /**
- * Who acted. A null id is the console or the scheduler; `via` says which (e.g. `console`).
+ * Who acted. A null id is the console or the scheduler; `via` says which (`console`, `scheduler`).
  */
 final readonly class AuditActorData
 {
@@ -16,5 +16,10 @@ final readonly class AuditActorData
     public static function console(): self
     {
         return new self(id: null, role: null, via: 'console');
+    }
+
+    public static function scheduler(): self
+    {
+        return new self(id: null, role: null, via: 'scheduler');
     }
 }

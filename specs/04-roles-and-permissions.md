@@ -26,7 +26,7 @@ says otherwise (e.g. moderators cannot suspend users; admins cannot change roles
 | `active` | yes | yes | yes | Normal |
 | `restricted` | yes | yes | no publishing/commenting/messaging | Soft sanction, time-boxed |
 | `suspended` | yes | own data only | no | Every page except the notice, logout, `/settings/*` and `/notifications` redirects to a suspension notice with reason and end date; the appeal link is added with appeals (P5-02) |
-| `banned` | no | no | no | Content hidden (the public profile 404s), tags released after 30 days |
+| `banned` | no | no | no | Every session ends and the remember token cycles when the ban is applied; content hidden (the public profile 404s), tags released after 30 days |
 | `pending_deletion` | yes (cancels deletion) | yes | no | 30-day window; the public profile 404s |
 
 Additional flags gating capabilities: `email_verified_at` (required for any write),

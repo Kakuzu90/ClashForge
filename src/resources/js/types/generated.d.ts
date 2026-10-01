@@ -2,7 +2,7 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired';
 export type AuditSubject = 'user';
 }
 }
@@ -107,6 +107,35 @@ export type MediaKind = 'image' | 'video';
 export type MediaStatus = 'pending' | 'uploaded' | 'processing' | 'ready' | 'failed' | 'quarantined' | 'deleting';
 export type MediaVisibility = 'public' | 'private';
 export type VariantName = 'thumb' | 'card' | 'full' | 'poster' | 'video_720p';
+}
+}
+namespace Moderation {
+namespace Data {
+export type SanctionAbilitiesData = {
+suspend: boolean,
+ban: boolean,
+lift: boolean,
+activeType: string | null,
+};
+export type SanctionData = {
+typeLabel: string,
+reasonLabel: string,
+publicReason: string,
+internalNote: string,
+issuedBy: string | null,
+startsAt: string,
+endsAt: string | null,
+state: string,
+stateLabel: string,
+liftedBy: string | null,
+liftedAt: string | null,
+liftNote: string | null,
+};
+}
+namespace Enums {
+export type ModerationActionType = 'hide' | 'unhide' | 'remove' | 'restore' | 'warn' | 'restrict' | 'suspend' | 'ban' | 'lift' | 'unban' | 'dismiss' | 'escalate' | 'transfer_ownership' | 'approve_seller' | 'reject_listing';
+export type ReasonCode = 'account_trading' | 'scam' | 'false_ownership' | 'nsfw' | 'hate' | 'harassment' | 'impersonation' | 'stolen_content' | 'off_platform_payment' | 'spam' | 'wrong_category' | 'other';
+export type SanctionType = 'warning' | 'restriction' | 'suspension' | 'ban';
 }
 }
 namespace Users {
@@ -228,6 +257,9 @@ displayName: string | null,
 avatarUrl: string | null,
 auditTrail: App.Http.Data.Admin.AuditTrailEntryData[],
 moreAuditEntries: boolean,
+sanctions: App.Domain.Moderation.Data.SanctionAbilitiesData,
+sanctionHistory: App.Domain.Moderation.Data.SanctionData[],
+sanctionForm: App.Http.Data.Admin.SanctionFormData,
 };
 export type AuditLogEntryData = {
 id: number,
@@ -274,6 +306,12 @@ createdAt: string,
 export type FilterOptionData = {
 value: string,
 label: string,
+};
+export type SanctionFormData = {
+reasons: App.Http.Data.Admin.FilterOptionData[],
+maxDays: number,
+publicReasonMax: number,
+noteMax: number,
 };
 }
 namespace Auth {

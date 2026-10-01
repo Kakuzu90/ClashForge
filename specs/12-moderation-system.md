@@ -148,8 +148,16 @@ below 70% precision is tuned or disabled. Rules live in config, not code.
 | Suspension | Admin+ | 1–90 days | Login permitted, everything hidden, content hidden, suspension notice (appeal link from P5-02) |
 | Ban | Admin+ | Permanent | No login. Content hidden. CoC tags released after 30 days. Email + IP hash recorded for evasion detection |
 
-- All sanctions write `user_sanctions` + `moderation_actions` + `audit_logs`.
-- Expiry is handled by a scheduled job that lifts sanctions and notifies the user.
+- All sanctions write `user_sanctions` + `moderation_actions` + `audit_logs`, and set
+  `users.status` through Auth in the same transaction, so a sanction applies on the next request.
+- An account has at most one active suspension or ban: a new suspension or a ban replaces an
+  active suspension (the old one is lifted, noted "Replaced by a new …"); a banned account cannot
+  be suspended or banned again until the ban is lifted. Pending-deletion and deleted accounts are
+  refused until account deletion (P1-11) defines how the two interact.
+- A ban ends every session of the account and cycles its remember token.
+- Expiry is handled by a scheduled command (`moderation:expire-sanctions`) that clears the status
+  of accounts past their end, writes a `sanction.expired` audit entry with the scheduler as actor,
+  and notifies the user once. The per-request status check already treats them as ended.
 - Lifting a sanction requires a reason and is itself audited.
 - **Ban evasion:** new accounts matching a banned user's email domain pattern, IP hash or verified
   CoC tag are flagged for review, not auto-banned (shared IPs are common in this audience, and

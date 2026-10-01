@@ -87,7 +87,7 @@ for a full temp volume does not.
 | Job | Trigger | Notes |
 |---|---|---|
 | `EvaluateAutoModerationJob` | `ReportFiled`, content created | Runs the rule set, may auto-hide and raise priority |
-| `ExpireSanctionsJob` | Every 15 min | Lifts expired restrictions/suspensions, notifies |
+| `moderation:expire-sanctions` (command, runs inline) | Every 15 min | Ends expired restrictions/suspensions, notifies once; only picks accounts whose status is still set |
 | `EscalateAgingCasesJob` | Hourly | Raises priority on SLA-breaching cases, alerts staff |
 | `DetectAnomaliesJob` | Nightly | Mass-reporting rings, review rings, interaction spikes, ban-evasion candidates |
 | `ReleaseBannedUserTagsJob` | Nightly | Releases tags 30 days after a ban |
@@ -111,7 +111,7 @@ for a full temp volume does not.
 * / 5 min    coc:sync-accounts            (withoutOverlapping, onOneServer)
 * / 5 min    platform:check-health
 * / 15 min   bases:recompute-trending
-* / 15 min   moderation:expire-sanctions
+* / 15 min   moderation:expire-sanctions   (at :07, :22, :37, :52, so never at :00)
 hourly :05   coc:sync-clans               (only tracked clans)
 hourly :10   bases:aggregate-metrics       (views + copies)
 hourly :20   media:sweep-orphans

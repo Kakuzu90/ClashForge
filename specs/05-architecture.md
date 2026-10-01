@@ -72,7 +72,7 @@ talks to it through **(a)** its public service classes, **(b)** its read-model/D
 | **Media** | `media`, `media_variants` | `UploadIntentService`, `MediaAttachmentService`, `MediaReadService` (status and variant URLs by media id), `MediaUrlResolver` | — (edge module) |
 | **GameAssets** | — (config + manifest, no tables) | `GameAssetResolver` (unit / TH / clan badge / league emblem → URL + accessible name), `GameAssetPolicy` flag | — (edge module). The only place Supercell assets are referenced ([18 §2](18-design-system.md)) |
 | **Notifications** | `notifications`, `notification_preferences` | `Notifier` (facade over channels), `NotificationReadModel` | Users |
-| **Moderation** | `reports`, `report_cases`, `moderation_actions`, `user_sanctions` | `ReportService`, `CaseService`, `SanctionService`, `Moderatable` contract | Users, Notifications, Audit |
+| **Moderation** | `reports`, `report_cases`, `moderation_actions`, `user_sanctions` | `ReportService`, `CaseService`, `SanctionService`, `SanctionHistoryQuery`, `Moderatable` contract | Auth (`UserStatusService` sets the status), Users, Notifications, Audit |
 | **Audit** | `audit_logs` | `AuditLogger`, `AuditLogQuery` (admin viewer read model) | — |
 | **Search** | (no tables; owns `search_documents` materialised view) | `SearchService` (interface), `IndexableContract` | reads other modules' read models |
 | **Admin** | — | Admin controllers, Inertia pages and Gates only | all modules' public surfaces |
@@ -109,7 +109,7 @@ Domain events published by modules and consumed elsewhere:
 | `MediaReady` / `MediaFailed` | Media | Bases, PlayerAccounts, Marketplace, Users (`MediaReady` on an avatar: forget the cached profile) |
 | `MediaRetriesExhausted` | Media | Notifications (owner: re-upload needed) |
 | `ReportFiled` | Moderation | Notifications (staff), Metrics |
-| `SanctionApplied` | Moderation | Auth (status change), Notifications, Audit, Search (de-index) |
+| `SanctionApplied` / `SanctionLifted` | Moderation | Notifications (sanction emails; sent by Moderation's listener until Notifications v1), Search (de-index). Held until commit. The status change (Auth) and the audit entry are written inside `SanctionService`'s transaction, not by listeners |
 | `RecruitmentApplicationSubmitted` | Recruitment | Notifications |
 | `OrderStatusChanged` | Marketplace | Notifications, Audit |
 

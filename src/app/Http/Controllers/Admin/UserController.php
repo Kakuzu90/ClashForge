@@ -8,6 +8,9 @@ use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Enums\StaffAbility;
 use App\Domain\Auth\Enums\UserStatus;
 use App\Domain\Auth\Queries\AdminUserQuery;
+use App\Domain\Moderation\Enums\ReasonCode;
+use App\Domain\Moderation\Queries\SanctionHistoryQuery;
+use App\Domain\Moderation\Services\SanctionService;
 use App\Domain\Users\Queries\ProfileReadModel;
 use App\Http\Controllers\Controller;
 use App\Http\Data\Admin\AdminUserFiltersData;
@@ -16,6 +19,7 @@ use App\Http\Data\Admin\AdminUserListData;
 use App\Http\Data\Admin\AdminUserShowPageData;
 use App\Http\Data\Admin\AuditTrailEntryData;
 use App\Http\Data\Admin\FilterOptionData;
+use App\Http\Data\Admin\SanctionFormData;
 use App\Http\Requests\Admin\AdminUserFilterRequest;
 use App\Models\User;
 use App\Support\Privacy\IpHash;
@@ -73,7 +77,7 @@ class UserController extends Controller
         ], new PageMeta(title: 'Users', noindex: true));
     }
 
-    public function show(Request $request, string $ulid, AdminUserQuery $users, ProfileReadModel $profiles, AuditLogQuery $audit): Response
+    public function show(Request $request, string $ulid, AdminUserQuery $users, ProfileReadModel $profiles, AuditLogQuery $audit, SanctionService $sanctions, SanctionHistoryQuery $history): Response
     {
         Gate::authorize(StaffAbility::ViewUsers->value);
 
@@ -98,6 +102,14 @@ class UserController extends Controller
             avatarUrl: $profiles->avatarUrl($user),
             auditTrail: array_map(AuditTrailEntryData::fromRecord(...), $trail->entries),
             moreAuditEntries: $trail->olderCursor !== null,
+            sanctions: $sanctions->abilities($viewer, $user),
+            sanctionHistory: $history->forUser($user, (int) config('platform.admin.audit_trail_limit')),
+            sanctionForm: new SanctionFormData(
+                reasons: array_map(fn (ReasonCode $reason) => new FilterOptionData($reason->value, $reason->label()), ReasonCode::cases()),
+                maxDays: (int) config('moderation.sanctions.suspension_max_days'),
+                publicReasonMax: (int) config('moderation.sanctions.public_reason_max'),
+                noteMax: (int) config('moderation.sanctions.note_max'),
+            ),
         );
 
         return PageMeta::page('Admin/Users/Show', $page->toArray(), new PageMeta(title: $user->username, noindex: true));

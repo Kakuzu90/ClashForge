@@ -10,6 +10,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Markdown;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Date;
@@ -37,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
     {
         // Immutable dates everywhere; tests freeze time through Date::now() (specs/05 §5).
         Date::use(CarbonImmutable::class);
+
+        // Mail lines are Markdown: text that came from a person (an admin's message to a sanctioned
+        // account) must show as typed, never as a link or a remote image (specs/11 "XSS").
+        Markdown::withSecuredEncoding();
 
         // Lazy loading, silently discarded and missing attributes throw outside production (specs/03 NFR-PERF-7).
         Model::shouldBeStrict(! $this->app->isProduction());

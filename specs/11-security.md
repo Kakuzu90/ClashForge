@@ -41,6 +41,8 @@ mechanism and the test that proves it.
   Blade view uses `{{ }}` only; `{!! !!}` is banned.
 - If markdown is ever enabled for descriptions, it goes through an HTML sanitiser with a strict
   allowlist — no raw HTML pass-through.
+- Mail lines are Markdown, so text a person typed (e.g. an admin's message to a sanctioned account)
+  is rendered with `Markdown::withSecuredEncoding()`: it shows as typed, never as a link or image.
 - User URLs are validated to `http/https`, rendered with `rel="nofollow ugc noopener"` and
   `target="_blank"`. `javascript:`/`data:` schemes rejected at validation.
 - CSP: `default-src 'self'; script-src 'self' 'nonce-...'; object-src 'none'; base-uri 'self';
@@ -225,10 +227,11 @@ failed and successful logins, password/email changes (`auth.password_changed`,
 `auth.password_change_failed`, `auth.password_confirm_failed`), new devices (`auth.new_device`),
 session revocation and expiry (`auth.session_revoked`, `auth.session_expired`), 2FA changes, role
 changes, permission denials,
-CoC claim attempts and verification failures, ownership transfers, sanctions, admin data access
+CoC claim attempts and verification failures, ownership transfers, admin data access
 (`admin.user_viewed` on each admin user detail: actor and target ULID, `ip_hash`;
 `admin.users_listed` on each load of the user list rows: actor, which filters were used, row count,
 `ip_hash`, never the search text, which may be an email),
+sanctions (`moderation.sanction_applied`, `moderation.sanction_lifted`, `moderation.sanction_expired`),
 rate-limit breaches, upload quarantines, CSP violation reports.
 
 Security events go to the `security` log channel (JSON, 90 days). Permission denials

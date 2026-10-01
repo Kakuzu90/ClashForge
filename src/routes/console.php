@@ -33,6 +33,14 @@ Schedule::command('assets:verify-pack')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'assets:verify-pack']));
 
+// Every 15 minutes (specs/20 §3), offset to :07 so it never starts at :00.
+Schedule::command('moderation:expire-sanctions')
+    ->cron('7-59/15 * * * *')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'moderation:expire-sanctions']));
+
 Schedule::command('media:sweep-orphans')
     ->hourlyAt(20)
     ->withoutOverlapping()

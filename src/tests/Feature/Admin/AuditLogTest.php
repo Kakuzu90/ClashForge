@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Audit\Enums\AuditAction;
 use App\Domain\Audit\Models\AuditLog;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
@@ -47,7 +48,7 @@ it('renders the page with its filters and loads the entries as a deferred prop',
             ->component('Admin/AuditLog')
             ->where('meta.title', 'Audit log')
             ->where('filters', ['actor' => 'warden', 'target' => null, 'action' => 'role.changed', 'from' => '2026-09-01', 'to' => '2026-09-30'])
-            ->where('actions', [['value' => 'role.changed', 'label' => 'Role changed']])
+            ->where('actions', array_map(fn (AuditAction $a) => ['value' => $a->value, 'label' => $a->label()], AuditAction::cases()))
             ->where('auth.can.viewAuditLog', true)
             ->missing('log'));
 });
@@ -108,7 +109,8 @@ it('filters by action and by whole UTC days', function () {
     AuditLog::factory()->create();
 
     expect(array_column(auditEntries($this->admin, ['from' => '2026-09-10', 'to' => '2026-09-11']), 'id'))->toBe([$last->id, $first->id])
-        ->and(auditEntries($this->admin, ['action' => 'role.changed']))->toHaveCount(4);
+        ->and(auditEntries($this->admin, ['action' => 'role.changed']))->toHaveCount(4)
+        ->and(auditEntries($this->admin, ['action' => 'sanction.applied']))->toBe([]);
 });
 
 it('reads its page size from config', function () {

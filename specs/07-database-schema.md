@@ -566,7 +566,7 @@ One row per reporter per target.
 | case_id | bigint null FK → report_cases | assigned on triage/grouping |
 | reporter_id | bigint FK → users | restrict |
 | reportable_type / reportable_id | varchar(60) / bigint | polymorphic target |
-| reason_code | varchar(40) | `spam`\|`scam`\|`account_trading`\|`harassment`\|`hate`\|`nsfw`\|`stolen_content`\|`impersonation`\|`false_ownership`\|`off_platform_payment`\|`other` |
+| reason_code | varchar(40) | `spam`\|`scam`\|`account_trading`\|`harassment`\|`hate`\|`nsfw`\|`stolen_content`\|`impersonation`\|`false_ownership`\|`off_platform_payment`\|`wrong_category`\|`other` (`App\Domain\Moderation\Enums\ReasonCode`, [12 §2](12-moderation-system.md)) |
 | detail | varchar(1000) null | |
 | evidence_media_ids | bigint[] | uploaded screenshots |
 | target_snapshot | jsonb | copy of the reported content at report time — survives edits/deletes |
@@ -591,11 +591,16 @@ Grouped workload unit, so ten reports on one base are one job for a moderator.
 ### `moderation_actions` [M]
 Immutable record of what a moderator did.
 
-`id`, `case_id null`, `actor_id (FK users, restrict)`, `action (hide|unhide|remove|restore|warn|restrict|suspend|ban|unban|dismiss|escalate|transfer_ownership|approve_seller|reject_listing)`,
+`id`, `case_id null`, `actor_id (FK users, restrict)`, `action (hide|unhide|remove|restore|warn|restrict|suspend|ban|lift|unban|dismiss|escalate|transfer_ownership|approve_seller|reject_listing)`,
 `target_type/target_id`, `target_user_id null`, `reason_code`, `note text`, `duration_hours null`,
-`metadata jsonb`, `ip_hash`, `created_at`. **No `updated_at`, no deletes.**
+`metadata jsonb`, `ip_hash`, `created_at`. **No `updated_at`, no deletes**, enforced by a trigger
+as for `audit_logs`. `case_id` gets its FK with `report_cases` (P3-06).
+- Sanction actions: `suspend` / `ban` target the account (`target_type = user`); `lift` (a
+  suspension, later a restriction) and `unban` target the sanction (`user_sanction`, its id), so
+  the history finds the lift note. A sanction replaced by a new one gets a `lift` noted "Replaced
+  by a new …", and the new action's `metadata.replaced_sanction_id`. Expiry writes no action.
 **Indexes:** `(target_type, target_id, created_at DESC)`; `(actor_id, created_at DESC)`;
-`(target_user_id, created_at DESC)`.
+`(target_user_id, created_at DESC)`; `(case_id)`.
 
 ### `user_sanctions` [M]
 Active and historical sanctions, so status checks are one indexed read and expiry is a scheduled job.
@@ -603,6 +608,8 @@ Active and historical sanctions, so status checks are one indexed read and expir
 `id`, `user_id (FK)`, `type (warning|restriction|suspension|ban)`, `reason_code`,
 `public_reason (varchar 255)`, `internal_note`, `issued_by (FK users)`, `starts_at`,
 `expires_at null`, `lifted_by null`, `lifted_at null`, `moderation_action_id (FK)`, `created_at`.
+Active = `lifted_at` null and `expires_at` null or in the future. Staff lifting sets `lifted_by` /
+`lifted_at`; a sanction that runs out keeps them null ("ended"). Every user FK restricts.
 **Indexes:** `(user_id, expires_at)`; partial `(expires_at) WHERE expires_at IS NOT NULL AND lifted_at IS NULL`.
 
 ### `audit_logs` [M]

@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import AdminActionPanel from '@/Components/admin/AdminActionPanel.vue';
 import AdminAuditTrailList from '@/Components/admin/AdminAuditTrailList.vue';
+import AdminSanctionHistory from '@/Components/admin/AdminSanctionHistory.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
@@ -14,14 +16,17 @@ defineOptions({ layout: AdminLayout });
 
 type Props = App.Http.Data.Admin.AdminUserShowPageData;
 
-// specs/12 §4 author context and FR-ADMIN-6: answer support questions from data. Sanctions and
-// their history join this page with P1-14.
+// specs/12 §4 author context and FR-ADMIN-6: answer support questions from data; FR-ADMIN-3:
+// suspend, ban and lift from here, with the account's sanction history.
 const props = defineProps<{
     user: Props['user'];
     displayName: Props['displayName'];
     avatarUrl: Props['avatarUrl'];
     auditTrail: Props['auditTrail'];
     moreAuditEntries: Props['moreAuditEntries'];
+    sanctions: Props['sanctions'];
+    sanctionHistory: Props['sanctionHistory'];
+    sanctionForm: Props['sanctionForm'];
 }>();
 
 const sanctioned = computed(() => props.user.statusReason !== null || props.user.statusEndsAt !== null);
@@ -86,6 +91,12 @@ const fullLogUrl = computed(() => audit({ query: { target: props.user.username }
                 <dt class="font-medium text-fg-secondary">Account id</dt>
                 <dd class="break-all text-fg">{{ user.ulid }}</dd>
             </dl>
+        </section>
+
+        <section aria-labelledby="standing-heading" class="flex flex-col gap-3">
+            <h2 id="standing-heading" class="text-h3 font-semibold">Sanctions</h2>
+            <AdminActionPanel :ulid="user.ulid" :username="user.username" :abilities="sanctions" :options="sanctionForm" />
+            <AdminSanctionHistory :sanctions="sanctionHistory" />
         </section>
 
         <section aria-labelledby="trail-heading" class="flex flex-col gap-3">

@@ -22,8 +22,8 @@ is waiting on.
 | | Email address changed (to old + new) | E* | — | immediate |
 | | New sign-in from an unrecognised device | I + E* (email since P1-05; in-app with P1-07) | — | immediate |
 | | 2FA enabled/disabled | I + E* | — | immediate |
-| | Account suspended / banned | I + E* | — | immediate |
-| | Sanction lifted / expired | I + E | — | immediate |
+| | Account suspended / banned | I + E* (email since P1-14; in-app with P1-07) | — | immediate |
+| | Sanction lifted / expired | I + E (email since P1-14; in-app with P1-07) | — | immediate |
 | **Ownership** | CoC account verified | I + E | — | immediate |
 | | Your verified account was claimed by someone else | I + E* | — | immediate |
 | | Dispute opened against you | I + E | — | immediate |

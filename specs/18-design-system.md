@@ -326,7 +326,9 @@ Built so far (P1-06): `AdminTable` (sticky header inside its own keyboard-scroll
 skeleton rows that keep the column classes, expandable detail rows; sorting and bulk-select join
 when a table needs them), `AdminFilterBar` (a GET search form with Apply and Clear),
 `AdminDiffViewer` (each change spelled out in words, colour only backs it up) and `AdminNav`;
-`AdminAuditTrailList` (P1-12: the latest entries about one record, who acted and what changed).
+`AdminAuditTrailList` (P1-12: the latest entries about one record, who acted and what changed);
+`AdminActionPanel` (P1-14: actions from the server's ability flags, each a dialog with reason,
+note and a live "What they will see" preview) and `AdminSanctionHistory`.
 
 ## 5. Layout
 
