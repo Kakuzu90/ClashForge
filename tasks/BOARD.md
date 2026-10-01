@@ -26,7 +26,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P1-01 | Login, logout, remember-me, password reset; `users` table in its specs/07 shape (registration + verification split to P1-08) | done | P0-* (P0-09 waived by owner, 2026-09-30) | tasks/phase-1/P1-01-login-and-password-reset.md |
 | P1-02 | Roles, status, policy scaffold | done | P1-01 | tasks/phase-1/P1-02-roles-status-policy-scaffold.md |
 | P1-03 | Profiles + avatar upload (avatar uploads must stay open to restricted accounts: make `account.active:content` on `uploads/*` collection-aware, from P1-02) | done | P1-02, P0-05 | tasks/phase-1/P1-03-profiles-and-avatar.md |
-| P1-04 | Privacy settings + public profile (+ `user_stats`, from P1-03) | todo | P1-03 | tasks/phase-1/P1-04-privacy-and-public-profile.md |
+| P1-04 | Privacy settings + public profile (+ `user_stats`, from P1-03) | done | P1-03 | tasks/phase-1/P1-04-privacy-and-public-profile.md |
 | P1-05 | Settings area incl. sessions, deletion (+ new-device sign-in email, from P1-01) | todo | P1-02 | |
 | P1-06 | Admin v1 + audit log (incl. the `audit_logs` entry for role changes from `RoleAssignmentService`, from P1-02) | todo | P1-02 | |
 | P1-07 | Notifications v1 | todo | P1-01 | |
@@ -38,7 +38,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
 | P2-01 | API client, decorators, key pool | todo | P0-02 | |
-| P2-02 | Attach + token verification flow | todo | P2-01, P1-02 | |
+| P2-02 | Attach + token verification flow (+ the attach CTA in the own profile's Accounts empty state, from P1-04) | todo | P2-01, P1-02 | |
 | P2-03 | Conflicts, disputes, ownership transfer | todo | P2-02, P1-06 | |
 | P2-04 | PlayerCard, account detail, progression | todo | P2-02, P0-06 | |
 | P2-05 | Asset pack v1 | todo | P0-06 | |
@@ -47,10 +47,10 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
-| P3-01 | Publishing + composer | todo | P2-02, P0-05 | |
+| P3-01 | Publishing + composer (+ the publish CTA in the own profile's Bases empty state, from P1-04) | todo | P2-02, P0-05 | |
 | P3-02 | Video processing | todo | P0-05 | |
 | P3-03 | Feed, trending, landing pages | todo | P3-01 | |
-| P3-04 | Likes, bookmarks, comments, counters | todo | P3-01 | |
+| P3-04 | Likes, bookmarks, comments, counters (+ `user_stats` listeners and nightly recompute calling `CacheInvalidator::profile()`, StatBlock count-up, from P1-04) | todo | P3-01 | |
 | P3-05 | Search v1 | todo | P3-01 | |
 | P3-06 | Moderation v1 (incl. 30-day quarantine purge with `audit_logs` entry, specs/10 §9; from P0-08) | todo | P3-01, P1-06 | |
 | P3-07 | SEO surfaces | todo | P3-03 | |

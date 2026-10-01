@@ -79,7 +79,7 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 
 ### Policies as the only source of truth
 
-- One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `CocAccountPolicy`,
+- One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `PrivacySettingsPolicy`, `CocAccountPolicy`,
   `BaseLayoutPolicy`, `BaseCommentPolicy`, `RecruitmentPostPolicy`, `ApplicationPolicy`,
   `ListingPolicy`, `OrderPolicy`, `ReportPolicy`, `MediaPolicy`.
 - Every request that reads or writes a resource runs its policy. **No implicit trust from route

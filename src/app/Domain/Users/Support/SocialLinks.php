@@ -16,10 +16,10 @@ final readonly class SocialLinks
      */
     private const NETWORKS = [
         // YouTube handles: 3–30 of letters, digits, `_`, `-`, `.`, stored with the leading @.
-        'youtube' => ['pattern' => '/^@[A-Za-z0-9_.\-]{3,30}$/', 'url' => 'https://www.youtube.com/', 'hint' => 'Use your YouTube handle, like @clashchief.'],
-        'twitch' => ['pattern' => '/^[A-Za-z0-9_]{4,25}$/', 'url' => 'https://www.twitch.tv/', 'hint' => 'Use your Twitch username, 4 to 25 letters, numbers or underscores.'],
-        'x' => ['pattern' => '/^[A-Za-z0-9_]{1,15}$/', 'url' => 'https://x.com/', 'hint' => 'Use your X handle without the @, up to 15 letters, numbers or underscores.'],
-        'discord' => ['pattern' => '/^[a-z0-9_.]{2,32}$/', 'url' => null, 'hint' => 'Use your Discord username, 2 to 32 lowercase letters, numbers, dots or underscores.'],
+        'youtube' => ['label' => 'YouTube', 'pattern' => '/^@[A-Za-z0-9_.\-]{3,30}$/', 'url' => 'https://www.youtube.com/', 'hint' => 'Use your YouTube handle, like @clashchief.'],
+        'twitch' => ['label' => 'Twitch', 'pattern' => '/^[A-Za-z0-9_]{4,25}$/', 'url' => 'https://www.twitch.tv/', 'hint' => 'Use your Twitch username, 4 to 25 letters, numbers or underscores.'],
+        'x' => ['label' => 'X', 'pattern' => '/^[A-Za-z0-9_]{1,15}$/', 'url' => 'https://x.com/', 'hint' => 'Use your X handle without the @, up to 15 letters, numbers or underscores.'],
+        'discord' => ['label' => 'Discord', 'pattern' => '/^[a-z0-9_.]{2,32}$/', 'url' => null, 'hint' => 'Use your Discord username, 2 to 32 lowercase letters, numbers, dots or underscores.'],
     ];
 
     /**
@@ -33,6 +33,11 @@ final readonly class SocialLinks
     public static function networks(): array
     {
         return array_keys(self::NETWORKS);
+    }
+
+    public static function label(string $network): string
+    {
+        return self::NETWORKS[$network]['label'] ?? $network;
     }
 
     /**

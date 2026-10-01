@@ -85,6 +85,11 @@ return [
         'display_name_max' => 50,
         'bio_max' => 500,
         'languages_max' => 3,
+        // Cache TTLs in seconds (specs/21 §3): `profile:{username}` and `user:{id}:privacy`.
+        'cache_ttl' => 300,
+        'privacy_cache_ttl' => 3600,
+        // Meta description length for `/u/{username}`, cut from the bio (specs/17 §6).
+        'meta_description_max' => 160,
     ],
 
     // Named limiters outside auth (specs/04 §4).

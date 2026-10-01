@@ -4,7 +4,9 @@ namespace Database\Factories;
 
 use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Enums\UserStatus;
+use App\Domain\Users\Models\PrivacySettings;
 use App\Domain\Users\Models\Profile;
+use App\Domain\Users\Models\UserStats;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -42,14 +44,20 @@ class UserFactory extends Factory
     }
 
     /**
-     * Every user has exactly one profile (FR-PROFILE-1); registration creates it, so the factory
-     * does too.
+     * Every user has exactly one profile (FR-PROFILE-1), privacy row and stats row; registration
+     * creates them, so the factory does too.
      */
     public function configure(): static
     {
         return $this->afterCreating(function (User $user): void {
             if (! Profile::query()->where('user_id', $user->id)->exists()) {
                 (new Profile)->forceFill(['user_id' => $user->id])->save();
+            }
+            if (! PrivacySettings::query()->whereKey($user->id)->exists()) {
+                (new PrivacySettings)->forceFill(['user_id' => $user->id])->save();
+            }
+            if (! UserStats::query()->whereKey($user->id)->exists()) {
+                (new UserStats)->forceFill(['user_id' => $user->id])->save();
             }
         });
     }
@@ -63,6 +71,18 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user) use ($attributes): void {
             Profile::query()->where('user_id', $user->id)->firstOrFail()->forceFill($attributes)->save();
+        });
+    }
+
+    /**
+     * Changes the privacy row created with the user.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function withPrivacy(array $attributes): static
+    {
+        return $this->afterCreating(function (User $user) use ($attributes): void {
+            PrivacySettings::query()->whereKey($user->id)->firstOrFail()->forceFill($attributes)->save();
         });
     }
 

@@ -1,5 +1,6 @@
 import { home } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
+import { edit as privacySettings } from '@/routes/settings/privacy';
 import { edit as profileSettings } from '@/routes/settings/profile';
 
 export type NavIconName = 'home' | 'bases' | 'recruit' | 'search' | 'market' | 'profile';
@@ -59,5 +60,8 @@ export interface SettingsLink {
 }
 
 // specs/18 §6 Settings sub-nav: Profile · Privacy · Accounts · Security · Notifications · Danger zone.
-// Each section joins when its page ships (P1-04, P1-05, P2).
-export const settingsNav: SettingsLink[] = [{ key: 'profile', label: 'Profile', href: () => profileSettings().url }];
+// Each section joins when its page ships (P1-05, P2).
+export const settingsNav: SettingsLink[] = [
+    { key: 'profile', label: 'Profile', href: () => profileSettings().url },
+    { key: 'privacy', label: 'Privacy', href: () => privacySettings().url },
+];

@@ -5,13 +5,16 @@ namespace App\Domain\Users\Services;
 use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Services\MediaAttachmentService;
 use App\Domain\Users\Data\UpdateProfileData;
+use App\Domain\Users\Models\PrivacySettings;
 use App\Domain\Users\Models\Profile;
+use App\Domain\Users\Models\UserStats;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Profile writes (specs/05 §2 Users). Every user has exactly one profile (FR-PROFILE-1).
+ * Profile writes (specs/05 §2 Users). Every user has exactly one profile (FR-PROFILE-1), privacy
+ * row and stats row. Each write drops the cached public profile (specs/21 §4).
  */
 class ProfileService
 {
@@ -22,9 +25,17 @@ class ProfileService
      */
     public function createFor(User $user): void
     {
-        if (! Profile::query()->where('user_id', $user->id)->exists()) {
-            (new Profile)->forceFill(['user_id' => $user->id])->save();
-        }
+        DB::transaction(function () use ($user): void {
+            if (! Profile::query()->where('user_id', $user->id)->exists()) {
+                (new Profile)->forceFill(['user_id' => $user->id])->save();
+            }
+            if (! PrivacySettings::query()->whereKey($user->id)->exists()) {
+                (new PrivacySettings)->forceFill(['user_id' => $user->id])->save();
+            }
+            if (! UserStats::query()->whereKey($user->id)->exists()) {
+                (new UserStats)->forceFill(['user_id' => $user->id])->save();
+            }
+        });
     }
 
     public function update(User $user, UpdateProfileData $data): void
@@ -40,6 +51,8 @@ class ProfileService
             'timezone' => $data->timezone?->value,
             'socials' => $data->socials->handles,
         ])->save();
+
+        CacheInvalidator::profile($user->username);
     }
 
     /**
@@ -61,6 +74,8 @@ class ProfileService
                 $this->attachments->release($previous);
             }
         });
+
+        CacheInvalidator::profile($user->username);
     }
 
     public function removeAvatar(User $user): void
@@ -78,6 +93,8 @@ class ProfileService
             $profile->forceFill(['avatar_media_id' => null])->save();
             $this->attachments->release($previous);
         });
+
+        CacheInvalidator::profile($user->username);
     }
 
     private function profileOf(User $user, bool $lock = false): Profile

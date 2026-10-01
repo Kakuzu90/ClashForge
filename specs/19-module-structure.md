@@ -185,7 +185,7 @@ config/
 ├── moderation.php # reason codes, priority weights, auto-action rules, SLA targets
 ├── bases.php      # categories, TH range, trending weights, publish quotas
 ├── recruitment.php# activity levels, war preferences, expiry and bump windows
-├── platform.php   # feature flags defaults, trust-ramp thresholds, reserved usernames, auth limiters, IP-hash key
+├── platform.php   # feature flags defaults, trust-ramp thresholds, reserved usernames, auth limiters, IP-hash key, profile limits + cache TTLs
 ├── assets.php     # pack_version, manifest path, CDN base, enabled flag, placeholder + fallback rules
 ```
 

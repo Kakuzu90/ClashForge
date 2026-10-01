@@ -84,7 +84,7 @@ describe('SettingsAvatarField', () => {
 });
 
 describe('settings nav', () => {
-    it('starts with Profile', () => {
-        expect(settingsNav.map((link) => link.key)).toEqual(['profile']);
+    it('lists Profile then Privacy', () => {
+        expect(settingsNav.map((link) => link.key)).toEqual(['profile', 'privacy']);
     });
 });

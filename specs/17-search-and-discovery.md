@@ -131,6 +131,11 @@ description, canonical URLs, `ItemList`/`VideoObject`/`Person` JSON-LD where app
 images (the base screenshot), an XML sitemap regenerated nightly for public bases and profiles, and
 `robots.txt` disallowing `/search`, filter permutations and deep pagination.
 
+Profiles (`/u/{username}`): title `{display name} (@{username})`, or `@{username}` without a
+display name; description from the bio (cut to `platform.profile.meta_description_max`), else
+`{name} on Clash Commons.`; `Person` JSON-LD with `sameAs` from the social links; `noindex` unless
+the profile is `public` and `searchable`.
+
 ## 7. Migration trigger and path
 
 Move off Postgres FTS when **any two** of the following hold for two consecutive weeks:

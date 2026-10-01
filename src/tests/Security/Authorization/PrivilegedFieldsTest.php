@@ -54,3 +54,21 @@ it('ignores role and status on an upload intent', function () {
 
     expect($user->refresh()->role)->toBe(Role::User);
 });
+
+it('ignores role and status on a privacy update', function () {
+    $user = User::factory()->restricted()->create();
+
+    $this->actingAs($user)->patch('/settings/privacy', [
+        'profile_visibility' => 'public',
+        'show_coc_accounts' => true,
+        'show_clan' => true,
+        'allow_recruitment_contact' => true,
+        'searchable' => true,
+        'role' => 'admin',
+        'status' => 'active',
+    ])->assertSessionHasNoErrors();
+
+    $user->refresh();
+    expect($user->role)->toBe(Role::User)
+        ->and($user->status)->toBe(UserStatus::Restricted);
+});

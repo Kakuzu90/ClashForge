@@ -5,3 +5,11 @@
 export function formatDateTime(iso: string, locale?: string): string {
     return new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeStyle: 'short' }).format(new Date(iso));
 }
+
+/**
+ * "September 2026", identical on the server and in the browser (fixed locale and UTC), so it is
+ * safe on server-rendered pages.
+ */
+export function formatMonthYear(iso: string): string {
+    return new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(iso));
+}

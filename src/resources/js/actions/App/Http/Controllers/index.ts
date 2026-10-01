@@ -2,6 +2,7 @@ import Home from './Home'
 import Dev from './Dev'
 import Auth from './Auth'
 import Account from './Account'
+import Profile from './Profile'
 import Settings from './Settings'
 import Upload from './Upload'
 import Admin from './Admin'
@@ -12,6 +13,7 @@ const Controllers = {
     Dev: Object.assign(Dev, Dev),
     Auth: Object.assign(Auth, Auth),
     Account: Object.assign(Account, Account),
+    Profile: Object.assign(Profile, Profile),
     Settings: Object.assign(Settings, Settings),
     Upload: Object.assign(Upload, Upload),
     Admin: Object.assign(Admin, Admin),

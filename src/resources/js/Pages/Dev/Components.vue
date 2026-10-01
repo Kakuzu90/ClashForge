@@ -11,11 +11,15 @@ import UiInput from '@/Components/ui/UiInput.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
 import UiPill, { type PillTone } from '@/Components/ui/UiPill.vue';
 import UiProgress from '@/Components/ui/UiProgress.vue';
+import UiRadioGroup, { type RadioOption } from '@/Components/ui/UiRadioGroup.vue';
 import UiSelect, { type SelectOption } from '@/Components/ui/UiSelect.vue';
 import UiSkeleton from '@/Components/ui/UiSkeleton.vue';
+import UiStatBlock from '@/Components/ui/UiStatBlock.vue';
+import UiTabs, { type TabItem } from '@/Components/ui/UiTabs.vue';
 import UiTextarea from '@/Components/ui/UiTextarea.vue';
 import UiToast from '@/Components/ui/UiToast.vue';
 import UiToaster from '@/Components/ui/UiToaster.vue';
+import UiToggle from '@/Components/ui/UiToggle.vue';
 import { useToast } from '@/Composables/useToast';
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -59,6 +63,21 @@ const remember = ref(false);
 const agreed = ref(true);
 const removableShown = ref(true);
 const modalOpen = ref(false);
+const switchedOn = ref(true);
+const switchedOff = ref(false);
+const radioOptions: RadioOption[] = [
+    { value: 'one', label: 'First option', description: 'A description under the label.' },
+    { value: 'two', label: 'Second option', description: 'Arrow keys move between options.' },
+    { value: 'three', label: 'Label only' },
+];
+const radioPick = ref('one');
+const sampleTabs: TabItem[] = [
+    { key: 'first', label: 'First tab' },
+    { key: 'second', label: 'Second tab' },
+    { key: 'third', label: 'Third tab' },
+];
+const underlineTab = ref('first');
+const pillTab = ref('second');
 const { push } = useToast();
 
 // Specimens report their click, so the gallery also proves each variant's handler fires.
@@ -68,6 +87,9 @@ const sections = [
     'Buttons',
     'Inputs',
     'Checkboxes',
+    'Toggles and radios',
+    'Tabs',
+    'Stat blocks',
     'Cards',
     'Pills',
     'Badges',
@@ -166,6 +188,48 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiCheckbox :model-value="false" label="Error" error="Tick this to continue." />
                     <UiCheckbox :model-value="true" disabled label="Disabled" />
                 </div>
+            </section>
+
+            <section :id="anchor('Toggles and radios')" aria-labelledby="h-toggles">
+                <h2 id="h-toggles" class="font-display text-h1">Toggles and radios</h2>
+                <div class="mt-4 grid gap-6 sm:grid-cols-2">
+                    <div class="flex flex-col gap-2">
+                        <UiToggle v-model="switchedOn" label="On" hint="A switch is a checkbox with role switch." />
+                        <UiToggle v-model="switchedOff" label="Off" />
+                        <UiToggle :model-value="false" label="Error" error="This setting could not be saved." />
+                        <UiToggle :model-value="true" disabled label="Disabled" />
+                    </div>
+                    <div class="flex flex-col gap-6">
+                        <UiRadioGroup v-model="radioPick" legend="Radio group" :options="radioOptions" />
+                        <UiRadioGroup model-value="two" legend="Radio group, disabled" :options="radioOptions" disabled />
+                        <UiRadioGroup legend="Radio group, error" :options="radioOptions" error="Choose one option." />
+                    </div>
+                </div>
+            </section>
+
+            <section :id="anchor('Tabs')" aria-labelledby="h-tabs">
+                <h2 id="h-tabs" class="font-display text-h1">Tabs</h2>
+                <div class="mt-4 flex flex-col gap-8">
+                    <UiTabs v-model="underlineTab" :tabs="sampleTabs" label="Underline tabs">
+                        <template v-for="t in sampleTabs" #[t.key] :key="t.key">
+                            <p class="text-body text-fg-secondary">{{ t.label }} panel (underline). Arrow keys, Home and End move between tabs.</p>
+                        </template>
+                    </UiTabs>
+                    <UiTabs v-model="pillTab" :tabs="sampleTabs" label="Pill tabs" variant="pill">
+                        <template v-for="t in sampleTabs" #[t.key] :key="t.key">
+                            <p class="text-body text-fg-secondary">{{ t.label }} panel (pill).</p>
+                        </template>
+                    </UiTabs>
+                </div>
+            </section>
+
+            <section :id="anchor('Stat blocks')" aria-labelledby="h-stats">
+                <h2 id="h-stats" class="font-display text-h1">Stat blocks</h2>
+                <dl class="mt-4 grid grid-cols-3 gap-4 rounded-lg border border-line bg-surface p-4">
+                    <UiStatBlock :value="0" label="Zero" />
+                    <UiStatBlock :value="3400" label="Thousands" />
+                    <UiStatBlock :value="1250000" label="Millions" />
+                </dl>
             </section>
 
             <section :id="anchor('Cards')" aria-labelledby="h-cards">

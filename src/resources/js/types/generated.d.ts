@@ -74,6 +74,17 @@ url512: string | null,
 url128: string | null,
 url48: string | null,
 };
+export type CodeLabelData = {
+code: string,
+label: string,
+};
+export type PrivacyFormData = {
+visibility: App.Domain.Users.Enums.ProfileVisibility,
+showCocAccounts: boolean,
+showClan: boolean,
+allowRecruitmentContact: boolean,
+searchable: boolean,
+};
 export type ProfileFormData = {
 username: string,
 displayName: string | null,
@@ -84,12 +95,44 @@ timezone: string | null,
 socials: App.Domain.Users.Data.SocialHandlesData,
 avatar: App.Domain.Users.Data.AvatarData,
 };
+export type ProfileStatsData = {
+basesPublished: number,
+likesReceived: number,
+copies: number,
+};
+export type PublicProfileData = {
+username: string,
+displayName: string | null,
+avatarUrl512: string | null,
+avatarUrl128: string | null,
+bio: string | null,
+country: App.Domain.Users.Data.CodeLabelData | null,
+languages: App.Domain.Users.Data.CodeLabelData[],
+socials: App.Domain.Users.Data.SocialLinkData[],
+memberSince: string,
+stats: App.Domain.Users.Data.ProfileStatsData,
+isOwn: boolean,
+};
 export type SocialHandlesData = {
 youtube: string | null,
 twitch: string | null,
 x: string | null,
 discord: string | null,
 };
+export type SocialLinkData = {
+network: string,
+label: string,
+handle: string,
+url: string | null,
+};
+export type VisibilityOptionData = {
+value: App.Domain.Users.Enums.ProfileVisibility,
+label: string,
+description: string,
+};
+}
+namespace Enums {
+export type ProfileVisibility = 'public' | 'members' | 'private';
 }
 }
 }
@@ -132,7 +175,17 @@ token: string,
 email: string,
 };
 }
+namespace Profile {
+export type ProfileShowPageData = {
+profile: App.Domain.Users.Data.PublicProfileData,
+};
+}
 namespace Settings {
+export type PrivacySettingsPageData = {
+settings: App.Domain.Users.Data.PrivacyFormData,
+visibilityOptions: App.Domain.Users.Data.VisibilityOptionData[],
+username: string,
+};
 export type ProfileSettingsPageData = {
 profile: App.Domain.Users.Data.ProfileFormData,
 avatarUpload: App.Domain.Media.Data.UploadCollectionData,

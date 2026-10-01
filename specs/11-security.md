@@ -127,7 +127,9 @@ mechanism and the test that proves it.
 - Generic messages on login, register, reset and email change.
 - Username availability check is rate-limited (10/min) and returns only a boolean.
 - Profile visibility settings respected in search and in direct URL access (`private`, and
-  `members` for a guest, → 404, not 403, so existence is not confirmed).
+  `members` for a guest, → 404, not 403, so existence is not confirmed). Every miss on
+  `/u/{username}` (unknown, hidden, banned, pending deletion, or a name that cannot be stored)
+  renders the one `Profile/NotFound` page with status 404 and `noindex`, so the bodies match.
 
 ### File upload attacks
 Fully specified in [10-media-storage.md](10-media-storage.md). Summary of controls:

@@ -381,7 +381,10 @@ copies, war stars across accounts) → tabs: Accounts · Bases · Activity (P2) 
 *Loading:* cover + avatar skeleton, then tab content skeletons.
 *Error (hidden profile):* a `private` profile (to anyone but the owner), a `members` profile (to a
 guest) and a banned or pending-deletion owner render the same 404 as an unknown username, so the
-page never confirms the account exists ([11](11-security.md)).
+page never confirms the account exists ([11](11-security.md)). That page is `Profile/NotFound`:
+an empty state with a link home, copy that never names the reason.
+*Own profile:* "Edit profile" and "Privacy" buttons in the cover band. The header avatar links to
+your own `/u/{username}`; settings are reached from there until the account menu (P1-05).
 
 ### CoC account detail (`/accounts/{ulid}`)
 PlayerCard hero → verification status banner → stat blocks with deltas → hero/troop/spell/equipment
@@ -428,6 +431,9 @@ Grouped list, unread highlighted with a gold left border, filter tabs by categor
 ### Settings (`/settings/*`)
 Left sub-nav (Profile · Privacy · Accounts · Security · Notifications · Danger zone) with plain,
 dense forms. Danger zone is visually separated with a red border and requires password confirmation.
+*Privacy:* a visibility radio group (Everyone · Signed-in members · Only me, each with a one-line
+description) and toggles for show accounts, show clan, recruitment contact and search. The
+stored `show_activity` and `allow_marketplace_contact` stay off the form until P2 / Phase 6.
 
 ### Admin (`/admin/*`)
 Left nav (Dashboard · Reports · Disputes · Users · Content · Media · Marketplace · Logs) →

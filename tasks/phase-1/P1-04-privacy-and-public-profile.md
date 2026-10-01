@@ -2,7 +2,7 @@
 id: P1-04
 title: Add privacy settings, user_stats and the public profile at /u/{username}
 phase: 1
-status: todo
+status: done
 depends_on: [P1-03]
 ---
 
@@ -59,3 +59,23 @@ Resolved by the owner, 2026-09-30 (all as recommended):
 4. Defaults: `public`, show accounts / clan / activity on, recruitment contact on, marketplace contact off, searchable on. synced → specs/07 `privacy_settings`.
 5. The Privacy page shows visibility, show accounts, show clan, recruitment contact and searchable. `show_activity` and `allow_marketplace_contact` are stored but hidden until P2 / Phase 6.
 6. Staff get no bypass on `/u/`; they use the admin user detail (P1-06). synced → specs/04 §3.
+
+### Decisions and divergences (implement, 2026-10-01)
+1. Config keys `platform.profile.cache_ttl` (300), `privacy_cache_ttl` (3600), `meta_description_max` (160), per specs/19 §5. synced → specs/21 §3, specs/19 §5, specs/17 §6.
+2. Auth public service `UserLookupService` (`findListed()`: unknown, unstorable, soft-deleted, banned and pending-deletion names all return null; `usernameOf()`). synced → specs/05 §2.
+3. `CacheInvalidator` in `Users/Services` (public); profile key lowercased (citext usernames). synced → specs/05 §2, specs/21 §3.
+4. Sync listener `ForgetProfileWhenAvatarReady` on `MediaReady`. synced → specs/05 §2 (events table, sync-listener rule).
+5. `PrivacyPolicyResolver` is a `scoped` binding with a memo; a missing row reads as `private`. synced → specs/21 L3, §3.
+6. One `Profile/NotFound` page (404, `noindex`) for every miss. synced → specs/11 "Account enumeration", specs/18 §6.
+7. Header avatar → own profile; settings reached from it until P1-05. synced → specs/18 §6.
+8. Title `@{username}` without a display name; description fallback `{name} on Clash Commons.`. synced → specs/17 §6.
+9. Accounts / Bases empty states have no CTA yet. Carried on the board → P2-02, P3-01.
+10. StatBlock count-up and `user_stats` invalidation deferred. Carried on the board → P3-04.
+11. New primitives in `/dev/components`: `UiTabs`, `UiToggle`, `UiRadioGroup`, `UiStatBlock`; Privacy page shape. synced → specs/18 §6. R-31: the cover band sits on `bg-surface` with the raised depth border so the `surface-raised` avatar reads against it; the selected radio row takes the gold border, like a selected card.
+12. SSR XSS covered by a Vitest `renderToString` test of `Profile/Show` plus the PHP root-view, meta and JSON-LD test (no SSR smoke harness yet).
+
+### Review fixes (verify, 2026-10-01)
+- Security (low): a cache refill already in flight could write an old privacy row or profile back right after a change. The privacy row is now written through inside the row-locked transaction, and readers only `add` on a miss. Profile entries carry `profile:{username}:version`, so a stale build is rebuilt. synced → specs/21 §3.
+- Spec (plausible): unstorable names are refused before the query. `%FF` / `%00` are already rejected by the framework with a 400 for any path, so no 500 is possible.
+- Spec (nit): `PublicProfileView` renamed `PublicProfileViewData` (specs/19 §3).
+- antislop audit-011: no findings.

@@ -60,8 +60,8 @@ talks to it through **(a)** its public service classes, **(b)** its read-model/D
 
 | Module | Owns (tables) | Public surface | Depends on |
 |---|---|---|---|
-| **Auth** | `users`, `sessions`, `password_reset_tokens`, `two_factor_*` | `RegistrationService`, `EmailVerificationService`, `SessionService`, `UserStatusService`, `RoleAssignmentService` | — |
-| **Users** | `profiles`, `privacy_settings`, `user_stats`, `follows` | `ProfileService`, `PrivacyPolicyResolver`, `PublicProfileReadModel` | Auth, Media |
+| **Auth** | `users`, `sessions`, `password_reset_tokens`, `two_factor_*` | `RegistrationService`, `EmailVerificationService`, `SessionService`, `UserStatusService`, `RoleAssignmentService`, `UserLookupService` (username → listed account, for other modules) | — |
+| **Users** | `profiles`, `privacy_settings`, `user_stats`, `follows` | `ProfileService`, `PrivacySettingsService`, `PrivacyPolicyResolver`, `PublicProfileReadModel`, `CacheInvalidator` (profile and privacy keys) | Auth, Media |
 | **CocIntegration** | `coc_api_requests` (log), cache entries | `CocApiClient` (interface), `PlayerLookup`, `ClanLookup`, `TokenVerifier`, `CocApiStatus` | — (edge module, no domain deps) |
 | **PlayerAccounts** | `coc_accounts`, `coc_account_claims`, `coc_account_snapshots`, `coc_account_disputes` | `AttachAccountService`, `VerifyOwnershipService`, `DisputeService`, `AccountSyncService`, `AccountReadModel` | CocIntegration, Users, Media, Notifications |
 | **Clans** | `clans`, `clan_memberships`, `clan_snapshots` | `ClanSyncService`, `ClanReadModel` | CocIntegration |
@@ -106,7 +106,7 @@ Domain events published by modules and consumed elsewhere:
 | `BasePublished` | Bases | Search, Notifications (followers, P2), Users (stats) |
 | `BaseInteracted` (like/copy/view) | Bases | Metrics aggregator, Notifications (throttled) |
 | `CommentPosted` | Bases | Notifications, Moderation (auto-screen) |
-| `MediaReady` / `MediaFailed` | Media | Bases, PlayerAccounts, Marketplace |
+| `MediaReady` / `MediaFailed` | Media | Bases, PlayerAccounts, Marketplace, Users (`MediaReady` on an avatar: forget the cached profile) |
 | `MediaRetriesExhausted` | Media | Notifications (owner: re-upload needed) |
 | `ReportFiled` | Moderation | Notifications (staff), Metrics |
 | `SanctionApplied` | Moderation | Auth (status change), Notifications, Audit, Search (de-index) |
@@ -115,7 +115,8 @@ Domain events published by modules and consumed elsewhere:
 
 All listeners that do I/O are queued. The one exception is Auth's `RecordLogin`, which stamps
 `last_login_at` and the hashed IP in the request because the IP is only known there. Otherwise,
-synchronous listeners are limited to in-memory cache invalidation.
+synchronous listeners are limited to cache invalidation, including the single key lookup it needs
+(Users' `ForgetProfileWhenAvatarReady` reads the username to name the key).
 
 ## 3. Layering inside a module
 
