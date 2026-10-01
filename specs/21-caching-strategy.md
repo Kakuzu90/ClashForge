@@ -48,7 +48,7 @@ of defence, not the first.
 | `account:{ulid}:card` | PlayerCard DTO | 5 min | Account sync, verification |
 | `user:{id}:privacy` | Privacy settings row, as scalars. A missing row reads as `private` (fail closed) | 1 h (`platform.profile.privacy_cache_ttl`) | Settings update writes the new row through (readers only add on a miss) |
 | `user:{id}:permissions` | Derived capability flags (can publish, can recruit) | 10 min | Role/status change, verification, sanction |
-| `notif:unread:{id}` | Unread count | 60 s | Notification create/read |
+| `notif:unread:{id}` | Unread count (the shared `unreadCount`) | 60 s (`platform.notifications.unread_cache_ttl`) | Notification create, mark read, mark all read. The nightly prune does not clear it; the TTL catches up |
 | `search:{signature}` | Result ids + facet counts (anonymous only) | 60 s | — (short TTL is the invalidation) |
 | `tags:popular` | Top tags | 1 h | Nightly tag reconcile |
 | `stats:homepage` | Site-wide counters for the landing page | 15 min | — |

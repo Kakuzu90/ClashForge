@@ -162,6 +162,38 @@ export type ReasonCode = 'account_trading' | 'scam' | 'false_ownership' | 'nsfw'
 export type SanctionType = 'warning' | 'restriction' | 'suspension' | 'ban';
 }
 }
+namespace Notifications {
+namespace Data {
+export type InAppMessageData = {
+type: App.Domain.Notifications.Enums.NotificationType,
+params: Record<string, string | number | boolean | null>,
+groupKey: string | null,
+};
+export type NotificationItemData = {
+id: string,
+category: string | null,
+title: string,
+body: string,
+hasTarget: boolean,
+read: boolean,
+createdAt: string,
+};
+export type NotificationSliceData = {
+entries: App.Domain.Notifications.Data.NotificationItemData[],
+newerCursor: string | null,
+olderCursor: string | null,
+};
+export type RenderedNotificationData = {
+title: string,
+body: string,
+url: string | null,
+};
+}
+namespace Enums {
+export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
+export type NotificationType = 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed';
+}
+}
 namespace Users {
 namespace Data {
 export type AvatarData = {
@@ -354,6 +386,17 @@ status: string | null,
 export type ResetPasswordPageData = {
 token: string,
 email: string,
+};
+}
+namespace Notifications {
+export type NotificationIndexPageData = {
+category: string | null,
+tabs: App.Http.Data.Notifications.NotificationTabData[],
+notifications: App.Domain.Notifications.Data.NotificationSliceData,
+};
+export type NotificationTabData = {
+value: string | null,
+label: string,
 };
 }
 namespace Profile {

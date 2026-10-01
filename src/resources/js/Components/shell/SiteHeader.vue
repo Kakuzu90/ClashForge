@@ -2,10 +2,11 @@
 import { usePageProps } from '@/Composables/usePageProps';
 import { computed } from 'vue';
 import AccountControls from './AccountControls.vue';
+import NotificationBell from './NotificationBell.vue';
 import Wordmark from './Wordmark.vue';
 
-// Sticky top bar (specs/18 §5). Search and the bell slot into `actions` once they exist; the account
-// controls always sit last.
+// Sticky top bar (specs/18 §5). Search slots into `actions` once it exists; signed in, the bell sits
+// just before the account controls, which always come last.
 defineProps<{ hideWordmarkOnDesktop?: boolean }>();
 
 // Signed in, the account controls need the room below 640px, so the wordmark shortens to CC there.
@@ -25,6 +26,7 @@ const signedIn = computed(() => !!auth.value?.user);
             </div>
             <div class="flex items-center gap-2">
                 <slot name="actions" />
+                <NotificationBell v-if="signedIn" />
                 <AccountControls />
             </div>
         </div>

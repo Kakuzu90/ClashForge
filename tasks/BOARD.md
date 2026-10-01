@@ -32,11 +32,12 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P1-12 | Admin user list + detail (FR-ADMIN-2 users, read): search, filters, detail with status and audit trail, `view-users` ability (admin+), `admin.user_viewed` security log (split from P1-06; sanctions → P1-14) | done | P1-06 | tasks/phase-1/P1-12-admin-user-list-and-detail.md |
 | P1-14 | Sanctions (FR-ADMIN-3, FR-MOD-5/6/8): suspend / ban / lift via `SanctionService`, `user_sanctions` + `moderation_actions`, status applied in the same transaction, `moderation:expire-sanctions`, suspended / banned / lifted emails, sanction `audit_logs` entries, history + action panel on the user detail (split from P1-12) | done | P1-12 | tasks/phase-1/P1-14-sanctions.md |
 | P1-13 | Admin dashboard v1 (FR-ADMIN-5): new signups, failed jobs, media storage usage; open reports, disputes and API health added as their modules land (split from P1-06) | done | P1-12 | tasks/phase-1/P1-13-admin-dashboard.md |
-| P1-07 | Notifications v1 (+ in-app copies of "Password changed" and "New sign-in", from P1-05) | todo | P1-01 | |
+| P1-07 | Notifications v1 (+ in-app copies of "Password changed" and "New sign-in", from P1-05) | done | P1-01 | tasks/phase-1/P1-07-notifications-v1.md |
 | P1-08 | Registration + email verification: username rules + reserved list, disposable-email blocklist, HIBP, Turnstile (register and `/forgot-password`, specs/11), honeypot + min fill time, existing-email notice, signed 60-min link, resend limiter, `UserRegistered`/`EmailVerified` (split from P1-01) (+ set the `known_devices` cookie at registration, from P1-05) | todo | P1-01 | |
 | P1-10 | Email change (FR-AUTH-8): re-confirmation, verification link to the new address, notice to the old one, generic error when taken (split from P1-05) | todo | P1-05, P1-08 | |
 | P1-11 | Account deletion + Danger zone (FR-AUTH-9, NFR-PRIV-2): request with re-confirmation, `pending_deletion` + `deletion_requested_at`, cancel on sign-in, `platform:anonymize-deleted` for Phase 1 data with an `audit_logs` entry (specs/08 §6; split from P1-05) | todo | P1-05, P1-06 | |
 | P1-09 | Username change + `username_history`: once per 30 days, old names reserved 90 days, `/u/{old}` redirects (FR-PROFILE-7, specs/23 §1; split from P1-03) | todo | P1-04, P1-08 | |
+| P1-15 | Non-security email (specs/16 §4): `SendEmailNotificationJob` on `low`, 10 per user per day cap, List-Unsubscribe header and an unsubscribe page, bounce / complaint handling once the mail provider exists (P0-09); first user: the "Media processing failed" email (from P1-07) | todo | P1-07 | |
 
 ## Phase 2 — Verified CoC accounts
 
@@ -68,5 +69,5 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P4-01 | Clans + clan sync | todo | P2-01 | |
 | P4-02 | Recruitment posts + applications | todo | P4-01 | |
 | P5-01 | Follows, activity, fan-out | todo | P3-* | |
-| P5-02 | Notifications v2, appeals, anomaly detection | todo | P5-01 | |
+| P5-02 | Notifications v2, appeals, anomaly detection (+ the bell dropdown with the 10 latest, specs/16 §6, from P1-07) | todo | P5-01 | |
 | P6-01 | Marketplace (conditional — see specs/15) | blocked | P3–P5 + legal preconditions | |

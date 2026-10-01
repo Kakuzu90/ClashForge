@@ -10,8 +10,8 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Date;
 
 /**
- * "Password changed" (specs/16 §2): security email, always sent, on `high`. The in-app copy joins
- * with Notifications v1 (P1-07).
+ * "Password changed" (specs/16 §2): security email, always sent, on `high`. The in-app copy is
+ * written by Notifications from the `PasswordChanged` event.
  */
 class PasswordChangedNotification extends Notification implements ShouldQueue
 {

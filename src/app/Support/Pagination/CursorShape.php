@@ -11,11 +11,20 @@ final class CursorShape
 {
     public static function accepts(string $cursor, string $column): bool
     {
+        return is_int(self::parameters($cursor)[$column] ?? null);
+    }
+
+    /**
+     * The decoded cursor when it has the paginator's direction flag, for checking other column
+     * shapes; null otherwise.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function parameters(string $cursor): ?array
+    {
         $json = base64_decode(str_replace(['-', '_'], ['+', '/'], $cursor), true);
         $parameters = $json === false ? null : json_decode($json, true);
 
-        return is_array($parameters)
-            && is_bool($parameters['_pointsToNextItems'] ?? null)
-            && is_int($parameters[$column] ?? null);
+        return is_array($parameters) && is_bool($parameters['_pointsToNextItems'] ?? null) ? $parameters : null;
     }
 }

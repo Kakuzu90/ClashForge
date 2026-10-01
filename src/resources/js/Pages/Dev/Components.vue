@@ -6,6 +6,7 @@ import AdminFilterBar from '@/Components/admin/AdminFilterBar.vue';
 import AdminPanel from '@/Components/admin/AdminPanel.vue';
 import AdminSanctionHistory from '@/Components/admin/AdminSanctionHistory.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
+import NotificationItem from '@/Components/notifications/NotificationItem.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
@@ -191,7 +192,28 @@ const sections = [
     'Progress',
     'Game assets',
     'Empty state',
+    'Notifications',
     'Admin',
+];
+const notificationSamples: App.Domain.Notifications.Data.NotificationItemData[] = [
+    {
+        id: '0199a8f0-0000-7000-8000-000000000001',
+        category: 'security',
+        title: 'New sign-in to your account',
+        body: 'From a device we have not seen before: Firefox on Linux, Germany. If it was not you, sign that device out and change your password.',
+        hasTarget: true,
+        read: false,
+        createdAt: '2026-10-01T12:00:00+00:00',
+    },
+    {
+        id: '0199a8f0-0000-7000-8000-000000000002',
+        category: 'security',
+        title: 'Your suspension is over',
+        body: 'It has ended. Your account works as normal again.',
+        hasTarget: false,
+        read: true,
+        createdAt: '2026-09-30T08:00:00+00:00',
+    },
 ];
 const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 </script>
@@ -499,6 +521,13 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                         </template>
                     </UiEmptyState>
                 </UiCard>
+            </section>
+            <section :id="anchor('Notifications')" aria-labelledby="h-notifications">
+                <h2 id="h-notifications" class="font-display text-h1">Notifications</h2>
+                <p class="mt-2 text-sm text-fg-secondary">Notification centre rows: unread with the gold border and a New label, then read.</p>
+                <ol class="mt-4 flex max-w-2xl flex-col divide-y divide-line-subtle overflow-hidden rounded-lg border border-line bg-surface">
+                    <li v-for="sample in notificationSamples" :key="sample.id"><NotificationItem :notification="sample" /></li>
+                </ol>
             </section>
             <section :id="anchor('Admin')" aria-labelledby="h-admin" class="font-body">
                 <h2 id="h-admin" class="font-display text-h1">Admin</h2>

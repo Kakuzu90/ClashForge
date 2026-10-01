@@ -334,7 +334,8 @@ titled plain box for the dashboard panels, numbers in the body font at `--text-h
 ## 5. Layout
 
 ### Mobile (< 768px) — the primary target
-- Sticky top bar: logo, search icon, notification bell.
+- Sticky top bar: logo, search icon, notification bell (signed in: a link to `/notifications`, a gold
+  count badge capped at "99+", the count in its `aria-label` and a polite live region).
 - **Bottom tab navigation** (5 items, 56px + safe-area inset): Home · Bases · Recruit · Market ·
   Profile. Market is hidden until Phase 6; the slot is Search until then. An item appears only once
   its page exists (owner decision, P0-04), so early phases show fewer tabs.
@@ -434,7 +435,15 @@ interstitial before a first order.
 
 ### Notifications (`/notifications`)
 Grouped list, unread highlighted with a gold left border, filter tabs by category, mark-all-read.
-*Empty:* "You're all caught up" with an illustration.
+Built in P1-07: plain rows until grouping lands (FR-NOTIF-5), each with a "New" label beside the
+border so the state is not colour alone; opening a row marks it read and follows its link, and a
+read row with nowhere to go is plain text. The tabs are links (`?category=`) for the categories
+that have a type: All · Security · Bases in v1, Moderation with P3-06. "Mark all as read" shows
+while anything is unread. `NotificationItem` is the row.
+*Empty:* "You're all caught up" with an illustration (an original bell with a check); a category
+tab says "Nothing in {category}".
+*Loading:* row skeletons while a tab or page loads. *Error:* inline alert with the request id
+(`useVisitError`).
 
 ### Settings (`/settings/*`)
 Left sub-nav (Profile · Privacy · Accounts · Security · Notifications · Danger zone) with plain,

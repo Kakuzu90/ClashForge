@@ -55,6 +55,13 @@ Schedule::command('media:retry-failed')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'media:retry-failed']));
 
+Schedule::command('notifications:prune')
+    ->dailyAt('02:15')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'notifications:prune']));
+
 Schedule::command('media:purge-deleted')
     ->dailyAt('02:30')
     ->withoutOverlapping()

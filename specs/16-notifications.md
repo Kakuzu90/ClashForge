@@ -8,7 +8,12 @@ in the MVP (it would require Redis + a websocket server).
 
 Delivery model: a domain event → a queued listener → `Notifier::send()` → one `notifications` row
 (+ optionally a mail job). Nothing user-facing is written synchronously in a request that the user
-is waiting on.
+is waiting on. Two routes in (P1-07): a module that depends on Notifications lists `InAppChannel`
+beside `mail` in its Laravel notification (Moderation's sanction notices); an edge module (Auth,
+Media) dispatches an event that the queued `WriteInAppNotice` listener (`high`) turns into a row.
+A row stores its `NotificationType` and parameters; the words and the link are rendered when it is
+read, so copy fixes reach old rows. A type the code no longer knows reads "This notification is no
+longer available", with no link.
 
 ## 2. Catalogue
 
@@ -18,12 +23,12 @@ is waiting on.
 |---|---|---|---|---|
 | **Security** | Email verification link | E* | — | immediate |
 | | Password reset | E* | — | immediate |
-| | Password changed | I + E* (email since P1-05; in-app with P1-07) | — | immediate |
+| | Password changed | I + E* (email since P1-05; in-app since P1-07) | — | immediate |
 | | Email address changed (to old + new) | E* | — | immediate |
-| | New sign-in from an unrecognised device | I + E* (email since P1-05; in-app with P1-07) | — | immediate |
+| | New sign-in from an unrecognised device | I + E* (email since P1-05; in-app since P1-07) | — | immediate |
 | | 2FA enabled/disabled | I + E* | — | immediate |
-| | Account suspended / banned | I + E* (email since P1-14; in-app with P1-07) | — | immediate |
-| | Sanction lifted / expired | I + E (email since P1-14; in-app with P1-07) | — | immediate |
+| | Account suspended / banned | I + E* (email since P1-14; in-app since P1-07) | — | immediate |
+| | Sanction lifted / expired | I + E (email since P1-14; in-app since P1-07) | — | immediate |
 | **Ownership** | CoC account verified | I + E | — | immediate |
 | | Your verified account was claimed by someone else | I + E* | — | immediate |
 | | Dispute opened against you | I + E | — | immediate |
@@ -37,7 +42,7 @@ is waiting on.
 | | Like milestone (10, 50, 100, 500, 1000) | I | `base:{id}:likes` | batched hourly |
 | | Your base is trending | I | — | daily max 1 |
 | | Base published (processing finished) | I | — | immediate |
-| | Media processing failed | I + E | — | immediate |
+| | Media processing failed | I + E (in-app since P1-07; email with P1-15, the first non-security email) | — | immediate |
 | **Moderation** | Your content was hidden/removed | I + E | — | immediate |
 | | Warning issued | I + E | — | immediate |
 | | Report outcome (to reporter) | I | — | immediate |
@@ -107,19 +112,24 @@ Digest options: `none` (default), `daily`, `weekly` — a single email summarisi
 
 - Bell icon with an unread count, capped at "99+", read from a cached count keyed
   `notif:unread:{user}` with a 60-second TTL and explicit invalidation on read/write.
-- Dropdown shows the 10 most recent; a full page paginates.
+- Dropdown shows the 10 most recent; a full page paginates. In v1 (P1-07) the bell is a link to the
+  page, the same at 375 px; the dropdown joins with P5-02.
 - Mark-as-read on click; "mark all read" available.
 - Grouped notifications show avatars of up to 3 actors plus a count.
 - Notifications link directly to the target anchor (e.g. the specific comment).
 - Deleted or hidden targets render as "this content is no longer available" rather than 404ing.
 - Polling: the bell refreshes on navigation (shared prop) and via a 60-second Inertia `usePoll`
-  partial reload (`only: ['unreadCount']`), **stopped while the tab is hidden**. This is the deliberate low-cost substitute for websockets; revisit with Redis + Reverb
+  partial reload (`only: ['unreadCount']`, `useUnreadPoll`, started and stopped on
+  `visibilitychange`), **stopped while the tab is hidden**. This is the deliberate low-cost substitute for websockets; revisit with Redis + Reverb
   if real-time becomes a requirement.
 
 ## 7. Retention and volume control
 
-- Read notifications older than 90 days are pruned nightly; unread older than 180 days too.
-- A hard cap of 500 notification rows per user; the oldest read rows are trimmed beyond that.
+- Read notifications older than 90 days are pruned nightly; unread older than 180 days too
+  (`notifications:prune`, 02:15, inline chunked deletes, `--dry-run`; limits in
+  `platform.notifications.*`).
+- A hard cap of 500 notification rows per user; the oldest read rows are trimmed beyond that, never
+  unread ones.
 - Fan-out is always chunked: a job that would create more than 500 notifications splits into
   batches of 200 (relevant for follower fan-out in Phase 5 — an author with 10k followers must not
   enqueue 10k jobs at once on a database queue).

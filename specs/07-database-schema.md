@@ -542,12 +542,16 @@ later. Rows for keys that vanished or gained a row are cleared at the end of eac
 Laravel's notification table shape, extended. Kept as its own table (not Laravel's default
 `uuid` PK only) so we can index efficiently for the bell.
 
-`id (uuid PK)`, `type (varchar)`, `notifiable_type/notifiable_id`, `data (jsonb)`,
+`id (uuid PK, UUIDv7)`, `type (varchar 60)`, `notifiable_type/notifiable_id`, `data (jsonb)`,
 `read_at (timestamptz null)`, `group_key (varchar 100 null)`, `created_at`, `updated_at`.
-**Indexes:** `(notifiable_type, notifiable_id, created_at DESC)`;
+`type` holds a `NotificationType` value and `data` only `{params}` (scalars): the words and the
+link are rendered when read, never stored ([16 §1](16-notifications.md)).
+**Indexes:** `(notifiable_type, notifiable_id, created_at DESC, id DESC)` for the centre's order;
 partial `(notifiable_id) WHERE read_at IS NULL` for the unread badge;
 `(group_key, notifiable_id)` for aggregation ("12 people liked your base").
-**Retention:** read notifications older than 90 days are pruned nightly.
+**Retention:** read notifications older than 90 days and unread older than 180 are pruned
+nightly, and each account keeps at most 500 rows, losing its oldest read ones
+([16 §7](16-notifications.md)).
 
 ### `notification_preferences` [P2]
 `user_id (PK, FK)`, `channel_prefs jsonb` — `{category: {in_app: bool, email: bool}}`,

@@ -120,6 +120,17 @@ return [
         'failed_jobs_top_classes' => 5,
     ],
 
+    'notifications' => [
+        // Rows per page in the notification centre (FR-NOTIF-1).
+        'per_page' => 25,
+        // Seconds the bell's unread count stays cached, `notif:unread:{id}` (specs/21 §3).
+        'unread_cache_ttl' => 60,
+        // Retention (specs/16 §7).
+        'prune_read_days' => 90,
+        'prune_unread_days' => 180,
+        'max_per_user' => 500,
+    ],
+
     'security_log' => [
         // auth.permission_denied lines per account (or IP) and route per minute (specs/11 §3).
         'denials_per_minute' => 20,

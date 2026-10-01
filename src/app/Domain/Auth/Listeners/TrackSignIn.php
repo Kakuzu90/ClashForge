@@ -2,6 +2,7 @@
 
 namespace App\Domain\Auth\Listeners;
 
+use App\Domain\Auth\Events\UnrecognisedDeviceSignedIn;
 use App\Domain\Auth\Notifications\NewSignInNotification;
 use App\Domain\Auth\Services\SessionService;
 use App\Domain\Auth\Support\CountryName;
@@ -64,9 +65,11 @@ class TrackSignIn
     {
         if (! KnownDevices::knows($this->request, $user->ulid)) {
             $device = DeviceLabel::fromUserAgent($this->request->userAgent());
+            $country = CountryName::of(CountryName::fromRequest($this->request));
 
             Log::channel('security')->info('auth.new_device', ['user' => $user->ulid, 'ip_hash' => IpHash::of($this->request->ip()), 'device' => $device]);
-            $user->notify(new NewSignInNotification($device, CountryName::of(CountryName::fromRequest($this->request)), Date::now()->toImmutable()));
+            $user->notify(new NewSignInNotification($device, $country, Date::now()->toImmutable()));
+            UnrecognisedDeviceSignedIn::dispatch($user->id, $device, $country);
         }
 
         KnownDevices::remember($this->request, $user->ulid);

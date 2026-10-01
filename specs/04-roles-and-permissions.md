@@ -83,7 +83,8 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 
 - One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `PrivacySettingsPolicy`, `CocAccountPolicy`,
   `BaseLayoutPolicy`, `BaseCommentPolicy`, `RecruitmentPostPolicy`, `ApplicationPolicy`,
-  `ListingPolicy`, `OrderPolicy`, `ReportPolicy`, `MediaPolicy`.
+  `ListingPolicy`, `OrderPolicy`, `ReportPolicy`, `MediaPolicy`, `NotificationPolicy` (a notification is
+  its recipient's alone; staff have no reach into it).
 - Every request that reads or writes a resource runs its policy. **No implicit trust from route
   grouping alone** — route middleware is defence in depth, not the check. Controllers call
   `authorize()` / `Gate::authorize()` when they hold what the policy needs; because Http may not
@@ -126,7 +127,10 @@ Three middlewares, applied in order, each with a dedicated denial page:
 2. `EnsureAccountIsActive` — `account.active` blocks `suspended`, `banned` and `pending_deletion`
    writes; `account.active:content` also blocks `restricted` on content writes (uploads, publishing,
    commenting, applying, messaging). Profile and settings writes stay open to restricted users.
-   Reads (GET/HEAD) pass, so the gate can sit on a whole route group such as `/admin`.
+   Reads (GET/HEAD) pass, so the gate can sit on a whole route group such as `/admin`. The
+   notification centre's writes (mark one or all read) skip it: they touch only the account's own
+   rows, so unverified, restricted, suspended and pending-deletion accounts keep them (owner
+   decision, 2026-10-01); `throttle:global-write` still applies.
 3. `EnsureHasVerifiedCocAccount` — blocks publishing, recruiting and selling.
 
 ## 4. Authentication strategy

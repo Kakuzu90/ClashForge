@@ -2,6 +2,7 @@
 
 namespace App\Domain\Auth\Services;
 
+use App\Domain\Auth\Events\PasswordChanged;
 use App\Domain\Auth\Notifications\PasswordChangedNotification;
 use App\Models\User;
 use App\Support\Privacy\IpHash;
@@ -37,5 +38,6 @@ class PasswordChangeService
 
         Log::channel('security')->info('auth.password_changed', ['user' => $user->ulid, 'ip_hash' => IpHash::of(request()->ip())]);
         $user->notify(new PasswordChangedNotification);
+        PasswordChanged::dispatch($user->id);
     }
 }

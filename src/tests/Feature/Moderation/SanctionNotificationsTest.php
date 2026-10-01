@@ -8,6 +8,7 @@ use App\Domain\Moderation\Models\UserSanction;
 use App\Domain\Moderation\Notifications\AccountBannedNotification;
 use App\Domain\Moderation\Notifications\AccountSuspendedNotification;
 use App\Domain\Moderation\Notifications\SanctionEndedNotification;
+use App\Domain\Notifications\Services\InAppChannel;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
@@ -37,7 +38,7 @@ it('tells a suspended account the reason and the end in UTC', function () {
         ->and($text)->toContain('suspended until 8 October 2026 at 12:00 UTC')
         ->and($text)->toContain('Reason: Spam links in comments')
         ->and($notification->queue)->toBe('high')
-        ->and($notification->via($user))->toBe(['mail']);
+        ->and($notification->via($user))->toBe(['mail', InAppChannel::class]);
 });
 
 it('tells a banned account the reason and that it is signed out', function () {

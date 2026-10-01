@@ -71,7 +71,7 @@ talks to it through **(a)** its public service classes, **(b)** its read-model/D
 | **Messaging** | `conversations`, `conversation_participants`, `messages` | `ConversationService`, `MessageService` | Users, Moderation |
 | **Media** | `media`, `media_variants` | `UploadIntentService`, `MediaAttachmentService`, `MediaReadService` (status and variant URLs by media id), `MediaUrlResolver` | — (edge module) |
 | **GameAssets** | — (config + manifest, no tables) | `GameAssetResolver` (unit / TH / clan badge / league emblem → URL + accessible name), `GameAssetPolicy` flag | — (edge module). The only place Supercell assets are referenced ([18 §2](18-design-system.md)) |
-| **Notifications** | `notifications`, `notification_preferences` | `Notifier` (facade over channels), `NotificationReadModel` | Users |
+| **Notifications** | `notifications`, `notification_preferences` | `Notifier` (writes in-app rows), `InAppChannel` + `InAppNotification` contract (a module's Laravel notification lists the channel beside `mail`), `NotificationReadModel` (centre and unread count), `NotificationService` (mark read), `NotificationType` / `NotificationCategory` | Users; listens to Auth and Media events (edge modules cannot call it) |
 | **Moderation** | `reports`, `report_cases`, `moderation_actions`, `user_sanctions` | `ReportService`, `CaseService`, `SanctionService`, `SanctionHistoryQuery`, `Moderatable` contract | Auth (`UserStatusService` sets the status), Users, Notifications, Audit |
 | **Audit** | `audit_logs` | `AuditLogger`, `AuditLogQuery` (admin viewer read model) | — |
 | **Search** | (no tables; owns `search_documents` materialised view) | `SearchService` (interface), `IndexableContract` | reads other modules' read models |
@@ -98,6 +98,7 @@ Domain events published by modules and consumed elsewhere:
 | Event | Publisher | Consumers |
 |---|---|---|
 | `UserRegistered` | Auth | Users (create profile), Notifications |
+| `PasswordChanged` / `UnrecognisedDeviceSignedIn` | Auth | Notifications (in-app copy; Auth sends the security email itself). After commit |
 | `EmailVerified` | Auth | Notifications, Users (unlock writes) |
 | `CocAccountAttached` | PlayerAccounts | Search (index), Audit |
 | `CocAccountVerified` | PlayerAccounts | Users (badge, stats), Notifications, Clans (ensure clan), Audit |
@@ -107,9 +108,9 @@ Domain events published by modules and consumed elsewhere:
 | `BaseInteracted` (like/copy/view) | Bases | Metrics aggregator, Notifications (throttled) |
 | `CommentPosted` | Bases | Notifications, Moderation (auto-screen) |
 | `MediaReady` / `MediaFailed` | Media | Bases, PlayerAccounts, Marketplace, Users (`MediaReady` on an avatar: forget the cached profile) |
-| `MediaRetriesExhausted` | Media | Notifications (owner: re-upload needed) |
+| `MediaRetriesExhausted` | Media | Notifications (owner: re-upload needed; in-app, the email joins with P1-15) |
 | `ReportFiled` | Moderation | Notifications (staff), Metrics |
-| `SanctionApplied` / `SanctionLifted` | Moderation | Notifications (sanction emails; sent by Moderation's listener until Notifications v1), Search (de-index). Held until commit. The status change (Auth) and the audit entry are written inside `SanctionService`'s transaction, not by listeners |
+| `SanctionApplied` / `SanctionLifted` | Moderation | Notifications (Moderation's listener sends the notices; each lists `InAppChannel` beside `mail`, so the in-app copy is Notifications'), Search (de-index). Held until commit. The status change (Auth) and the audit entry are written inside `SanctionService`'s transaction, not by listeners |
 | `RecruitmentApplicationSubmitted` | Recruitment | Notifications |
 | `OrderStatusChanged` | Marketplace | Notifications, Audit |
 

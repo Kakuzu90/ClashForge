@@ -230,7 +230,7 @@ php artisan bases:recompute-trending
 php artisan bases:aggregate-metrics
 php artisan stats:reconcile               # repairs all denormalised counters
 php artisan moderation:expire-sanctions
-php artisan notifications:prune
+php artisan notifications:prune --dry-run  # read >90 d, unread >180 d, 500 rows per account (oldest read first)
 php artisan search:reindex {type?}
 php artisan assets:make-manifest {path} --pack-version=  # write/refresh a pack's manifest from its files
 php artisan assets:publish-pack {path} --pack-version=   # upload a curated game-asset pack to R2, byte-exact

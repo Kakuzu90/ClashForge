@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Auth\Enums\StaffAbility;
+use App\Domain\Notifications\Queries\NotificationReadModel;
 use App\Domain\Users\Queries\ProfileReadModel;
 use App\Http\Data\AuthData;
 use App\Http\Data\AuthUserData;
@@ -74,7 +75,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
-            unreadCount: null, // notifications land in P1-07
+            unreadCount: $user === null ? null : app(NotificationReadModel::class)->unreadCount($user),
             features: [],
         );
 

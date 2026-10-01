@@ -76,11 +76,11 @@ for a full temp volume does not.
 
 | Job | Trigger | Notes |
 |---|---|---|
-| `SendNotificationJob` | Domain events | Writes the row, handles grouping with a row lock |
-| `SendEmailNotificationJob` | Same, `low` queue | Respects preferences, bounce state and the daily cap |
+| `SendNotificationJob` | Domain events | Writes the row, handles grouping with a row lock. Built in P1-07 as the queued `WriteInAppNotice` listener (`high`) plus the `InAppChannel` job of a Laravel notification; grouping joins with FR-NOTIF-5 |
+| `SendEmailNotificationJob` | Same, `low` queue | Respects preferences, bounce state and the daily cap (P1-15). Security emails are sent by their own module on `high` |
 | `FanOutToFollowersJob` | `BasePublished` (P2) | Chunked at 200; switches to pull-based above 1000 followers |
 | `SendDigestJob` | Daily/weekly schedule (P5) | Batched per user |
-| `PruneNotificationsJob` | Nightly | Read >90d, unread >180d, cap 500/user |
+| `PruneNotificationsJob` | Nightly | Read >90d, unread >180d, cap 500/user. Built as the `notifications:prune` command, run inline (chunked deletes) |
 
 ### Moderation (`default` / `low`)
 
