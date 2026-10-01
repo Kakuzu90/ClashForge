@@ -26,9 +26,10 @@ it('logs a failed and a successful sign-in with the ULID and a hashed IP', funct
     $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])->post('/login', ['email' => 'chief@example.com', 'password' => 'a-long-password']);
 
     $events = $this->securityEvents();
-    expect(messages($events))->toBe(['auth.login_failed', 'auth.login'])
+    // A first sign-in from this browser also logs the new device (P1-05).
+    expect(messages($events))->toBe(['auth.login_failed', 'auth.new_device', 'auth.login'])
         ->and($events[0]['context'])->toBe(['user' => $this->user->ulid, 'ip_hash' => IpHash::of('203.0.113.9')])
-        ->and($events[1]['context'])->toMatchArray(['user' => $this->user->ulid, 'remember' => false]);
+        ->and($events[2]['context'])->toMatchArray(['user' => $this->user->ulid, 'remember' => false]);
 });
 
 it('logs a failure for an unknown email without the email', function () {

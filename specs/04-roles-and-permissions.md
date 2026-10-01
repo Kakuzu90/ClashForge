@@ -134,7 +134,10 @@ Three middlewares, applied in order, each with a dedicated denial page:
   public read API arrives (Phase 7), it will be Sanctum-issued, scoped, per-user tokens with their
   own rate limits.
 - Remember-me is enabled. The recaller cookie lasts 30 days (the absolute cap below), and its token is
-  cycled on logout and on password reset.
+  cycled on logout, password reset, password change and session revocation. A cycle never re-issues
+  this browser's cookie, so remember-me cannot be extended past the password sign-in. A sign-in
+  from the recaller inherits the time of that password sign-in from the encrypted `remember_since`
+  cookie; without it the session counts as expired.
 - Backend: Laravel Fortify's controllers and actions, behind our own Inertia pages, copy and routes
   (`routes/web/auth.php`). The reset-link request is ours (a queued job, see [11](11-security.md)).
 
@@ -150,10 +153,15 @@ before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`,
 - Hash: bcrypt cost 12, rehash on login when the cost changes.
 
 ### Session security
-- Regenerate the session id on login, logout and privilege change.
-- Absolute session lifetime 30 days, idle lifetime 14 days.
-- Session records store device, IP and last-active for the session-management UI.
+- Regenerate the session id on login, logout, privilege change, password change and "sign out every
+  other device" (a copy of this browser's cookie is another device too).
+- Absolute session lifetime 30 days from the password sign-in (`platform.auth.absolute_session_days`,
+  clock kept in the session as `auth.signed_in_at`), idle lifetime 14 days.
+- Session records store device label, hashed IP, CDN country and last-active for the
+  session-management UI (`/settings/security`); listing and counts skip rows past the idle lifetime.
 - Password change, email change and 2FA change invalidate all other sessions.
+- Sensitive actions re-confirm the password within 15 minutes (`auth.password_timeout`) through the
+  `password.confirm` page; the password form asks for the current password inline instead.
 
 ### Rate limits (named limiters)
 
@@ -171,6 +179,7 @@ before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`,
 | `upload-intent` | 30 / hour | user |
 | `search` | 60 / min | ip |
 | `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
+| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page and password form share it | user |
 
 All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their
 numbers are config keys (`config/platform.php` `auth.*` for the auth limiters). On an Inertia form

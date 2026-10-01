@@ -3,6 +3,7 @@
 use App\Domain\Media\Exceptions\StorageUnavailable;
 use App\Http\Controllers\Web\HealthController;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnforceAbsoluteSessionLifetime;
 use App\Http\Middleware\EnforceAccountStatus;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(AssignRequestId::class);
 
         $middleware->web(append: [
+            EnforceAbsoluteSessionLifetime::class,
             HandleInertiaRequests::class,
             EnforceAccountStatus::class,
         ]);

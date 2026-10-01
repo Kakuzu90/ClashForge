@@ -5,10 +5,12 @@ namespace App\Providers;
 use App\Domain\Auth\Exceptions\AccountBanned;
 use App\Domain\Auth\Services\AuthenticationService;
 use App\Domain\Auth\Services\PasswordResetService;
+use App\Http\Data\Auth\ConfirmPasswordPageData;
 use App\Http\Data\Auth\ForgotPasswordPageData;
 use App\Http\Data\Auth\LoginPageData;
 use App\Http\Data\Auth\ResetPasswordPageData;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Responses\Auth\PasswordConfirmationFailedResponse;
 use App\Http\Responses\Auth\PasswordResetDoneResponse;
 use App\Http\Responses\Auth\PasswordResetFailedResponse;
 use App\Support\Seo\PageMeta;
@@ -16,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Inertia\Response;
+use Laravel\Fortify\Contracts\FailedPasswordConfirmationResponse;
 use Laravel\Fortify\Contracts\FailedPasswordResetResponse;
 use Laravel\Fortify\Contracts\PasswordResetResponse;
 use Laravel\Fortify\Fortify;
@@ -36,6 +39,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         $this->app->bind(FailedPasswordResetResponse::class, PasswordResetFailedResponse::class);
         $this->app->bind(PasswordResetResponse::class, PasswordResetDoneResponse::class);
+        $this->app->bind(FailedPasswordConfirmationResponse::class, PasswordConfirmationFailedResponse::class);
     }
 
     public function boot(): void
@@ -65,6 +69,12 @@ class FortifyServiceProvider extends ServiceProvider
             'Auth/ForgotPassword',
             (new ForgotPasswordPageData(status: $this->status($request)))->toArray(),
             new PageMeta(title: 'Reset your password', noindex: true),
+        ));
+
+        Fortify::confirmPasswordView(fn (): Response => PageMeta::page(
+            'Auth/ConfirmPassword',
+            (new ConfirmPasswordPageData(minutes: intdiv((int) config('auth.password_timeout'), 60)))->toArray(),
+            new PageMeta(title: 'Confirm your password', noindex: true),
         ));
 
         Fortify::resetPasswordView(fn (Request $request): Response => PageMeta::page(

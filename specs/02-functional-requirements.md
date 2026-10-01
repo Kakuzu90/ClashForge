@@ -15,7 +15,7 @@ Priority: **M** = MVP, **P2** = phase 4–5, **P3** = phase 6–7.
 | FR-AUTH-4 | M | Unverified users may log in but cannot publish bases, comment, attach CoC accounts or upload media. |
 | FR-AUTH-5 | M | Login is rate-limited per IP and per account; responses are identical for unknown-email and wrong-password (no account enumeration). |
 | FR-AUTH-6 | M | Password reset via signed, single-use, 60-minute token; all sessions are invalidated on reset. |
-| FR-AUTH-7 | M | Users can see active sessions (device, IP region, last active) and revoke any or all of them. |
+| FR-AUTH-7 | M | Users can see active sessions (device, IP region as a country from Cloudflare's `CF-IPCountry`, last active) and revoke any or all of them. |
 | FR-AUTH-8 | M | Users can change email; the new address requires re-verification, the old one gets a change notice. |
 | FR-AUTH-9 | M | Users can delete their account: 30-day soft delete, then anonymisation of profile fields, release of CoC account tags, retention of moderation and audit records. |
 | FR-AUTH-10 | P2 | Optional TOTP two-factor auth, mandatory for moderator and above. |

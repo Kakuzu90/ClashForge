@@ -34,7 +34,7 @@ Authentication identity and platform-level status. Deliberately thin — profile
 | email | citext | |
 | email_verified_at | timestamptz null | required for writes |
 | password | varchar(255) | bcrypt/argon2id |
-| remember_token | varchar(100) null | remember-me recaller; cycled on logout and password reset |
+| remember_token | varchar(100) null | remember-me recaller; cycled on logout, password reset, password change and session revocation |
 | role | varchar(20) | `user`\|`moderator`\|`admin`\|`super_admin`, default `user` |
 | status | varchar(20) | `active`\|`restricted`\|`suspended`\|`banned`\|`pending_deletion` |
 | status_reason | varchar(255) null | user-visible sanction reason |
@@ -66,8 +66,11 @@ Holds released usernames so old profile URLs redirect and handles cannot be snip
 ### `sessions` [M]
 Laravel's database session table, plus columns for the session-management UI.
 
-`id (varchar PK)`, `user_id (bigint null, index)`, `ip_hash`, `user_agent`, `payload (text)`,
-`last_activity (int, index)`, `device_label`.
+`id (varchar PK)`, `user_id (bigint null, index)`, `ip_hash (varchar(64) null)`, `user_agent`,
+`payload (text)`, `last_activity (int, index)`, `device_label (varchar(100) null)`,
+`country_code (char(2) null, from Cloudflare's CF-IPCountry via a trusted proxy; null locally)`,
+`created_at (timestamptz null)`. No raw IP is stored. The absolute-lifetime clock lives in the
+session payload (`auth.signed_in_at`).
 
 ### `password_reset_tokens` [M]
 Laravel default: `email (PK)`, `token`, `created_at`.

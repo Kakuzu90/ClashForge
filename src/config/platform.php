@@ -40,9 +40,20 @@ return [
         'password_reset_per_ip_per_hour' => 20,
         'min_password_length' => 10,
         'hibp_timeout' => 2,
+        // A session ends this long after sign-in even while active (specs/04 §4); idle is session.lifetime.
+        'absolute_session_days' => 30,
+        // The `known_devices` cookie: how long a browser stays recognised, and how many accounts it
+        // remembers (specs/11 "Authentication attacks").
+        'known_device_days' => 365,
+        'known_devices_max' => 10,
+        // Request header the CDN fills with the visitor's country (sessions.country_code, FR-AUTH-7).
+        'country_header' => env('COUNTRY_HEADER', 'CF-IPCountry'),
+        // Current-password checks (confirm page, password change) per account and IP.
+        'password_confirm_per_minute' => 5,
+        'password_confirm_per_hour' => 20,
     ],
 
-    // Key for hashing IPs before they are stored (last_login_ip_hash, later session ip_hash).
+    // Key for hashing IPs before they are stored (last_login_ip_hash, sessions.ip_hash).
     'ip_hash_salt' => env('IP_HASH_SALT') ?: env('APP_KEY'),
 
     'health' => [

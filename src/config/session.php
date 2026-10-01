@@ -32,7 +32,7 @@ return [
     |
     */
 
-    // Idle lifetime: 14 days (specs/04 §4). The 30-day absolute cap arrives with P1-05.
+    // Idle lifetime: 14 days (specs/04 §4). The 30-day absolute cap is platform.auth.absolute_session_days.
     'lifetime' => (int) env('SESSION_LIFETIME', 20160),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),

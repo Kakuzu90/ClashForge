@@ -166,7 +166,7 @@ require __DIR__.'/web/accounts.php';
 | `/recruit` `/recruit/clans` `/recruit/players` `/recruit/{ulid}` | recruitment |
 | `/market` `/market/{slug}` `/market/orders/{ulid}` | marketplace |
 | `/search` | search |
-| `/notifications` `/settings/*` `/dashboard` | authenticated |
+| `/notifications` `/settings/*` `/dashboard` `/confirm-password` | authenticated |
 | `/account/suspended` | suspension notice (a suspended account is sent here, [04 §1](04-roles-and-permissions.md)) |
 | `/admin/*` | staff |
 | `/uploads/intent` `/uploads/{ulid}/complete` `/uploads/{ulid}` | presigned upload flow (JSON, owner only, [10 §3](10-media-storage.md)) |

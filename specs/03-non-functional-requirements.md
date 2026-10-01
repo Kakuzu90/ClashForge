@@ -62,7 +62,7 @@ Full controls in [11-security.md](11-security.md). NFR-level commitments:
 |---|---|
 | NFR-PRIV-1 | Data export: a user can request a machine-readable export of their data, delivered within 30 days (queued, emailed as a signed link). |
 | NFR-PRIV-2 | Data deletion honours FR-AUTH-9; moderation records are retained under legitimate interest with the user pseudonymised. |
-| NFR-PRIV-3 | Cookie use is limited to strictly-necessary session and CSRF cookies at launch; no third-party analytics that requires consent (use a self-hosted or cookieless analytics tool). |
+| NFR-PRIV-3 | Cookie use is limited to strictly-necessary cookies at launch: session, CSRF, remember-me (`remember_web_*`, `remember_since`) and the `known_devices` security cookie; no third-party analytics that requires consent (use a self-hosted or cookieless analytics tool). |
 | NFR-PRIV-4 | Minors: the platform states a 13+ (16+ in the EEA where required) minimum age at registration; underage reports are actioned by deletion. |
 | NFR-PRIV-5 | Supercell Fan Content Policy compliance: the required disclaimer visible in the global footer on every page, no Supercell trademarks in the logo, domain or platform branding, and game assets used only to identify game content, unmodified ([18 §2](18-design-system.md)). |
 | NFR-PRIV-6 | Terms of Service and Privacy Policy exist before launch and are versioned; material changes require re-acceptance. |

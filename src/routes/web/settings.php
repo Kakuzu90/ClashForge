@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\PrivacyController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Support\Facades\Route;
 
 // The settings area (specs/19 §4, specs/18 §6). Profile and privacy writes are account writes,
@@ -9,10 +10,15 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'account.active'])->prefix('settings')->name('settings.')->group(function (): void {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/privacy', [PrivacyController::class, 'edit'])->name('privacy.edit');
+    Route::get('/security', [SecurityController::class, 'edit'])->name('security.edit');
     Route::middleware('throttle:global-write')->group(function (): void {
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::put('/profile/avatar', [ProfileController::class, 'setAvatar'])->name('profile.avatar.update');
         Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.destroy');
         Route::patch('/privacy', [PrivacyController::class, 'update'])->name('privacy.update');
+        // Current-password guesses share the `password-confirm` bucket with the confirm page.
+        Route::put('/security/password', [SecurityController::class, 'updatePassword'])->middleware('throttle:password-confirm')->name('security.password.update');
+        Route::delete('/security/sessions', [SecurityController::class, 'destroyOtherSessions'])->name('security.sessions.destroy-others');
+        Route::delete('/security/sessions/{key}', [SecurityController::class, 'destroySession'])->where('key', '[0-9a-f]{32}')->name('security.sessions.destroy');
     });
 });

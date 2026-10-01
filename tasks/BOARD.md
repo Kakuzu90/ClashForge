@@ -27,10 +27,12 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P1-02 | Roles, status, policy scaffold | done | P1-01 | tasks/phase-1/P1-02-roles-status-policy-scaffold.md |
 | P1-03 | Profiles + avatar upload (avatar uploads must stay open to restricted accounts: make `account.active:content` on `uploads/*` collection-aware, from P1-02) | done | P1-02, P0-05 | tasks/phase-1/P1-03-profiles-and-avatar.md |
 | P1-04 | Privacy settings + public profile (+ `user_stats`, from P1-03) | done | P1-03 | tasks/phase-1/P1-04-privacy-and-public-profile.md |
-| P1-05 | Settings area incl. sessions, deletion (+ new-device sign-in email, from P1-01) | todo | P1-02 | |
+| P1-05 | Security settings: password change, session list/revoke, 30-day absolute cap, 15-min re-confirmation page (+ new-device sign-in email, from P1-01) | done | P1-02 | tasks/phase-1/P1-05-security-settings-and-sessions.md |
 | P1-06 | Admin v1 + audit log (incl. the `audit_logs` entry for role changes from `RoleAssignmentService`, from P1-02) | todo | P1-02 | |
-| P1-07 | Notifications v1 | todo | P1-01 | |
-| P1-08 | Registration + email verification: username rules + reserved list, disposable-email blocklist, HIBP, Turnstile (register and `/forgot-password`, specs/11), honeypot + min fill time, existing-email notice, signed 60-min link, resend limiter, `UserRegistered`/`EmailVerified` (split from P1-01) | todo | P1-01 | |
+| P1-07 | Notifications v1 (+ in-app copies of "Password changed" and "New sign-in", from P1-05) | todo | P1-01 | |
+| P1-08 | Registration + email verification: username rules + reserved list, disposable-email blocklist, HIBP, Turnstile (register and `/forgot-password`, specs/11), honeypot + min fill time, existing-email notice, signed 60-min link, resend limiter, `UserRegistered`/`EmailVerified` (split from P1-01) (+ set the `known_devices` cookie at registration, from P1-05) | todo | P1-01 | |
+| P1-10 | Email change (FR-AUTH-8): re-confirmation, verification link to the new address, notice to the old one, generic error when taken (split from P1-05) | todo | P1-05, P1-08 | |
+| P1-11 | Account deletion + Danger zone (FR-AUTH-9, NFR-PRIV-2): request with re-confirmation, `pending_deletion` + `deletion_requested_at`, cancel on sign-in, `platform:anonymize-deleted` for Phase 1 data with an `audit_logs` entry (specs/08 §6; split from P1-05) | todo | P1-05, P1-06 | |
 | P1-09 | Username change + `username_history`: once per 30 days, old names reserved 90 days, `/u/{old}` redirects (FR-PROFILE-7, specs/23 §1; split from P1-03) | todo | P1-04, P1-08 | |
 
 ## Phase 2 — Verified CoC accounts

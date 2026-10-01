@@ -6,6 +6,7 @@ import UiBadge from '@/Components/ui/UiBadge.vue';
 import UiButton, { type ButtonSize, type ButtonVariant } from '@/Components/ui/UiButton.vue';
 import UiCard from '@/Components/ui/UiCard.vue';
 import UiCheckbox from '@/Components/ui/UiCheckbox.vue';
+import UiDropdownMenu, { type MenuItem } from '@/Components/ui/UiDropdownMenu.vue';
 import UiEmptyState from '@/Components/ui/UiEmptyState.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
@@ -77,6 +78,11 @@ const sampleTabs: TabItem[] = [
     { key: 'third', label: 'Third tab' },
 ];
 const underlineTab = ref('first');
+const menuItems: MenuItem[] = [
+    { key: 'first', label: 'Link item', href: '#h-menu' },
+    { key: 'second', label: 'Button item' },
+    { key: 'third', label: 'Another button item' },
+];
 const pillTab = ref('second');
 const { push } = useToast();
 
@@ -89,6 +95,7 @@ const sections = [
     'Checkboxes',
     'Toggles and radios',
     'Tabs',
+    'Dropdown menu',
     'Stat blocks',
     'Cards',
     'Pills',
@@ -220,6 +227,21 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                             <p class="text-body text-fg-secondary">{{ t.label }} panel (pill).</p>
                         </template>
                     </UiTabs>
+                </div>
+            </section>
+
+            <section :id="anchor('Dropdown menu')" aria-labelledby="h-menu">
+                <h2 id="h-menu" class="font-display text-h1">Dropdown menu</h2>
+                <p class="mt-2 max-w-prose text-body text-fg-secondary">
+                    Enter, Space or Down opens on the first item, Up on the last. Arrows, Home and End move; Escape closes.
+                </p>
+                <div class="mt-4 flex gap-8">
+                    <UiDropdownMenu :items="menuItems" label="Sample menu, aligned start" align="start" @select="clicked">
+                        <template #trigger><span class="px-2 text-fg">Open (start)</span></template>
+                    </UiDropdownMenu>
+                    <UiDropdownMenu :items="menuItems" label="Sample menu, aligned end" @select="clicked">
+                        <template #trigger><span class="px-2 text-fg">Open (end)</span></template>
+                    </UiDropdownMenu>
                 </div>
             </section>
 

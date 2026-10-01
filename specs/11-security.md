@@ -120,8 +120,9 @@ mechanism and the test that proves it.
 - Password resets invalidate all sessions; reset tokens are single-use and expire in 60 minutes.
 - Compromised-password check via HIBP k-anonymity on registration and password change.
 - 2FA mandatory for moderator and above.
-- Login notifications ("new sign-in from a new device") emailed for unrecognised device
-  fingerprints.
+- Login notifications ("new sign-in from a new device") emailed for unrecognised devices: a device
+  is known when the browser holds the long-lived encrypted `known_devices` cookie listing the
+  accounts that signed in from it (a security cookie, strictly necessary under NFR-PRIV-3).
 
 ### Account enumeration
 - Generic messages on login, register, reset and email change.
@@ -184,7 +185,9 @@ so no value can escape `game/{version}/`.
 - Idle 14 days / absolute 30 days lifetimes.
 - Session listing and remote revocation in settings.
 - Logout revokes the remember token.
-- Sensitive-action re-authentication window of 15 minutes.
+- Sensitive-action re-authentication window of 15 minutes (`password.confirm` page, `/confirm-password`).
+- The session list never carries a session id: each row has an HMAC key, and revocation 404s on a
+  foreign, current or unknown key. The country header is believed only through a trusted proxy.
 
 ### Transport & headers
 HSTS (1 year, includeSubDomains, preload), TLS 1.2+, `X-Content-Type-Options: nosniff`,
@@ -212,7 +215,10 @@ HSTS (1 year, includeSubDomains, preload), TLS 1.2+, `X-Content-Type-Options: no
 ## 3. Logging, monitoring and response
 
 **Security events logged** (structured, to a dedicated channel):
-failed and successful logins, password/email changes, 2FA changes, role changes, permission denials,
+failed and successful logins, password/email changes (`auth.password_changed`,
+`auth.password_change_failed`, `auth.password_confirm_failed`), new devices (`auth.new_device`),
+session revocation and expiry (`auth.session_revoked`, `auth.session_expired`), 2FA changes, role
+changes, permission denials,
 CoC claim attempts and verification failures, ownership transfers, sanctions, admin data access,
 rate-limit breaches, upload quarantines, CSP violation reports.
 
@@ -245,7 +251,7 @@ author; disclosure obligations and timelines. Rehearsed once before launch.
 | Upload suite | Polyglot file, MIME mismatch, oversized, SVG, zip-bomb image, 0-byte, wrong magic bytes |
 | Rate limit suite | Each named limiter enforced and correctly keyed |
 | XSS suite | Payloads in every user-controlled field, output asserted escaped |
-| Auth suite | Enumeration, fixation, reset-token reuse, session invalidation on password change |
+| Auth suite | Enumeration, fixation, reset-token reuse, session invalidation on password change, session-key IDOR, remember-me past the absolute cap, current-password guessing limits |
 | Static analysis | PHPStan L6/L8, plus a rule banning `DB::raw` interpolation and `$guarded = []` |
 | Dependency scan | Every PR |
 | Manual review | Checklist review before each phase ships: new routes have policies, new models have `$fillable`, new uploads use the media pipeline |
@@ -253,8 +259,8 @@ author; disclosure obligations and timelines. Rehearsed once before launch.
 
 ## 5. Privacy-adjacent security requirements
 
-- IP addresses are stored hashed (HMAC with a server-side salt rotated every 90 days) except in the
-  live session row.
+- IP addresses are stored hashed (HMAC with a server-side salt rotated every 90 days), the live
+  session row included (`sessions.ip_hash`).
 - Email addresses appear only to the owner and to admins; never in public pages, never in
   notification payloads to third parties.
 - Data export and deletion flows exist (NFR-PRIV-1/2).

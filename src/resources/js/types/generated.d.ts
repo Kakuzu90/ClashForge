@@ -1,6 +1,16 @@
 declare namespace App {
 namespace Domain {
 namespace Auth {
+namespace Data {
+export type SessionData = {
+key: string,
+deviceLabel: string,
+country: string | null,
+lastActiveAt: string,
+signedInAt: string | null,
+isCurrent: boolean,
+};
+}
 namespace Enums {
 export type Role = 'user' | 'moderator' | 'admin' | 'super_admin';
 export type StaffAbility = 'access-admin' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
@@ -164,6 +174,9 @@ endsAt: string | null,
 };
 }
 namespace Auth {
+export type ConfirmPasswordPageData = {
+minutes: number,
+};
 export type ForgotPasswordPageData = {
 status: string | null,
 };
@@ -206,6 +219,9 @@ displayNameMax: number,
 bioMax: number,
 languagesMax: number,
 },
+};
+export type SecuritySettingsPageData = {
+passwordMinLength: number,
 };
 }
 }

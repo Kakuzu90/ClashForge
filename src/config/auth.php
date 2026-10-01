@@ -121,6 +121,7 @@ return [
     // stored reset token costs one bcrypt-12 hash, ~250 ms) so every answer takes the same time.
     'timebox_duration' => (int) env('AUTH_TIMEBOX_DURATION', 700000),
 
-    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+    // Sensitive actions need a password confirmed within 15 minutes (specs/11 "CSRF").
+    'password_timeout' => (int) env('AUTH_PASSWORD_TIMEOUT', 900),
 
 ];

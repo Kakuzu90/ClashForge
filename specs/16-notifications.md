@@ -18,9 +18,9 @@ is waiting on.
 |---|---|---|---|---|
 | **Security** | Email verification link | E* | — | immediate |
 | | Password reset | E* | — | immediate |
-| | Password changed | I + E* | — | immediate |
+| | Password changed | I + E* (email since P1-05; in-app with P1-07) | — | immediate |
 | | Email address changed (to old + new) | E* | — | immediate |
-| | New sign-in from an unrecognised device | I + E* | — | immediate |
+| | New sign-in from an unrecognised device | I + E* (email since P1-05; in-app with P1-07) | — | immediate |
 | | 2FA enabled/disabled | I + E* | — | immediate |
 | | Account suspended / banned | I + E* | — | immediate |
 | | Sanction lifted / expired | I + E | — | immediate |

@@ -1,4 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
+import confirmD7e05f from './confirm'
 /**
 * @see \Laravel\Fortify\Http\Controllers\PasswordResetLinkController::request
 * @see vendor/laravel/fortify/src/Http/Controllers/PasswordResetLinkController.php:22
@@ -173,11 +174,56 @@ update.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     method: 'post',
 })
 
+/**
+* @see \Laravel\Fortify\Http\Controllers\ConfirmablePasswordController::confirm
+* @see vendor/laravel/fortify/src/Http/Controllers/ConfirmablePasswordController.php:40
+* @route '/confirm-password'
+*/
+export const confirm = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: confirm.url(options),
+    method: 'get',
+})
+
+confirm.definition = {
+    methods: ["get","head"],
+    url: '/confirm-password',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \Laravel\Fortify\Http\Controllers\ConfirmablePasswordController::confirm
+* @see vendor/laravel/fortify/src/Http/Controllers/ConfirmablePasswordController.php:40
+* @route '/confirm-password'
+*/
+confirm.url = (options?: RouteQueryOptions) => {
+    return confirm.definition.url + queryParams(options)
+}
+
+/**
+* @see \Laravel\Fortify\Http\Controllers\ConfirmablePasswordController::confirm
+* @see vendor/laravel/fortify/src/Http/Controllers/ConfirmablePasswordController.php:40
+* @route '/confirm-password'
+*/
+confirm.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: confirm.url(options),
+    method: 'get',
+})
+
+/**
+* @see \Laravel\Fortify\Http\Controllers\ConfirmablePasswordController::confirm
+* @see vendor/laravel/fortify/src/Http/Controllers/ConfirmablePasswordController.php:40
+* @route '/confirm-password'
+*/
+confirm.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: confirm.url(options),
+    method: 'head',
+})
+
 const password = {
     request: Object.assign(request, request),
     email: Object.assign(email, email),
     reset: Object.assign(reset, reset),
     update: Object.assign(update, update),
+    confirm: Object.assign(confirm, confirmD7e05f),
 }
 
 export default password

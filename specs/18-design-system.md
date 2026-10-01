@@ -264,7 +264,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 | **Modal / Sheet** | centered modal (desktop), bottom sheet (mobile) | open, closing; focus-trapped |
 | **Toast** | info, success, danger, **reward** (gold, animated) | enter, idle, exit |
 | **Tooltip** | top/bottom/left/right | — |
-| **Dropdown menu** | — | keyboard navigable |
+| **Dropdown menu** | — | keyboard navigable (WAI-ARIA menu button: Enter/Space/Down opens on the first item, Up on the last; arrows, Home, End move; Escape closes and returns focus; Tab and an outside click close) |
 | **Tabs** | underline, pill | active, focus |
 | **Pagination** | numbered, load-more, infinite-sentinel | loading |
 | **Progress** | bar, ring, upload-progress | determinate, indeterminate |
@@ -383,8 +383,8 @@ copies, war stars across accounts) → tabs: Accounts · Bases · Activity (P2) 
 guest) and a banned or pending-deletion owner render the same 404 as an unknown username, so the
 page never confirms the account exists ([11](11-security.md)). That page is `Profile/NotFound`:
 an empty state with a link home, copy that never names the reason.
-*Own profile:* "Edit profile" and "Privacy" buttons in the cover band. The header avatar links to
-your own `/u/{username}`; settings are reached from there until the account menu (P1-05).
+*Own profile:* "Edit profile" and "Privacy" buttons in the cover band. The header avatar opens the
+account menu: Your profile · Settings · Sign out.
 
 ### CoC account detail (`/accounts/{ulid}`)
 PlayerCard hero → verification status banner → stat blocks with deltas → hero/troop/spell/equipment

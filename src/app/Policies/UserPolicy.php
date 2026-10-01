@@ -7,12 +7,25 @@ use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Staff actions on another account (specs/04 §2). Beyond holding the ability, the actor must
+ * An account's own security settings, and staff actions on another account (specs/04 §2). Beyond holding the ability, the actor must
  * strictly outrank the target: a moderator never acts on a moderator, an admin never on another
  * admin, and super admins are changed only from the console (rule 1). Nobody acts on themselves.
  */
 class UserPolicy
 {
+    /**
+     * Own sessions only, with account-write standing: open to restricted accounts (specs/04 §3).
+     */
+    public function manageSessions(User $actor, User $target): bool
+    {
+        return $actor->id === $target->id && $actor->allowsAccountWrites();
+    }
+
+    public function changePassword(User $actor, User $target): bool
+    {
+        return $actor->id === $target->id && $actor->allowsAccountWrites();
+    }
+
     public function warn(User $actor, User $target): bool
     {
         return $this->staffOver($actor, StaffAbility::WarnUser, $target);

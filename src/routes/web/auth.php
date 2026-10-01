@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\ResetLinkRequestController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
+use Laravel\Fortify\Http\Controllers\ConfirmablePasswordController;
 use Laravel\Fortify\Http\Controllers\NewPasswordController;
 use Laravel\Fortify\Http\Controllers\PasswordResetLinkController;
 
@@ -24,3 +25,10 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth')->name('logout');
+
+// Re-confirmation before sensitive actions (specs/11 "CSRF"): `password.confirm` middleware sends
+// here and the confirmation lasts auth.password_timeout (15 minutes).
+Route::middleware('auth')->group(function (): void {
+    Route::get('/confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
+    Route::post('/confirm-password', [ConfirmablePasswordController::class, 'store'])->middleware('throttle:password-confirm')->name('password.confirm.store');
+});

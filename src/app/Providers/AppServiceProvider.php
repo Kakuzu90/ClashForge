@@ -88,6 +88,18 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour((int) config('platform.auth.password_reset_per_hour'))->by('password-reset:'.$this->emailKey($request))->response($this->throttledForm('password-reset')),
             Limit::perHour((int) config('platform.auth.password_reset_per_ip_per_hour'))->by('password-reset:ip:'.$request->ip())->response($this->throttledForm('password-reset')),
         ]);
+
+        // Guessing the current password from a hijacked session: the confirm page and the
+        // password change share one bucket per account (specs/11 "Authentication attacks").
+        RateLimiter::for('password-confirm', function (Request $request): array {
+            $key = 'password-confirm:'.($request->user()?->getAuthIdentifier() ?? $request->ip());
+            $response = $this->throttledForm('password-confirm', $request->has('current_password') ? 'current_password' : 'password');
+
+            return [
+                Limit::perMinute((int) config('platform.auth.password_confirm_per_minute'))->by($key.':m')->response($response),
+                Limit::perHour((int) config('platform.auth.password_confirm_per_hour'))->by($key.':h')->response($response),
+            ];
+        });
     }
 
     private function emailKey(Request $request): string
@@ -101,9 +113,9 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return Closure(Request, array<string, string>): Response
      */
-    private function throttledForm(string $limiter): Closure
+    private function throttledForm(string $limiter, string $field = 'email'): Closure
     {
-        return function (Request $request, array $headers) use ($limiter): Response {
+        return function (Request $request, array $headers) use ($limiter, $field): Response {
             Log::channel('security')->warning('auth.rate_limited', ['limiter' => $limiter, 'ip_hash' => IpHash::of($request->ip())]);
 
             $seconds = (int) ($headers['Retry-After'] ?? 60);
@@ -111,7 +123,7 @@ class AppServiceProvider extends ServiceProvider
 
             return back()
                 ->withInput($request->only('email'))
-                ->withErrors(['email' => "Too many attempts. Try again in {$wait}."]);
+                ->withErrors([$field => "Too many attempts. Try again in {$wait}."]);
         };
     }
 }
