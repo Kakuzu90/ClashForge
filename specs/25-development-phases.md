@@ -53,7 +53,7 @@ before Phase 3 ships publicly; the only difference must be `.env`.
 | Public profile | `/u/{username}` with visibility rules (mostly empty at this stage — that is fine) |
 | Settings | Profile, privacy, security, sessions, danger zone (deletion request) |
 | Admin v1 | User list, user detail, suspend/ban, audit log viewer |
-| Notifications v1 | `notifications` table, bell, list page, mark-read; security emails |
+| Notifications v1 | `notifications` table, bell, list page, mark-read; security emails; P1-15 adds queued non-security email, email preferences and signed unsubscribe |
 
 **Exit:** register → verify → complete profile → upload avatar → view public profile → an admin can
 suspend the user and the suspension takes effect. Security test suite (enumeration, mass assignment,
@@ -122,7 +122,7 @@ both sides are notified. A non-leader cannot post for a clan.
 |---|---|
 | Social | Follows, follower counts, followed-authors feed section, pull-based fan-out above 1000 followers |
 | Activity | Profile activity timeline |
-| Notifications v2 | Preferences, grouping/aggregation, digests, bounce handling |
+| Notifications v2 | In-app preference controls, grouping/aggregation, digests, bounce handling (email preferences ship in P1-15) |
 | Moderation v2 | Appeals queue with reviewer separation, anomaly detection job, transparency page, reporter trust scoring |
 | Achievements | Badge framework + a first set (verified, first base, milestones), reward toasts |
 | Polish | Empty/loading/error states audited across every page, accessibility pass with assistive tech, performance budgets enforced |
@@ -258,6 +258,7 @@ user input, files, or crosses a trust boundary.
 | Username change + `username_history` (P1-09) | [07](07-database-schema.md) (users, `username_history`), [04 §4](04-roles-and-permissions.md) | [23 §1](23-edge-cases.md) |
 | Admin v1 + audit log | [12](12-moderation-system.md), [07](07-database-schema.md) (audit) | [18 §4](18-design-system.md) (admin components) |
 | Notifications v1 | [16](16-notifications.md), [07](07-database-schema.md) | [20](20-jobs-and-scheduling.md) |
+| Non-security email + email preferences (P1-15) | [16 §4–5](16-notifications.md), [07](07-database-schema.md) (`notification_preferences`) | [20 §1–2, §4–5](20-jobs-and-scheduling.md), [04 §3](04-roles-and-permissions.md), [11 §2](11-security.md), [08 §6](08-entity-relationships.md), [18 §6](18-design-system.md) |
 
 ### Phase 2 — Verified CoC accounts
 

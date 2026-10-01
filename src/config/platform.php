@@ -158,6 +158,10 @@ return [
     ],
 
     'notifications' => [
+        'email_per_day' => 10,
+        'email_counter_ttl' => 86400,
+        'unsubscribe_link_days' => 30,
+        'email_slow_seconds' => 10,
         // Rows per page in the notification centre (FR-NOTIF-1).
         'per_page' => 25,
         // Seconds the bell's unread count stays cached, `notif:unread:{id}` (specs/21 §3).

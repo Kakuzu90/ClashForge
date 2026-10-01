@@ -114,6 +114,14 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
 
 ### IDOR prevention
 
+- P1-15 email preferences are the recipient's alone, with no staff bypass. Signed-in owners may
+  edit them even when unverified, restricted, suspended or pending deletion; these housekeeping
+  writes skip `account.active` and retain `throttle:global-write`. A signed unsubscribe capability
+  also works without sign-in, including for banned recipients, and authorizes only disabling
+  non-security mail for the bound account. The policy checks the capability's signature, expiry
+  and current-email binding; it cannot authorize reads of private preferences or re-enabling mail
+  ([16 §5](16-notifications.md); owner decision, 2026-10-01).
+
 - All owned-resource queries are scoped at the query level (`->whereBelongsTo($user)`), so a wrong
   id 404s before a policy ever runs.
 - Public identifiers: users are addressed by `username`, bases by `ULID` slug

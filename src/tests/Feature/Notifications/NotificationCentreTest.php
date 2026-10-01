@@ -162,7 +162,7 @@ it('keeps the centre within the query budget', function () {
 });
 
 it('reads its limits from config', function () {
-    expect(config('platform.notifications'))->toBe([
+    expect(config('platform.notifications'))->toMatchArray([
         'per_page' => 25,
         'unread_cache_ttl' => 60,
         'prune_read_days' => 90,

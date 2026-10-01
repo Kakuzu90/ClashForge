@@ -2,10 +2,16 @@
 
 use App\Http\Controllers\Settings\AccountDeletionController;
 use App\Http\Controllers\Settings\EmailChangeController;
+use App\Http\Controllers\Settings\EmailPreferenceController;
 use App\Http\Controllers\Settings\PrivacyController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Support\Facades\Route;
+
+Route::middleware('auth')->prefix('settings')->name('settings.')->group(function (): void {
+    Route::get('/notifications', [EmailPreferenceController::class, 'edit'])->name('notifications.edit');
+    Route::patch('/notifications', [EmailPreferenceController::class, 'update'])->middleware('throttle:global-write')->name('notifications.update');
+});
 
 // The settings area (specs/19 §4, specs/18 §6). Profile and privacy writes are account writes,
 // open to restricted accounts (specs/04 §3); the policies re-check every action.

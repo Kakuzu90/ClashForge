@@ -41,6 +41,11 @@ enum NotificationCategory: string implements HasLabelAndColor
         return 'text-muted';
     }
 
+    public function emailDefault(): bool
+    {
+        return $this !== self::Social;
+    }
+
     /**
      * @return list<NotificationType>
      */

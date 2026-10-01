@@ -50,6 +50,8 @@
 | user → profile | 1:1 | user | cascade |
 | user → privacy_settings | 1:1 | user | cascade |
 | user → user_stats | 1:1 | user | cascade |
+| user → notification_preferences | 1:1, lazily created | user | cascade |
+| user → notification_email_deliveries | 1:N | user | cascade |
 | user → coc_accounts | 1:N | user | **set null + status `released`** — the tag must become reclaimable, and the history must survive |
 | user → featured coc_account | N:1 (nullable, circular) | user | set null |
 | coc_account → snapshots | 1:N | account | cascade |
@@ -168,7 +170,7 @@ remember-me; a fresh sign-in cancels it while preserving any still-effective san
 | `profiles` | display name, bio, socials, country, languages and timezone cleared; avatar reference cleared and media deleted through Media's lifecycle |
 | `privacy_settings`, `user_stats` | rows retained with privacy defaults and zero counters |
 | `sessions`, `password_reset_tokens` | deleted for the account; reset-token lookup uses the original email before hashing |
-| `notifications`, `notification_preferences` | account's rows deleted; Phase 1 deletes notifications, preferences join when their table ships |
+| `notifications`, `notification_preferences`, `notification_email_deliveries` | account's rows deleted; preference and delivery cleanup join in P1-15 |
 | `coc_accounts` | `user_id` nulled, `status='released'`, snapshots retained, tag reclaimable |
 | `base_layouts` | deleted (cascade), media swept |
 | `base_comments` | body replaced with a tombstone, row retained so threads stay readable |

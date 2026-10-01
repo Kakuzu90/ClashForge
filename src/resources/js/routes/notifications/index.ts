@@ -1,4 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
+import unsubscribe from './unsubscribe'
 /**
 * @see \App\Http\Controllers\Notifications\NotificationController::index
 * @see app/Http/Controllers/Notifications/NotificationController.php:24
@@ -130,6 +131,7 @@ read.post = (args: { id: string | number } | [id: string | number ] | string | n
 })
 
 const notifications = {
+    unsubscribe: Object.assign(unsubscribe, unsubscribe),
     index: Object.assign(index, index),
     readAll: Object.assign(readAll, readAll),
     read: Object.assign(read, read),

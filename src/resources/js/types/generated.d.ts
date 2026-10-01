@@ -176,6 +176,17 @@ export type SanctionType = 'warning' | 'restriction' | 'suspension' | 'ban';
 }
 namespace Notifications {
 namespace Data {
+export type EmailCategoryData = {
+key: string,
+label: string,
+enabled: boolean,
+locked: boolean,
+};
+export type EmailPreferencesData = {
+emailEnabled: boolean,
+categories: App.Domain.Notifications.Data.EmailCategoryData[],
+canUpdate: boolean,
+};
 export type InAppMessageData = {
 type: App.Domain.Notifications.Enums.NotificationType,
 params: Record<string, string | number | boolean | null>,
@@ -204,6 +215,7 @@ url: string | null,
 namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
 export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed';
+export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
 }
 }
 namespace Users {
@@ -433,6 +445,11 @@ export type NotificationTabData = {
 value: string | null,
 label: string,
 };
+export type UnsubscribePageData = {
+outcome: string,
+message: string,
+confirmUrl: string | null,
+};
 }
 namespace Profile {
 export type ProfileShowPageData = {
@@ -450,6 +467,9 @@ message: string,
 username: string | null,
 newEmail: string | null,
 confirmUrl: string | null,
+};
+export type EmailPreferencesPageData = {
+settings: App.Domain.Notifications.Data.EmailPreferencesData,
 };
 export type PrivacySettingsPageData = {
 settings: App.Domain.Users.Data.PrivacyFormData,

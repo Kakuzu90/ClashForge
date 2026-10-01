@@ -48,6 +48,10 @@ class EnforceAbsoluteSessionLifetime
         $session->invalidate();
         $session->regenerateToken();
 
+        if ($request->routeIs('notifications.unsubscribe.*')) {
+            return $next($request);
+        }
+
         if ($request->expectsJson() || $request->is('uploads/*')) {
             return response()->json(['message' => __('auth.session_expired')], 401);
         }

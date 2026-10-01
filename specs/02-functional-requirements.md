@@ -129,7 +129,7 @@ Priority: **M** = MVP, **P2** = phase 4–5, **P3** = phase 6–7.
 | FR-NOTIF-1 | M | In-app notification centre with unread count, mark-read, mark-all-read and pagination. |
 | FR-NOTIF-2 | M | Events: email verified, CoC account verified, claim conflict, dispute opened/resolved, comment on your base, reply to your comment, like milestone, moderation decision, report outcome. |
 | FR-NOTIF-3 | M | Transactional email for security-critical events (verification, password reset, email change, suspension, ban). |
-| FR-NOTIF-4 | P2 | Per-category notification preferences for in-app and email. |
+| FR-NOTIF-4 | M / P2 | Per-category notification preferences: email controls and global non-security email opt-out in P1-15; in-app controls in Phase 5 (specs/16 §5). |
 | FR-NOTIF-5 | P2 | Likes are aggregated ("12 people liked your base") rather than one notification per like. |
 | FR-NOTIF-6 | P2 | Optional daily/weekly email digest. |
 

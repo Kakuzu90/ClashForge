@@ -98,19 +98,48 @@ an atomic `jsonb` update, so concurrent likes do not lose actors.
 | Templates | One responsive base layout (Markdown mail), plain-text alternative for every message, brand-light — dark-themed game styling renders badly in email clients |
 | Sending | Always queued on the `low` queue; never in the request cycle |
 | Rate | Max 10 emails per user per day excluding security mail; a cap counter in the cache prevents notification storms |
-| Unsubscribe | One-click list-unsubscribe header on every non-security email, linking to preferences |
+| Unsubscribe | List-Unsubscribe header on every non-security email, linking to a signed recipient-bound unsubscribe page; no sign-in required. GET shows the page; POST disables all non-security email. Preferences remain available to the signed-in owner (§5) |
 | Bounces | Webhook → mark the address `bouncing` after a hard bounce → stop sending, show an in-app banner asking the user to update their email |
 | Complaints | Spam complaint → disable all non-security email for that user immediately |
 | Auth | SPF, DKIM, DMARC configured before launch. DMARC starts at `p=none`, moves to `p=quarantine` after two weeks of clean reports |
 | Never emailed | CoC API tokens, passwords, report evidence, another user's email address, reporter identities |
 
-## 5. Preferences (Phase 5)
+P1-15 delivery uses `SendEmailNotificationJob` on `low` (3 attempts, 60/300/900-second backoff,
+60-second timeout). It locks the recipient's account, re-checks current preferences and reserves
+the daily cap before calling the mailer. Days are UTC, with `platform.notifications.email_per_day`
+(10) and `email_counter_ttl` (86400 seconds); a cache miss recovers the count from that day's
+completed receipts. Deleted recipients are skipped. A unique `(recipient, type, event_key)`
+receipt prevents replay after a completed send; the first event key is the media ULID
+([07 Notifications](07-database-schema.md)). SMTP acceptance followed by a worker crash before
+the receipt commits can still duplicate a delivery on retry; SMTP has no atomic transaction with
+our database. Provider-specific idempotency remains a mail-provider follow-up with P0-09.
+
+## 5. Preferences (email in P1-15; in-app and digests in Phase 5)
 
 `notification_preferences.channel_prefs` is a `jsonb` map of category → `{in_app, email}`.
 Security categories are present but locked. Defaults: everything in-app on; email on for ownership,
 moderation, marketplace and recruitment decisions; email off for social.
 
 Digest options: `none` (default), `daily`, `weekly` — a single email summarising unread activity.
+
+Owner decision, 2026-10-01 (P1-15): bring `notification_preferences` and email controls forward.
+`/settings/notifications` offers a global non-security email toggle and per-category email toggles;
+Security is shown as always on. In-app controls and digest selection remain Phase 5; persist their
+defaults without exposing them as editable fields. Bases email defaults on for the media-failure
+notice. Future catalogue entries use these same stored preferences.
+
+Unsubscribe sets `non_security_email_enabled=false` without changing in-app or Security settings.
+This global flag suppresses future categories as well as current ones; only an explicit owner
+preference update can re-enable it. Delivery re-checks both this flag and the category preference.
+The signed link binds the account ULID and a hash of its current email, expires after a configured
+lifetime and becomes invalid when that email changes or the account is anonymised. Its capability
+authorizes only disabling non-security mail, even when the browser is signed in to another account.
+GET never mutates preferences; the browser's POST retains CSRF protection and repeated submissions
+are harmless. Invalid links show a generic error without exposing an address.
+The link lifetime is `platform.notifications.unsubscribe_link_days` (30); the address binding is
+an HMAC-SHA256 with the application key, so the URL carries no address or plain address hash.
+Missing preference rows read defaults; GET does not create them. Saving email controls preserves
+stored in-app and digest choices.
 
 ## 6. In-app UX
 

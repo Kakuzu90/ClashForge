@@ -472,6 +472,12 @@ link again" and "Cancel the change", and the new-email form with the current pas
 *Privacy:* a visibility radio group (Everyone · Signed-in members · Only me, each with a one-line
 description) and toggles for show accounts, show clan, recruitment contact and search. The
 stored `show_activity` and `allow_marketplace_contact` stay off the form until P2 / Phase 6.
+*Notifications (P1-15):* global non-security email toggle and per-category email toggles, with
+Security displayed as always on. In-app controls and digests join in Phase 5. Show submitting,
+success and validation/error states using existing form primitives. The signed unsubscribe page
+uses the public layout, requires no sign-in and has a confirmation button; GET changes nothing.
+Show success after POST and a generic invalid/expired-link state, without an email address
+([16 §5](16-notifications.md); owner decision, 2026-10-01).
 
 ### Admin (`/admin/*`)
 Left nav (Dashboard · Reports · Disputes · Users · Content · Media · Marketplace · Logs) →

@@ -567,9 +567,24 @@ partial `(notifiable_id) WHERE read_at IS NULL` for the unread badge;
 nightly, and each account keeps at most 500 rows, losing its oldest read ones
 ([16 §7](16-notifications.md)).
 
-### `notification_preferences` [P2]
+### `notification_preferences` [M, P1-15]
 `user_id (PK, FK)`, `channel_prefs jsonb` — `{category: {in_app: bool, email: bool}}`,
-`digest_frequency (none|daily|weekly)`, `updated_at`.
+`non_security_email_enabled (bool default true)`,
+`digest_frequency (varchar 10, none|daily|weekly, default none)`, `updated_at (timestamptz null)`.
+
+Email controls ship in P1-15; in-app controls and digests remain Phase 5 (owner decision,
+2026-10-01). The global email flag makes unsubscribe apply to future categories too;
+Security bypasses it. Preferences are deleted by account anonymisation ([08 §6](08-entity-relationships.md)).
+Rows are created on the first preference write or unsubscribe; a missing row reads the catalogue
+defaults without a database write.
+
+### `notification_email_deliveries` [M, P1-15]
+Completed non-security deliveries, so replayed jobs do not resend an event after cache eviction.
+`id (bigserial PK, internal only)`, `user_id (bigint FK, cascade)`, `type (varchar 60)`,
+`event_key (varchar 100)`, `sent_at (timestamptz)`.
+**Unique:** `(user_id, type, event_key)`. **Index:** `(user_id, sent_at)` for recovering the daily
+cap on a cache miss. `event_key` is the failed media ULID for the first caller; no address, body
+or secret is stored. The account's receipts are deleted during anonymisation ([08 §6](08-entity-relationships.md)).
 
 ---
 
@@ -692,8 +707,8 @@ Laravel defaults, unmodified except the extra session columns noted above.
 | Marketplace | seller_profiles, marketplace_listings, marketplace_orders, marketplace_order_events, marketplace_reviews, marketplace_disputes | 0 of 6 |
 | Messaging | conversations, conversation_participants, messages | 0 of 3 |
 | Media | media, media_variants | 2 of 2 |
-| Notifications | notifications, notification_preferences | 1 of 2 |
+| Notifications | notifications, notification_preferences, notification_email_deliveries | 3 of 3 |
 | Moderation | reports, report_cases, moderation_actions, user_sanctions, audit_logs | 5 of 5 |
 | Ops | coc_api_requests, sync_states + framework tables | 2 of 2 |
 
-**MVP: 30 tables + 7 framework tables.**
+**MVP: 32 tables + 7 framework tables.**

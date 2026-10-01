@@ -35,13 +35,13 @@ class EnforceAccountStatus
         }
 
         return match ($this->statuses->effectiveStatus($user)) {
-            UserStatus::Banned => $this->signOut($request, $user),
+            UserStatus::Banned => $this->signOut($request, $user, $next),
             UserStatus::Suspended => $request->routeIs(...self::SUSPENDED_ALLOWED) ? $next($request) : $this->toNotice($request),
             default => $next($request),
         };
     }
 
-    private function signOut(Request $request, User $user): Response
+    private function signOut(Request $request, User $user, Closure $next): Response
     {
         Log::channel('security')->warning('auth.banned_session_ended', [
             'user' => $user->ulid,
@@ -52,6 +52,10 @@ class EnforceAccountStatus
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($request->routeIs('notifications.unsubscribe.*')) {
+            return $next($request);
+        }
 
         if ($request->expectsJson() || $request->is('uploads/*')) {
             return response()->json(['message' => __('auth.banned')], 401);
