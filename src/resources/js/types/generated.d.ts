@@ -54,6 +54,7 @@ last30Days: App.Domain.Auth.Data.SignupCountData,
 };
 }
 namespace Enums {
+export type EmailVerificationOutcome = 'pending' | 'verified' | 'already_verified' | 'invalid';
 export type Role = 'user' | 'moderator' | 'admin' | 'super_admin';
 export type StaffAbility = 'access-admin' | 'view-users' | 'view-platform-stats' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
 export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pending_deletion';
@@ -191,7 +192,7 @@ url: string | null,
 }
 namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
-export type NotificationType = 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed';
+export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed';
 }
 }
 namespace Users {
@@ -379,13 +380,36 @@ minutes: number,
 };
 export type ForgotPasswordPageData = {
 status: string | null,
+turnstileSiteKey: string | null,
 };
 export type LoginPageData = {
 status: string | null,
 };
+export type RegisterPageData = {
+usernameMin: number,
+usernameMax: number,
+passwordMin: number,
+turnstileSiteKey: string | null,
+formStarted: string,
+};
+export type RegisterSentPageData = {
+linkMinutes: number,
+};
 export type ResetPasswordPageData = {
 token: string,
 email: string,
+};
+export type VerificationResultPageData = {
+outcome: string,
+message: string,
+signedIn: boolean,
+username: string | null,
+confirmUrl: string | null,
+};
+export type VerifyEmailPageData = {
+email: string,
+status: string | null,
+linkMinutes: number,
 };
 }
 namespace Notifications {

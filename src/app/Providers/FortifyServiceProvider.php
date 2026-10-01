@@ -67,7 +67,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::requestPasswordResetLinkView(fn (Request $request): Response => PageMeta::page(
             'Auth/ForgotPassword',
-            (new ForgotPasswordPageData(status: $this->status($request)))->toArray(),
+            (new ForgotPasswordPageData(status: $this->status($request), turnstileSiteKey: config('services.turnstile.site_key')))->toArray(),
             new PageMeta(title: 'Reset your password', noindex: true),
         ));
 

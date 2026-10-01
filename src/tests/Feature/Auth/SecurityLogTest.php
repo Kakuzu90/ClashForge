@@ -13,7 +13,8 @@ uses(CapturesSecurityLog::class, FakesHibp::class);
 
 beforeEach(function () {
     $this->captureSecurityLog();
-    $this->user = User::factory()->create(['email' => 'chief@example.com', 'password' => 'a-long-password']);
+    // Signed in before, so this browser counts as a new device (an account's first sign-in does not).
+    $this->user = User::factory()->create(['email' => 'chief@example.com', 'password' => 'a-long-password', 'last_login_at' => now()->subDay()]);
 });
 
 function messages(array $events): array

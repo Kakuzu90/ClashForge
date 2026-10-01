@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetLinkRequestController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
@@ -8,9 +10,13 @@ use Laravel\Fortify\Http\Controllers\NewPasswordController;
 use Laravel\Fortify\Http\Controllers\PasswordResetLinkController;
 
 // Fortify's controllers with our pages (FortifyServiceProvider) and our named limiters (specs/04 §4).
-// Registration and email verification join in P1-08.
+// Registration and email verification are ours (FR-AUTH-1/3).
 
 Route::middleware('guest')->group(function (): void {
+    Route::get('/register', [RegisterController::class, 'create'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:register')->name('register.store');
+    Route::get('/register/sent', [RegisterController::class, 'sent'])->name('register.sent');
+
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:login')->name('login.store');
 
@@ -31,4 +37,22 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->midd
 Route::middleware('auth')->group(function (): void {
     Route::get('/confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
     Route::post('/confirm-password', [ConfirmablePasswordController::class, 'store'])->middleware('throttle:password-confirm')->name('password.confirm.store');
+});
+
+// Verification (FR-AUTH-3): the link works signed in or not. Opening it shows the account; the
+// page's button (a POST) confirms, so a mail gateway that opens links confirms nothing. The notice
+// and resend need a session.
+Route::get('/email/verify/{ulid}/{hash}', [EmailVerificationController::class, 'show'])
+    ->where(['ulid' => '[0-9A-Za-z]{26}', 'hash' => '[0-9a-f]{40}'])
+    ->name('verification.verify');
+Route::post('/email/verify/{ulid}/{hash}', [EmailVerificationController::class, 'confirm'])
+    ->where(['ulid' => '[0-9A-Za-z]{26}', 'hash' => '[0-9a-f]{40}'])
+    ->middleware('throttle:global-write')
+    ->name('verification.confirm');
+Route::get('/email/verified', [EmailVerificationController::class, 'result'])->name('verification.result');
+Route::middleware('auth')->group(function (): void {
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+        ->middleware('throttle:verify-email-resend')
+        ->name('verification.send');
 });

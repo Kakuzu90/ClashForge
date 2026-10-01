@@ -1,7 +1,15 @@
 <?php
 
 // specs/10 §2.1: moving between local storage and production storage is an .env change, so no
-// code outside config/filesystems.php may name a provider.
+// code outside config/filesystems.php may name a provider. Turnstile is Cloudflare's captcha, not
+// storage, so its files may name the vendor (P1-08).
+
+const TURNSTILE_FILES = [
+    'app/Domain/Auth/Contracts/TurnstileVerifier.php',
+    'app/Domain/Auth/Services/CloudflareTurnstileVerifier.php',
+    'config/services.php',
+    'resources/js/Components/auth/TurnstileWidget.vue',
+];
 
 it('names no storage provider outside config/filesystems.php', function () {
     $root = dirname(__DIR__, 2);
@@ -14,7 +22,7 @@ it('names no storage provider outside config/filesystems.php', function () {
         foreach ($files as $file) {
             $path = substr($file->getPathname(), strlen($root) + 1);
 
-            if ($path === 'config/filesystems.php' || str_starts_with($path, 'bootstrap/cache/') || ! preg_match('/\.(php|ts|vue)$/', $path)) {
+            if (in_array($path, TURNSTILE_FILES, true) || $path === 'config/filesystems.php' || str_starts_with($path, 'bootstrap/cache/') || ! preg_match('/\.(php|ts|vue)$/', $path)) {
                 continue;
             }
 

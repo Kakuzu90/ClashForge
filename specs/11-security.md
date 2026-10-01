@@ -47,6 +47,8 @@ mechanism and the test that proves it.
   `target="_blank"`. `javascript:`/`data:` schemes rejected at validation.
 - CSP: `default-src 'self'; script-src 'self' 'nonce-...'; object-src 'none'; base-uri 'self';
   frame-ancestors 'none'; img-src 'self' https://cdn.<domain> data:; media-src 'self' https://cdn.<domain>`.
+  Turnstile (P1-08) adds `https://challenges.cloudflare.com` to `script-src`, `frame-src` and
+  `connect-src` when the CSP lands.
   No `unsafe-inline` and no `unsafe-eval` for scripts: SFC templates are precompiled (runtime-only
   Vue build), Vite tags carry the request nonce (`Vite::useCspNonce()`), and the Inertia page object
   is embedded as JSON data, never as executable script. Report-only first, enforced before launch.
@@ -59,7 +61,8 @@ mechanism and the test that proves it.
   `->toArray()` to `Inertia::render()` is banned (Pest arch test).
 - Shared props (`HandleInertiaRequests::share`, typed by `App\Http\Data\SharedPropsData`) are limited
   to: `auth.user` summary (username, avatar, verification flags; no role, since Vue never reads it),
-  `auth.can`, `flash`, `unreadCount` and client-safe `features`. Page props may add `meta.title`. Never email, IP data, 2FA state or anything from `coc_accounts` beyond
+  `auth.can`, `flash`, `unreadCount` and client-safe `features`. Page props may add `meta.title`. The
+  confirm-your-email page shows its owner a masked address (`C***@example.com`). Never email, IP data, 2FA state or anything from `coc_accounts` beyond
   public fields.
 - Lazy/deferred props are authorised exactly like the page that declares them.
 - **Test:** a stored-XSS test posts `<img src=x onerror=...>` into every text field and asserts the
@@ -123,14 +126,18 @@ mechanism and the test that proves it.
   ULID, which feeds the alerts in §3; 2FA for staff and the compromised-password check limit the
   damage.
 - Registration rejects existing emails with the same generic behaviour — the account-existence
-  signal is delivered by email, not by the form.
+  signal is delivered by email, not by the form. Every path (new email, taken email, a trapped bot)
+  hashes the password inside one timebox (`auth.timebox_duration`), none signs in, and all land on
+  `/register/sent`; a taken address's owner gets at most one "someone tried to sign up" email an
+  hour.
 - Session fixation prevented by regeneration on login and privilege change.
 - Password resets invalidate all sessions; reset tokens are single-use and expire in 60 minutes.
 - Compromised-password check via HIBP k-anonymity on registration and password change.
 - 2FA mandatory for moderator and above.
 - Login notifications ("new sign-in from a new device") emailed for unrecognised devices: a device
   is known when the browser holds the long-lived encrypted `known_devices` cookie listing the
-  accounts that signed in from it (a security cookie, strictly necessary under NFR-PRIV-3).
+  accounts that signed in from it (a security cookie, strictly necessary under NFR-PRIV-3). An
+  account's first sign-in has no earlier device, so it gets a "first sign-in" email instead.
 
 ### Account enumeration
 - Generic messages on login, register, reset and email change.
@@ -158,8 +165,12 @@ so no value can escape `game/{version}/`.
 - Named rate limiters on every write and on search; a global per-user write limiter as a backstop.
 - Cloudflare in front: bot fight mode, managed rules, and a rate-limiting rule on
   `/u/*`, `/bases/*` and `/search` for anonymous traffic.
-- Turnstile on registration, password reset and (conditionally, on reputation signals) on
-  base publishing and reporting.
+- Turnstile on registration, the reset-link form and (conditionally, on reputation signals) on
+  base publishing and reporting. Checked last, once every other field is valid, so a typo keeps the
+  single-use token. If siteverify cannot be reached in 3 s the form is let through and
+  `auth.turnstile_unavailable` logged; a missing secret fails closed. Keys come from
+  `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY`; local and test runs default to Cloudflare's
+  always-pass test keys.
 - Pagination is capped (max 50 per page) and deep pagination beyond page 100 requires auth.
 - No public JSON API in the MVP. Inertia XHR responses (`X-Inertia` requests) return the same props
   as the HTML response and pass through the same middleware, policies, rate limiters and Cloudflare
@@ -170,13 +181,19 @@ so no value can escape `game/{version}/`.
   cost-of-scraping and infrastructure protection, not prevention.
 
 ### Spam and fake accounts
-- Email verification required for every write.
-- Disposable-email domain blocklist, refreshed monthly.
+- Email verification required for content writes (FR-AUTH-4).
+- Disposable-email domain blocklist, refreshed monthly: the CC0 `disposable-email-domains` list is
+  committed; `auth:refresh-disposable-domains` saves a newer copy to storage only when it parses to
+  at least 1,000 domains. A domain matches itself and its subdomains.
 - New-account trust ramp: for the first 24 h and until a verified CoC account exists, publishing,
   commenting and reporting are limited to a fraction of normal quotas.
 - Link limits in comments (0 links for accounts under 7 days old, 1 thereafter).
 - Duplicate-content detection on comments (same body posted 3+ times → auto-hide + report case).
-- Honeypot fields plus a minimum form-fill time on registration.
+- Honeypot fields plus a minimum form-fill time on registration: a hidden `website` field and an
+  encrypted, single-use form token (time shown and a session nonce) at least 3 s and at most
+  120 min old. A trapped submission answers exactly like a real one and logs
+  `auth.registration_blocked` with the reason; a form left open too long gets a "reload" field
+  error instead, since that is not a bot signal.
 
 ### Marketplace fraud (Phase 6)
 - Seller applications reviewed manually; verified CoC account ≥30 days.

@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Auth\Events\UnrecognisedDeviceSignedIn;
 use App\Domain\Auth\Notifications\NewSignInNotification;
 use App\Domain\Auth\Notifications\PasswordChangedNotification;
 use App\Domain\Auth\Services\SessionService;
@@ -11,6 +12,7 @@ use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
@@ -35,7 +37,8 @@ beforeEach(function () {
     $this->fakeHibp(['password123456']);
     $this->captureSecurityLog();
     Notification::fake();
-    $this->user = User::factory()->create(['email' => 'chief@example.com', 'password' => 'password']);
+    // Signed in before, so a new browser is a new device (the very first sign-in is not).
+    $this->user = User::factory()->create(['email' => 'chief@example.com', 'password' => 'password', 'last_login_at' => now()->subDay()]);
 });
 
 afterEach(fn () => TrustProxies::flushState());
@@ -351,6 +354,19 @@ it('starts the clock for a session from before the clock existed', function () {
     $this->actingAs($this->user)->get('/settings/security')->assertOk()->assertSessionHas(SessionService::SIGNED_IN_AT);
 });
 
+it('sends a first-sign-in email, not a new-device one, on an account\'s very first sign-in', function () {
+    Event::fake([UnrecognisedDeviceSignedIn::class]);
+    $newcomer = User::factory()->create(['password' => 'password']);
+
+    $browser = $this->signInBrowser($newcomer, ['User-Agent' => FIREFOX]);
+
+    Notification::assertSentTo($newcomer, NewSignInNotification::class, fn (NewSignInNotification $n) => $n->firstSignIn
+        && $n->toMail($newcomer)->subject === 'First sign-in to your Clash Commons account');
+    Event::assertNotDispatched(UnrecognisedDeviceSignedIn::class);
+    expect($browser)->toHaveKey(KnownDevices::COOKIE)
+        ->and($newcomer->refresh()->last_login_at)->not->toBeNull();
+});
+
 it('emails the owner about a sign-in from a browser it has not seen, once', function () {
     $first = $this->signInBrowser($this->user, ['User-Agent' => FIREFOX, 'CF-IPCountry' => 'DE']);
 
@@ -362,7 +378,7 @@ it('emails the owner about a sign-in from a browser it has not seen, once', func
     Notification::assertNothingSent();
 
     // Another account on the same browser is new to that account.
-    $partner = User::factory()->create(['password' => 'password']);
+    $partner = User::factory()->create(['password' => 'password', 'last_login_at' => now()->subDay()]);
     $this->signInBrowser($partner, cookies: [KnownDevices::COOKIE => $first[KnownDevices::COOKIE]]);
     Notification::assertSentTo($partner, NewSignInNotification::class);
 });

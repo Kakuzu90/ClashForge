@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TurnstileWidget from '@/Components/auth/TurnstileWidget.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiCard from '@/Components/ui/UiCard.vue';
@@ -14,15 +15,21 @@ defineOptions({ layout: PublicLayout });
 
 type Props = App.Http.Data.Auth.ForgotPasswordPageData;
 
-defineProps<{ status: Props['status'] }>();
+defineProps<{ status: Props['status']; turnstileSiteKey: Props['turnstileSiteKey'] }>();
 
-const form = useForm({ email: '' });
+const form = useForm({ email: '', turnstile_token: null as string | null });
 const formEl = ref<HTMLFormElement | null>(null);
+const turnstile = ref<InstanceType<typeof TurnstileWidget> | null>(null);
 
 function submit() {
     form.post(email().url, {
         preserveScroll: true,
-        onError: () => focusFirstError(formEl.value),
+        onError: () => {
+            turnstile.value?.reset();
+            focusFirstError(formEl.value);
+        },
+        // A token works once, so every submit needs a fresh one.
+        onSuccess: () => turnstile.value?.reset(),
     });
 }
 </script>
@@ -39,6 +46,7 @@ function submit() {
         <UiCard class="p-5 sm:p-6">
             <form ref="formEl" class="flex flex-col gap-4" novalidate @submit.prevent="submit">
                 <UiInput v-model="form.email" label="Email" type="email" autocomplete="email" required autofocus :error="form.errors.email" />
+                <TurnstileWidget ref="turnstile" v-model="form.turnstile_token" :site-key="turnstileSiteKey" :error="form.errors.turnstile_token" />
                 <UiButton type="submit" block :loading="form.processing">Send the reset link</UiButton>
             </form>
         </UiCard>

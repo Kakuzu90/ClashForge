@@ -17,6 +17,7 @@ enum NotificationType: string implements HasLabelAndColor
 {
     use EnumHelpers;
 
+    case EmailVerified = 'email_verified';
     case PasswordChanged = 'password_changed';
     case NewDeviceSignIn = 'new_device_sign_in';
     case AccountSuspended = 'account_suspended';
@@ -27,6 +28,7 @@ enum NotificationType: string implements HasLabelAndColor
     public function label(): string
     {
         return match ($this) {
+            self::EmailVerified => 'Email confirmed',
             self::PasswordChanged => 'Password changed',
             self::NewDeviceSignIn => 'New sign-in',
             self::AccountSuspended => 'Account suspended',
@@ -41,7 +43,7 @@ enum NotificationType: string implements HasLabelAndColor
         return match ($this) {
             self::AccountSuspended, self::AccountBanned, self::MediaProcessingFailed => 'state-danger',
             self::PasswordChanged, self::NewDeviceSignIn => 'state-warning',
-            self::SanctionEnded => 'state-success',
+            self::EmailVerified, self::SanctionEnded => 'state-success',
         };
     }
 
@@ -59,6 +61,11 @@ enum NotificationType: string implements HasLabelAndColor
     public function render(array $params): RenderedNotificationData
     {
         return match ($this) {
+            self::EmailVerified => new RenderedNotificationData(
+                title: 'Your email is confirmed',
+                body: 'Thanks for confirming. Your account is all set.',
+                url: null,
+            ),
             self::PasswordChanged => new RenderedNotificationData(
                 title: 'Your password was changed',
                 body: 'Every other device was signed out. If you did not change it, reset your password now.',

@@ -105,6 +105,19 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour((int) config('platform.auth.password_reset_per_ip_per_hour'))->by('password-reset:ip:'.$request->ip())->response($this->throttledForm('password-reset')),
         ]);
 
+        // Registration (specs/04 §4): every attempt per IP here; accepted sign-ups (3 / hour) are
+        // counted by RegistrationLimit, so typos never lock a person out. Resends per account.
+        RateLimiter::for('register', fn (Request $request): Limit => Limit::perHour((int) config('platform.auth.register_attempts_per_hour'))
+            ->by('register:attempts:'.$request->ip())
+            ->response($this->throttledForm('register')));
+        RateLimiter::for('verify-email-resend', fn (Request $request): Limit => Limit::perHour((int) config('platform.auth.verify_resend_per_hour'))
+            ->by('verify-email-resend:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(function (Request $request, array $headers): Response {
+                Log::channel('security')->warning('auth.rate_limited', ['limiter' => 'verify-email-resend', 'ip_hash' => IpHash::of($request->ip())]);
+
+                return back()->with('error', 'You asked for a new link a few times already. Try again in an hour.');
+            }));
+
         // Guessing the current password from a hijacked session: the confirm page and the
         // password change share one bucket per account (specs/11 "Authentication attacks").
         RateLimiter::for('password-confirm', function (Request $request): array {

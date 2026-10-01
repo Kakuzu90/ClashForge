@@ -131,6 +131,7 @@ weekly Sun 05:15  assets:verify-pack
 weekly Sun 05:30  coc:rotate-keys
 weekly Mon 06:00  coc:refresh-reference-data
 monthly 1st 06:30 platform:rotate-ip-salt
+monthly 3rd 04:20 auth:refresh-disposable-domains
 ```
 
 Every scheduled task uses `withoutOverlapping()`, `onOneServer()`, `runInBackground()` where it is

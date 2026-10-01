@@ -2,9 +2,12 @@
 
 namespace App\Domain\Auth;
 
+use App\Domain\Auth\Contracts\TurnstileVerifier;
 use App\Domain\Auth\Listeners\LogSecurityEvents;
 use App\Domain\Auth\Listeners\RecordLogin;
 use App\Domain\Auth\Listeners\TrackSignIn;
+use App\Domain\Auth\Services\CloudflareTurnstileVerifier;
+use App\Domain\Auth\Services\DisposableEmailDomains;
 use App\Domain\Auth\Support\HibpVerifier;
 use App\Domain\Auth\Support\TrackedDatabaseSessionHandler;
 use Illuminate\Auth\Events\Login;
@@ -21,6 +24,10 @@ class AuthServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(TurnstileVerifier::class, CloudflareTurnstileVerifier::class);
+        // Parsed once per process; the list is about 9,000 lines.
+        $this->app->singleton(DisposableEmailDomains::class);
+
         // extend(), not bind(): the framework's deferred ValidationServiceProvider binds its own
         // verifier when it loads, which would silently replace ours.
         $this->app->extend(UncompromisedVerifier::class, fn (UncompromisedVerifier $verifier, $app): HibpVerifier => new HibpVerifier(
@@ -34,8 +41,9 @@ class AuthServiceProvider extends ServiceProvider
         // specs/04 §4: at least 10 characters, no composition rules, not in a known breach.
         Password::defaults(fn (): Password => Password::min((int) config('platform.auth.min_password_length'))->uncompromised());
 
-        Event::listen(Login::class, RecordLogin::class);
+        // TrackSignIn first: it reads `last_login_at` before RecordLogin stamps it.
         Event::listen(Login::class, TrackSignIn::class);
+        Event::listen(Login::class, RecordLogin::class);
 
         // The database driver, with hashed IP, device label and country columns (specs/07 `sessions`).
         Session::extend('database', fn (Application $app): TrackedDatabaseSessionHandler => new TrackedDatabaseSessionHandler(

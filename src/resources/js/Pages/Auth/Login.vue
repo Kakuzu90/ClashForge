@@ -7,6 +7,7 @@ import UiInput from '@/Components/ui/UiInput.vue';
 import { focusFirstError } from '@/Composables/useFirstErrorFocus';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 import { store } from '@/routes/login';
+import { register } from '@/routes';
 import { request } from '@/routes/password';
 import { Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -57,5 +58,15 @@ function submit() {
                 <UiButton type="submit" block :loading="form.processing">Sign in</UiButton>
             </form>
         </UiCard>
+
+        <p class="text-sm text-fg-secondary">
+            New here?
+            <Link
+                :href="register().url"
+                class="font-medium text-brand underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+                Create an account
+            </Link>
+        </p>
     </div>
 </template>

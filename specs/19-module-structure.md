@@ -166,7 +166,9 @@ require __DIR__.'/web/accounts.php';
 | `/recruit` `/recruit/clans` `/recruit/players` `/recruit/{ulid}` | recruitment |
 | `/market` `/market/{slug}` `/market/orders/{ulid}` | marketplace |
 | `/search` | search |
-| `/notifications` `/settings/*` `/dashboard` `/confirm-password` | authenticated |
+| `/register` `/register/sent` | sign-up (guests) |
+| `/email/verify/{ulid}/{hash}` `/email/verified` | email confirmation: GET shows the account, POST confirms |
+| `/notifications` `/settings/*` `/dashboard` `/confirm-password` `/email/verify` | authenticated |
 | `/account/suspended` | suspension notice (a suspended account is sent here, [04 §1](04-roles-and-permissions.md)) |
 | `/admin/*` | staff |
 | `/uploads/intent` `/uploads/{ulid}/complete` `/uploads/{ulid}` | presigned upload flow (JSON, owner only, [10 §3](10-media-storage.md)) |
@@ -230,6 +232,7 @@ php artisan bases:recompute-trending
 php artisan bases:aggregate-metrics
 php artisan stats:reconcile               # repairs all denormalised counters
 php artisan moderation:expire-sanctions
+php artisan auth:refresh-disposable-domains  # newer disposable-email list into storage; the committed one stays the fallback
 php artisan notifications:prune --dry-run  # read >90 d, unread >180 d, 500 rows per account (oldest read first)
 php artisan search:reindex {type?}
 php artisan assets:make-manifest {path} --pack-version=  # write/refresh a pack's manifest from its files

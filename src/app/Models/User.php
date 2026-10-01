@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Enums\UserStatus;
 use App\Domain\Auth\Notifications\ResetPasswordNotification;
+use App\Domain\Auth\Notifications\VerifyEmailNotification;
 use App\Domain\Users\Models\Profile;
 use App\Support\Auth\HasAccountStanding;
 use Carbon\CarbonImmutable;
@@ -20,7 +21,8 @@ use Illuminate\Notifications\Notifiable;
 /**
  * The shared authenticatable identity (specs/07 `users`). It stays in App\Models because every
  * module's policies type-hint it; writes go through Domain/Auth services (specs/19 §1).
- * Verified email gates every write (FR-AUTH-4).
+ * A verified email gates content writes: publishing, commenting, attaching CoC accounts and
+ * uploads (FR-AUTH-4); account and settings writes stay open.
  *
  * @property int $id
  * @property string $ulid
@@ -121,6 +123,14 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /**
+     * Our signed link (ULID, not the id) and copy, queued on `high` (FR-AUTH-3).
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailNotification);
     }
 
     protected function casts(): array

@@ -51,6 +51,31 @@ return [
         // Current-password checks (confirm page, password change) per account and IP.
         'password_confirm_per_minute' => 5,
         'password_confirm_per_hour' => 20,
+        // Registration (specs/04 §4, specs/11 "Spam and fake accounts"): accepted sign-ups per IP (a
+        // typo does not count), every attempt per IP, verification resends per account, and the
+        // honeypot form's minimum fill time and maximum age.
+        'register_per_hour' => 3,
+        'register_attempts_per_hour' => 20,
+        'verify_resend_per_hour' => 3,
+        'register_min_seconds' => 3,
+        'register_max_form_age_minutes' => 120,
+        // Verification links stay valid this long (FR-AUTH-3).
+        'verification_link_minutes' => 60,
+        // Names nobody may register (FR-AUTH-1), matched exactly after lowercasing.
+        'reserved_usernames' => [
+            'about', 'account', 'accounts', 'admin', 'administrator', 'api', 'base', 'bases', 'clan', 'clans',
+            'clashcommons', 'clash_commons', 'dashboard', 'dev', 'help', 'login', 'logout', 'mail', 'market',
+            'me', 'mod', 'moderator', 'mods', 'notifications', 'null', 'official', 'privacy', 'recruit',
+            'register', 'root', 'search', 'security', 'settings', 'staff', 'supercell', 'support', 'system',
+            'team', 'terms', 'u', 'undefined', 'www',
+        ],
+        // Disposable-email domains (FR-AUTH-11): the committed list, and the monthly refresh's copy.
+        'disposable_domains_file' => resource_path('blocklists/disposable-email-domains.txt'),
+        'disposable_domains_refreshed' => storage_path('app/blocklists/disposable-email-domains.txt'),
+        'disposable_domains_url' => 'https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/main/disposable_email_blocklist.conf',
+        // A download with fewer domains than this is treated as broken; the download's timeout.
+        'disposable_domains_min' => 1000,
+        'disposable_domains_timeout' => 30,
     ],
 
     // Key for hashing IPs before they are stored (last_login_ip_hash, sessions.ip_hash).

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Notifications\Listeners;
 
+use App\Domain\Auth\Events\EmailVerified;
 use App\Domain\Auth\Events\PasswordChanged;
 use App\Domain\Auth\Events\UnrecognisedDeviceSignedIn;
 use App\Domain\Media\Events\MediaRetriesExhausted;
@@ -21,6 +22,11 @@ class WriteInAppNotice implements ShouldQueue
     public string $queue = 'high';
 
     public function __construct(private readonly Notifier $notifier) {}
+
+    public function handleEmailVerified(EmailVerified $event): void
+    {
+        $this->send($event->userId, new InAppMessageData(NotificationType::EmailVerified));
+    }
 
     public function handlePasswordChanged(PasswordChanged $event): void
     {
@@ -59,6 +65,7 @@ class WriteInAppNotice implements ShouldQueue
     public function subscribe(Dispatcher $events): array
     {
         return [
+            EmailVerified::class => 'handleEmailVerified',
             PasswordChanged::class => 'handlePasswordChanged',
             UnrecognisedDeviceSignedIn::class => 'handleUnrecognisedDevice',
             MediaRetriesExhausted::class => 'handleMediaRetriesExhausted',

@@ -129,7 +129,7 @@ it('never hands out a remember-me cookie when signing out other devices', functi
 });
 
 it('cannot be fooled by a tampered known_devices cookie', function () {
-    $user = User::factory()->create(['password' => 'password']);
+    $user = User::factory()->create(['password' => 'password', 'last_login_at' => now()->subDay()]);
 
     // A plaintext list the browser wrote itself does not decrypt, so it counts as unknown.
     $this->signInBrowser($user, cookies: ['known_devices' => json_encode([$user->ulid])]);

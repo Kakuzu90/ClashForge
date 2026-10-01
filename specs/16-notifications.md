@@ -21,11 +21,13 @@ longer available", with no link.
 
 | Category | Event | Channels | Group key | Priority |
 |---|---|---|---|---|
-| **Security** | Email verification link | E* | — | immediate |
+| **Security** | Email verification link | E* (P1-08) | — | immediate |
+| | Email confirmed | I (P1-08) | — | immediate |
+| | Someone tried to sign up with your email | E* (P1-08; at most one an hour per account) | — | immediate |
 | | Password reset | E* | — | immediate |
 | | Password changed | I + E* (email since P1-05; in-app since P1-07) | — | immediate |
 | | Email address changed (to old + new) | E* | — | immediate |
-| | New sign-in from an unrecognised device | I + E* (email since P1-05; in-app since P1-07) | — | immediate |
+| | New sign-in from an unrecognised device | I + E* (email since P1-05; in-app since P1-07). An account's first sign-in gets a "first sign-in" email instead, with no in-app copy (P1-08) | — | immediate |
 | | 2FA enabled/disabled | I + E* | — | immediate |
 | | Account suspended / banned | I + E* (email since P1-14; in-app since P1-07) | — | immediate |
 | | Sanction lifted / expired | I + E (email since P1-14; in-app since P1-07) | — | immediate |

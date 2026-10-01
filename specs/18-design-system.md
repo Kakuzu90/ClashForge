@@ -362,8 +362,8 @@ Each page below specifies its structure and its three required states
 (**empty**, **loading/skeleton**, **error**).
 
 ### Home feed (`/`)
-Hero strip (logged-out: value proposition + register CTA; logged-in: featured player card + quick
-actions) → TH filter chip row (sticky on scroll) → sort tabs (Trending / New / Most Copied) →
+Hero strip (logged-out: value proposition + register CTA, "Create your account" since P1-08;
+logged-in: featured player card + quick actions) → TH filter chip row (sticky on scroll) → sort tabs (Trending / New / Most Copied) →
 base card grid → load-more.
 *Empty:* "No bases match these filters" + reset-filters action + a "browse all TH levels" link.
 *Loading:* 6–9 base-card skeletons in grid; chip row renders immediately.
@@ -444,6 +444,14 @@ while anything is unread. `NotificationItem` is the row.
 tab says "Nothing in {category}".
 *Loading:* row skeletons while a tab or page loads. *Error:* inline alert with the request id
 (`useVisitError`).
+
+### Sign-up and email confirmation (`/register`, `/email/*`)
+The sign-in card register: a single card form with field hints (username rules, password length),
+the invisible Turnstile widget (it shows a line when it could not load) and links to and from
+sign-in. Every registration ends on "Check your email". The link opens a page that names the account
+with a "Confirm my email" button, then a result (confirmed / already confirmed / link not working,
+with a new-link button). A signed-in unverified account sees an info alert at the top of every app
+page linking to `/email/verify` (masked address, "Send a new link").
 
 ### Settings (`/settings/*`)
 Left sub-nav (Profile · Privacy · Accounts · Security · Notifications · Danger zone) with plain,

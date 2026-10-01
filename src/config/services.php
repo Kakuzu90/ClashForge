@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    // Cloudflare Turnstile on registration and the reset-link form (FR-AUTH-11, specs/11). Local
+    // and test runs default to Cloudflare's published always-pass test keys; anywhere else the keys
+    // must come from the environment, and a missing secret fails closed.
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY', in_array(env('APP_ENV'), ['local', 'testing'], true) ? '1x00000000000000000000AA' : null),
+        'secret' => env('TURNSTILE_SECRET_KEY', in_array(env('APP_ENV'), ['local', 'testing'], true) ? '1x0000000000000000000000000000000AA' : null),
+        'verify_url' => 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        'timeout' => 3,
+        // Cloudflare's tokens are at most 2,048 characters.
+        'max_token_length' => 2048,
+    ],
+
 ];

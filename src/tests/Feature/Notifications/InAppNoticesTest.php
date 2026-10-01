@@ -65,6 +65,8 @@ it('does not announce a refused password change', function () {
 it('announces a sign-in from an unrecognised browser only', function () {
     Event::fake([UnrecognisedDeviceSignedIn::class]);
     NotificationFacade::fake();
+    // Signed in before: an account's very first sign-in is not a new device.
+    $this->user->forceFill(['last_login_at' => now()->subDay()])->save();
 
     $browser = $this->signInBrowser($this->user, ['User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0']);
 

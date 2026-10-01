@@ -6,6 +6,7 @@ import SiteFooter from '@/Components/shell/SiteFooter.vue';
 import SiteHeader from '@/Components/shell/SiteHeader.vue';
 import SkipLink from '@/Components/shell/SkipLink.vue';
 import TopNav from '@/Components/shell/TopNav.vue';
+import VerifyEmailBanner from '@/Components/shell/VerifyEmailBanner.vue';
 import UiToaster from '@/Components/ui/UiToaster.vue';
 import { usePageProps } from '@/Composables/usePageProps';
 import { primaryNav, visibleNavItems } from '@/navigation';
@@ -31,6 +32,7 @@ const items = computed(() => visibleNavItems(primaryNav, can.value));
                 tabindex="-1"
                 class="gutter-x mx-auto w-full max-w-[1200px] flex-1 scroll-mt-16 pt-6 md:scroll-mt-28 md:pt-8 lg:scroll-mt-16"
             >
+                <VerifyEmailBanner class="mb-6" />
                 <slot />
             </main>
             <!-- Bottom padding keeps the footer clear of the fixed tab bar on mobile. -->

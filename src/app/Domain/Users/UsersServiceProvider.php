@@ -2,7 +2,9 @@
 
 namespace App\Domain\Users;
 
+use App\Domain\Auth\Events\UserRegistered;
 use App\Domain\Media\Events\MediaReady;
+use App\Domain\Users\Listeners\CreateProfileForNewAccount;
 use App\Domain\Users\Listeners\ForgetProfileWhenAvatarReady;
 use App\Domain\Users\Models\PrivacySettings;
 use App\Domain\Users\Models\Profile;
@@ -27,5 +29,6 @@ class UsersServiceProvider extends ServiceProvider
         Gate::policy(PrivacySettings::class, PrivacySettingsPolicy::class);
 
         Event::listen(MediaReady::class, ForgetProfileWhenAvatarReady::class);
+        Event::listen(UserRegistered::class, CreateProfileForNewAccount::class);
     }
 }

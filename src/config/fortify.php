@@ -162,7 +162,8 @@ return [
     */
 
     'features' => [
-        // Registration and email verification arrive with P1-08, two-factor in Phase 2 (specs/04 §4).
+        // Registration and email verification are ours (RegisterController, EmailVerificationController),
+        // so Fortify keeps only password resets; two-factor joins in Phase 2 (specs/04 §4).
         Features::resetPasswords(),
     ],
 

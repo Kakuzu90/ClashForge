@@ -11,8 +11,8 @@ Priority: **M** = MVP, **P2** = phase 4–5, **P3** = phase 6–7.
 |---|---|---|
 | FR-AUTH-1 | M | A visitor can register with email, username and password. Username: 3–20 chars, `[a-z0-9_]`, case-insensitively unique, reserved-word blocklist. |
 | FR-AUTH-2 | M | Passwords are ≥10 chars and checked against a compromised-password list; hashed with bcrypt (cost 12) or argon2id. |
-| FR-AUTH-3 | M | Registration sends a signed, single-use, 60-minute email-verification link. |
-| FR-AUTH-4 | M | Unverified users may log in but cannot publish bases, comment, attach CoC accounts or upload media. |
+| FR-AUTH-3 | M | Registration sends a signed, 60-minute email-verification link. Opening it names the account; a button confirms (a POST, so link-scanning mail gateways confirm nothing), and a link for a confirmed account says so. |
+| FR-AUTH-4 | M | Unverified users may log in but cannot publish bases, comment, attach CoC accounts or upload media. Account, settings and notification writes stay open. |
 | FR-AUTH-5 | M | Login is rate-limited per IP and per account; responses are identical for unknown-email and wrong-password (no account enumeration). |
 | FR-AUTH-6 | M | Password reset via signed, single-use, 60-minute token; all sessions are invalidated on reset. |
 | FR-AUTH-7 | M | Users can see active sessions (device, IP region as a country from Cloudflare's `CF-IPCountry`, last active) and revoke any or all of them. |

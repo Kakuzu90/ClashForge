@@ -55,6 +55,14 @@ Schedule::command('media:retry-failed')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'media:retry-failed']));
 
+// Monthly, on the 3rd (specs/11 "Spam and fake accounts"). A failed download keeps the current list.
+Schedule::command('auth:refresh-disposable-domains')
+    ->monthlyOn(3, '04:20')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'auth:refresh-disposable-domains']));
+
 Schedule::command('notifications:prune')
     ->dailyAt('02:15')
     ->withoutOverlapping()

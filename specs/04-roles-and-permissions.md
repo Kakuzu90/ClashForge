@@ -29,7 +29,8 @@ says otherwise (e.g. moderators cannot suspend users; admins cannot change roles
 | `banned` | no | no | no | Every session ends and the remember token cycles when the ban is applied; content hidden (the public profile 404s), tags released after 30 days |
 | `pending_deletion` | yes (cancels deletion) | yes | no | 30-day window; the public profile 404s |
 
-Additional flags gating capabilities: `email_verified_at` (required for any write),
+Additional flags gating capabilities: `email_verified_at` (required for content writes: publishing,
+commenting, attaching CoC accounts, uploads; FR-AUTH-4),
 `has_verified_coc_account` (required to publish bases, recruit, or sell).
 
 ## 2. Permission matrix
@@ -123,7 +124,9 @@ Additional flags gating capabilities: `email_verified_at` (required for any writ
 ### Write gating middleware
 
 Three middlewares, applied in order, each with a dedicated denial page:
-1. `EnsureEmailIsVerified` — blocks all writes.
+1. `EnsureEmailIsVerified` (Laravel's `verified`) — blocks content writes for an unverified email
+   (FR-AUTH-4): uploads check it in `MediaPolicy`, later content routes add the middleware.
+   Account, settings and notification writes stay open, so a mistyped address can be fixed.
 2. `EnsureAccountIsActive` — `account.active` blocks `suspended`, `banned` and `pending_deletion`
    writes; `account.active:content` also blocks `restricted` on content writes (uploads, publishing,
    commenting, applying, messaging). Profile and settings writes stay open to restricted users.
@@ -147,11 +150,22 @@ Three middlewares, applied in order, each with a dedicated denial page:
   from the recaller inherits the time of that password sign-in from the encrypted `remember_since`
   cookie; without it the session counts as expired.
 - Backend: Laravel Fortify's controllers and actions, behind our own Inertia pages, copy and routes
-  (`routes/web/auth.php`). The reset-link request is ours (a queued job, see [11](11-security.md)).
+  (`routes/web/auth.php`). The reset-link request is ours (a queued job, see [11](11-security.md)),
+  and so are registration and email verification (`RegisterController`, `RegistrationService`,
+  `EmailVerificationController`): Fortify's registration signs the new account in, which the
+  taken-email path could not copy.
 
 ### Registration
-Email + username + password + Turnstile. Disposable-domain blocklist. Email verification required
-before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`, `base`, ...).
+Email + username + password (+ confirmation) + Turnstile, plus a hidden honeypot field and a
+single-use encrypted form token ([11](11-security.md) "Spam and fake accounts"). Disposable-domain
+blocklist. Usernames are lowercased and trimmed, then 3 to 20 of `[a-z0-9_]`, unique ignoring case
+against every account (deleted ones included), and not on the reserved list
+(`platform.auth.reserved_usernames`: `admin`, `mod`, `support`, `api`, `u`, `base`, ...).
+Registration never signs anyone in: every outcome ends on "Check your email". A verified email is
+required for content writes (FR-AUTH-4). The verification link is signed for 60 minutes
+(`platform.auth.verification_link_minutes`) and addressed by ULID and a hash of the email; it opens
+a page naming the account whose button confirms (POST), and confirming ends every other session of
+the account and cycles its remember token.
 
 ### Password policy
 - Minimum 10 characters, no composition rules (they harm more than help).
@@ -176,9 +190,9 @@ before any write. Username reserved list (`admin`, `mod`, `support`, `api`, `u`,
 | Limiter | Limit | Key |
 |---|---|---|
 | `login` | 5 / min, then 20 / hour; 30 / min per ip | ip + email; ip |
-| `register` | 3 / hour | ip |
+| `register` | 3 accepted / hour (counted after validation, so typos are free); every attempt 20 / hour (`platform.auth.register_attempts_per_hour`) | ip |
 | `password-reset` | 3 / hour; 20 / hour per ip (link requests only) | ip + email; ip |
-| `verify-email-resend` | 3 / hour | user |
+| `verify-email-resend` | 3 / hour; a breach is a flash error on the notice page | user |
 | `coc-attach` | 5 / hour | user |
 | `coc-refresh` | 1 / 10 min | user + account |
 | `base-publish` | 5 / day, 20 / week | user |

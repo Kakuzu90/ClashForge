@@ -7,8 +7,9 @@ Grouped by domain. Each has a defined behaviour; anything marked **decide** is a
 
 | Case | Behaviour |
 |---|---|
-| User registers with an email already in use | Generic success message; an email is sent to the existing address saying someone tried to register. No enumeration |
-| User never verifies their email | Can log in, cannot write. Reminder at day 3; account purged after 30 days with a final warning email |
+| User registers with an email already in use | Generic success message ("Check your email", the same page, cookies and timing as a new address; nobody is signed in); an email goes to the existing address saying someone tried to register, at most one an hour. An address held by a soft-deleted account counts as in use. No enumeration |
+| User never verifies their email | Can log in, cannot make content writes (FR-AUTH-4). Reminder at day 3; account purged after 30 days with a final warning email (P1-16) |
+| A verification link is opened by a mail scanner, or someone registered another person's address | Opening the link confirms nothing; only the page's button does. Confirming ends every other session of the account, so a squatter loses it once the owner confirms |
 | Email provider bounces permanently | Address marked `bouncing`, all non-security email stops, an in-app banner asks for a new address. Writes still allowed — we do not punish the user for a dead mailbox they may still be able to change |
 | Password reset requested for a non-existent account | Identical response and timing; no email sent |
 | Reset link used twice | Second use fails with "This link has already been used or has expired. Ask for a new one." (the same message for an expired or mismatched link) |

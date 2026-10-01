@@ -30,7 +30,7 @@ Authentication identity and platform-level status. Deliberately thin — profile
 |---|---|---|
 | id | bigserial PK | |
 | ulid | char(26) | non-enumerable external id |
-| username | citext | public handle, 3–20 chars |
+| username | citext | public handle: 3 to 20 of `[a-z0-9_]`, stored lowercase, unique ignoring case; a deleted account keeps its name taken |
 | email | citext | |
 | email_verified_at | timestamptz null | required for writes |
 | password | varchar(255) | bcrypt/argon2id |
