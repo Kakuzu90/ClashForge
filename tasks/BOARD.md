@@ -45,7 +45,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
 | P2-01 | API client: `CocApiClient` + HTTP client, DTO mappers, `PlayerTag`, key pool, fake + fixtures, use-case services, `coc:check-health` (decorators split to P2-07, rotation to P2-08) | done | P0-02 | tasks/phase-2/P2-01-coc-api-client.md |
-| P2-07 | Client decorators: throttle (rate budgets, interactive/background buckets), circuit breaker (incl. maintenance), cache + negative cache + stale-while-error, `coc_api_requests` log + prune, `CocApiStatus` (split from P2-01; banner and dashboard panel split to P2-10) | review | P2-01 | tasks/phase-2/P2-07-coc-client-decorators.md |
+| P2-07 | Client decorators: throttle (rate budgets, interactive/background buckets), circuit breaker (incl. maintenance), cache + negative cache + stale-while-error, `coc_api_requests` log + prune, `CocApiStatus` (split from P2-01; banner and dashboard panel split to P2-10) | done | P2-01 | tasks/phase-2/P2-07-coc-client-decorators.md |
 | P2-10 | API status UI: site-wide banner while the CoC circuit is open or in maintenance (shared prop from `CocApiStatus`) + the dashboard's API sync health panel (from P1-13) (split from P2-07) | todo | P2-07, P1-13 | |
 | P2-08 | Key rotation via the developer portal (`coc:rotate-keys`, egress IP detection) + `/leagues` `/locations` reference data (`coc:refresh-reference-data`) (split from P2-01) | todo | P2-01 | |
 | P2-02 | Attach + token verification flow (+ the attach CTA in the own profile's Accounts empty state, from P1-04) | todo | P2-01, P2-07, P1-02 | |
