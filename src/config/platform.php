@@ -101,6 +101,7 @@ return [
     'ip_hash_salt' => env('IP_HASH_SALT') ?: env('APP_KEY'),
 
     'health' => [
+        // `coc` is never required: a game API outage degrades the platform, it does not take it down (NFR-AVAIL-2).
         'required' => ['database', 'queue', 'storage', 'scheduler'],
         // Oldest pending job per queue before the queue reads as degraded, in seconds (specs/20 §6).
         'queue_max_wait' => ['high' => 300, 'default' => 1800],

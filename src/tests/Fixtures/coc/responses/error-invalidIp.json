@@ -1,0 +1,5 @@
+{
+  "_fixture": "synthetic",
+  "reason": "accessDenied.invalidIp",
+  "message": "Invalid authorization: API key does not allow access from IP 203.0.113.10"
+}

@@ -1,0 +1,150 @@
+{
+  "_fixture": "synthetic",
+  "tag": "#2PQ8GRJC",
+  "name": "Fixture Chief",
+  "townHallLevel": 16,
+  "expLevel": 231,
+  "trophies": 5124,
+  "bestTrophies": 5602,
+  "warStars": 1480,
+  "attackWins": 84,
+  "defenseWins": 6,
+  "builderHallLevel": 10,
+  "builderBaseTrophies": 4210,
+  "bestBuilderBaseTrophies": 4600,
+  "role": "coLeader",
+  "warPreference": "in",
+  "donations": 2210,
+  "donationsReceived": 1650,
+  "clanCapitalContributions": 512000,
+  "clan": {
+    "tag": "#2Q8URJ9L",
+    "name": "Fixture Clan",
+    "clanLevel": 22,
+    "badgeUrls": {
+      "small": "https://api-assets.clashofclans.com/badges/70/fixture.png",
+      "medium": "https://api-assets.clashofclans.com/badges/200/fixture.png",
+      "large": "https://api-assets.clashofclans.com/badges/512/fixture.png"
+    }
+  },
+  "league": {
+    "id": 29000022,
+    "name": "Legend League",
+    "iconUrls": {
+      "small": "https://api-assets.clashofclans.com/leagues/72/legend.png",
+      "tiny": "https://api-assets.clashofclans.com/leagues/36/legend.png",
+      "medium": "https://api-assets.clashofclans.com/leagues/288/legend.png"
+    }
+  },
+  "builderBaseLeague": {
+    "id": 44000036,
+    "name": "Ruby League II"
+  },
+  "achievements": [
+    {
+      "name": "Bigger Coffers",
+      "stars": 3,
+      "value": 18,
+      "target": 10,
+      "info": "Upgrade a Gold Storage to level 10",
+      "completionInfo": null,
+      "village": "home"
+    },
+    {
+      "name": "Sweet Victory!",
+      "stars": 3,
+      "value": 5602,
+      "target": 1250,
+      "info": "Achieve a total of 1250 trophies in Multiplayer battles",
+      "completionInfo": "Trophy record: 5602",
+      "village": "home"
+    }
+  ],
+  "labels": [
+    {
+      "id": 57000000,
+      "name": "Clan Wars",
+      "iconUrls": {
+        "small": "https://api-assets.clashofclans.com/labels/64/clanwars.png",
+        "medium": "https://api-assets.clashofclans.com/labels/128/clanwars.png"
+      }
+    }
+  ],
+  "troops": [
+    {
+      "name": "Barbarian",
+      "level": 11,
+      "maxLevel": 12,
+      "village": "home"
+    },
+    {
+      "name": "Electro Dragon",
+      "level": 6,
+      "maxLevel": 7,
+      "village": "home"
+    },
+    {
+      "name": "Super Barbarian",
+      "level": 11,
+      "maxLevel": 12,
+      "village": "home",
+      "superTroopIsActive": true
+    },
+    {
+      "name": "Raged Barbarian",
+      "level": 18,
+      "maxLevel": 20,
+      "village": "builderBase"
+    }
+  ],
+  "heroes": [
+    {
+      "name": "Barbarian King",
+      "level": 90,
+      "maxLevel": 95,
+      "village": "home",
+      "equipment": [
+        {
+          "name": "Rage Vial",
+          "level": 18,
+          "maxLevel": 18,
+          "village": "home"
+        }
+      ]
+    },
+    {
+      "name": "Archer Queen",
+      "level": 90,
+      "maxLevel": 95,
+      "village": "home"
+    }
+  ],
+  "heroEquipment": [
+    {
+      "name": "Rage Vial",
+      "level": 18,
+      "maxLevel": 18,
+      "village": "home"
+    },
+    {
+      "name": "Giant Gauntlet",
+      "level": 24,
+      "maxLevel": 27,
+      "village": "home"
+    }
+  ],
+  "spells": [
+    {
+      "name": "Lightning Spell",
+      "level": 11,
+      "maxLevel": 11,
+      "village": "home"
+    },
+    {
+      "name": "Rage Spell",
+      "level": 6,
+      "maxLevel": 6,
+      "village": "home"
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Platform;
 
+use App\Domain\CocIntegration\Services\CocHealthCheck;
 use App\Support\Health\HealthChecker;
 use App\Support\Health\HealthStatus;
 use Illuminate\Console\Command;
@@ -11,14 +12,19 @@ class CheckHealthCommand extends Command
 {
     protected $signature = 'platform:check-health';
 
-    protected $description = 'Probe external dependencies (object storage) and record the result for /health';
+    protected $description = 'Probe external dependencies (object storage, CoC API keys) and record the result for /health';
 
-    public function handle(HealthChecker $health): int
+    public function handle(HealthChecker $health, CocHealthCheck $coc): int
     {
         $storage = $health->probeStorage();
         $this->components->twoColumnDetail('storage', $storage->value);
-        Log::info('platform.check_health', ['storage' => $storage->value]);
 
-        return $storage === HealthStatus::Ok ? self::SUCCESS : self::FAILURE;
+        // A degraded key pool still serves; only a pool with no working key fails the run.
+        $cocStatus = $coc->run();
+        $this->components->twoColumnDetail('coc', $cocStatus->value);
+
+        Log::info('platform.check_health', ['storage' => $storage->value, 'coc' => $cocStatus->value]);
+
+        return $storage === HealthStatus::Ok && $cocStatus !== HealthStatus::Down ? self::SUCCESS : self::FAILURE;
     }
 }

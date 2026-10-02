@@ -54,12 +54,12 @@ operationally annoying constraint of the integration.
 
 | Element | Decision |
 |---|---|
-| Storage | `COC_API_TOKENS` env as a comma-separated list; loaded into a `CocKeyPool` |
-| Selection | Round-robin across healthy keys, so per-key limits are spread |
-| Health | A key returning 403 with `accessDenied.invalidIp` is marked unhealthy and removed from rotation; an alert fires |
+| Storage | `COC_API_TOKENS` env as a comma-separated list; loaded into a `CocKeyPool`. A key is identified by the first 8 hex characters of its token's sha256 (`coc.key_pool.id_length`), the only form that is ever logged or shown |
+| Selection | Round-robin across healthy keys, so per-key limits are spread (a `Cache` counter shared by all workers) |
+| Health | A key returning 403 (`accessDenied` or `accessDenied.invalidIp`) is marked unhealthy in the cache for at most `coc.key_pool.unhealthy_ttl` (1 h) and removed from rotation; the call is retried once with another key. `coc.key_unhealthy` is logged once per outage (error; critical for `invalidIp`), and `coc.keys_all_unhealthy` (critical) when the last key goes |
 | Rotation | A scheduled job (weekly, plus on-demand) detects the current egress IP, and if it changed, calls the developer portal API to create a key for the new IP and revoke the stale one |
-| Startup check | A console command verifies at least one healthy key before the app is considered ready; the health endpoint reports key-pool status |
-| Never | Keys are never exposed to the browser, never logged, never placed in a queued job payload |
+| Startup check | `coc:check-health` (also run by `platform:check-health` every 5 min) sends `GET /locations?limit=1` once per key: a success clears the key's marker, a 403 sets it. Ok when every key works, degraded when some do or the API did not answer, down when none works or none is configured; it fails only on down. `/health` reports the result as `coc`, never a required check (NFR-AVAIL-2) |
+| Never | Keys are never exposed to the browser, never logged, never placed in a queued job payload (`CocApiKey` hides the token from dumps and refuses serialisation) |
 
 **Fallback if automated rotation is not possible** (portal credentials unavailable): a documented
 manual runbook plus an alert when all keys go unhealthy. The application must degrade to snapshots,
@@ -175,8 +175,20 @@ key from Supercell.
 |---|---|
 | `PlayerData` | tag, name, townHallLevel, expLevel, trophies, bestTrophies, warStars, attackWins, defenseWins, donations, league, clan (tag, name, role, badge), labels, heroes[], troops[], spells[], heroEquipment[], achievements[] |
 | `ClanData` | tag, name, description, badges, level, points, memberCount, warFrequency, warLeague, capitalHallLevel, requiredTownHall, requiredTrophies, type, location, members[] |
-| `TokenVerificationResult` | tag, status (`ok`/`invalid`), verifiedAt |
+| `TokenVerificationResult` | tag, status (`ok`/`invalid` from the API; `not_found`/`unavailable` from us), verifiedAt (only on `ok`) |
 | `UnitData` | name, level, maxLevel, village, superTroopIsActive |
+
+Only `tag` and `name` are required. A field the API stops sending maps to null (or an empty list);
+a field present with the wrong type refuses the whole response as malformed. API names that differ
+from ours: the player's top-level `role` is `clan.role`; a clan's `members` is `memberCount` and
+`memberList` is `members`; `requiredTownhallLevel` is `requiredTownHall`;
+`clanCapital.capitalHallLevel` is `capitalHallLevel`.
+
+**Use-case results.** `PlayerLookup`, `ClanLookup` and `TokenVerifier` never throw for an API
+problem: they return `PlayerLookupResult` / `ClanLookupResult` (`found` / `not_found` /
+`unavailable`) or a `TokenVerificationResult`, with a `CocFailureReason` (`throttled`,
+`maintenance`, `server_error`, `timeout`, `no_healthy_key`, `malformed`) and `retryAfter` when
+unavailable. The client's exceptions stay inside the module.
 
 **Asset URLs in responses:** `clan.badgeUrls` is stored verbatim as a URL and rendered unmodified —
 clan badges stay referenced, never mirrored, because there is one per clan and they change.
@@ -207,7 +219,9 @@ short-lived and single-use-ish, so the flow must be immediate.
    `coc_account_claims`, successful or not.
 
 Tokens are **never stored** — not in the database, not in logs, not in job payloads. They exist only
-inside the request that verifies them. The claim record stores the outcome, not the token.
+inside the request that verifies them. The claim record stores the outcome, not the token. The
+verifytoken response echoes the token: only its `status` is read, and a malformed verifytoken body
+is never logged.
 
 Full state machine, conflict and dispute handling: [13-claiming-workflow.md](13-claiming-workflow.md).
 
@@ -221,14 +235,19 @@ Full state machine, conflict and dispute handling: [13-claiming-workflow.md](13-
 | Rate limiter | Time-frozen tests asserting the budget is respected and background yields to interactive |
 | Circuit breaker | Tests asserting open/half-open/closed transitions and that pages still render while open |
 | Scheduler | Tests asserting tier assignment, `next_due_at` computation and snapshot-only-on-change |
-| Never | The test suite makes no real network calls. CI runs with no outbound access to the API |
+| Never | The test suite makes no real network calls (`Http::preventStrayRequests()` in every test). CI runs with no outbound access to the API |
+| Fixtures | `tests/Fixtures/coc/`: synthetic until a developer key exists (each file marked `"_fixture": "synthetic"`), then replaced by recorded responses under the same names; the contract test maps every file |
 
 ## 11. Configuration surface (`config/coc.php`)
 
 ```
-base_url, tokens[], timeouts{connect,total}, cache{player_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
+driver (fake|http), base_url, tokens[], timeouts{connect,total}, key_pool{unhealthy_ttl,cursor_ttl,id_length},
+log{malformed_body_bytes}, fake{fixtures_path,valid_token},
+cache{player_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
 rate{global_per_second,per_key_per_second,interactive_share}, circuit{threshold,window,probe_interval},
 sync{tiers{hot,warm,cold,frozen}, batch_size, queue}, key_rotation{enabled, portal_email, portal_password}
 ```
 
 Every value is environment-overridable. No magic numbers anywhere else in the codebase.
+`driver` defaults to `fake` (the fixture client); production must run `http`: resolving the fake
+there throws, and `coc:check-health` reports it as down.

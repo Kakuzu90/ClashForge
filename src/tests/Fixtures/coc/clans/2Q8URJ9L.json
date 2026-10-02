@@ -1,0 +1,94 @@
+{
+  "_fixture": "synthetic",
+  "tag": "#2Q8URJ9L",
+  "name": "Fixture Clan",
+  "type": "inviteOnly",
+  "description": "Synthetic clan for tests. War twice a week.",
+  "location": {
+    "id": 32000006,
+    "name": "International",
+    "isCountry": false
+  },
+  "isFamilyFriendly": true,
+  "badgeUrls": {
+    "small": "https://api-assets.clashofclans.com/badges/70/fixture.png",
+    "medium": "https://api-assets.clashofclans.com/badges/200/fixture.png",
+    "large": "https://api-assets.clashofclans.com/badges/512/fixture.png"
+  },
+  "clanLevel": 22,
+  "clanPoints": 48210,
+  "clanBuilderBasePoints": 40110,
+  "clanCapitalPoints": 3900,
+  "requiredTrophies": 3000,
+  "warFrequency": "always",
+  "warWinStreak": 4,
+  "warWins": 410,
+  "isWarLogPublic": true,
+  "warLeague": {
+    "id": 48000018,
+    "name": "Champion League I"
+  },
+  "members": 2,
+  "memberList": [
+    {
+      "tag": "#2PQ8GRJC",
+      "name": "Fixture Chief",
+      "role": "coLeader",
+      "townHallLevel": 16,
+      "expLevel": 231,
+      "league": {
+        "id": 29000022,
+        "name": "Legend League",
+        "iconUrls": {
+          "small": "https://api-assets.clashofclans.com/leagues/72/legend.png",
+          "tiny": "https://api-assets.clashofclans.com/leagues/36/legend.png",
+          "medium": "https://api-assets.clashofclans.com/leagues/288/legend.png"
+        }
+      },
+      "trophies": 5124,
+      "builderBaseTrophies": 4210,
+      "clanRank": 1,
+      "previousClanRank": 2,
+      "donations": 2210,
+      "donationsReceived": 1650
+    },
+    {
+      "tag": "#9QV8YLJ2",
+      "name": "Fixture Leader",
+      "role": "leader",
+      "townHallLevel": 15,
+      "expLevel": 210,
+      "trophies": 4980,
+      "clanRank": 2,
+      "previousClanRank": 1,
+      "donations": 1800,
+      "donationsReceived": 900
+    }
+  ],
+  "labels": [
+    {
+      "id": 56000000,
+      "name": "Clan Wars",
+      "iconUrls": {
+        "small": "https://api-assets.clashofclans.com/labels/64/clanwars.png"
+      }
+    }
+  ],
+  "requiredBuilderBaseTrophies": 0,
+  "requiredTownhallLevel": 13,
+  "clanCapital": {
+    "capitalHallLevel": 10,
+    "districts": [
+      {
+        "id": 70000000,
+        "name": "Capital Peak",
+        "districtHallLevel": 10
+      }
+    ]
+  },
+  "chatLanguage": {
+    "id": 75000000,
+    "name": "English",
+    "languageCode": "EN"
+  }
+}

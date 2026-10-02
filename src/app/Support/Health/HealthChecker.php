@@ -19,6 +19,9 @@ class HealthChecker
 
     public const HEARTBEAT_KEY = 'platform:health:heartbeat';
 
+    // Written by coc:check-health (CocIntegration); read here by key, so Support stays domain-free.
+    public const COC_KEY = 'platform:health:coc';
+
     /**
      * @return array<string, HealthStatus>
      */
@@ -29,6 +32,7 @@ class HealthChecker
             'queue' => $this->queue(),
             'storage' => $this->storage(),
             'scheduler' => $this->scheduler(),
+            'coc' => $this->recorded(self::COC_KEY),
         ];
     }
 
@@ -71,6 +75,11 @@ class HealthChecker
         Cache::put(self::STORAGE_KEY, $status->value, (int) config('platform.health.external_ttl'));
 
         return $status;
+    }
+
+    public function recordCoc(HealthStatus $status): void
+    {
+        Cache::put(self::COC_KEY, $status->value, (int) config('platform.health.external_ttl'));
     }
 
     public function beat(): void
@@ -117,7 +126,15 @@ class HealthChecker
 
     private function storage(): HealthStatus
     {
-        $cached = $this->cached(self::STORAGE_KEY);
+        return $this->recorded(self::STORAGE_KEY);
+    }
+
+    /**
+     * A probe result written by platform:check-health; missing or expired reads as unknown.
+     */
+    private function recorded(string $key): HealthStatus
+    {
+        $cached = $this->cached($key);
 
         return is_string($cached) ? (HealthStatus::tryFrom($cached) ?? HealthStatus::Unknown) : HealthStatus::Unknown;
     }

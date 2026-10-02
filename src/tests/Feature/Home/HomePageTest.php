@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -13,6 +14,8 @@ it('renders the home page through Inertia', function () {
 it('skips SSR on excluded paths only', function (string $path, bool $ssr) {
     Route::middleware('web')->get($path, fn () => Inertia::render('Home/Index'));
     config(['inertia.ssr.enabled' => true]);
+    // The renderer is down, so a public page falls back to the client shell.
+    Http::fake(['*/render' => Http::response('', 503)]);
 
     $this->get($path)->assertOk();
 

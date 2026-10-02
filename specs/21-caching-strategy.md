@@ -39,6 +39,8 @@ of defence, not the first.
 | `coc:leagues`, `coc:locations` | Reference data | 7 days | Weekly refresh command |
 | `coc:404:{TAG}` | Negative lookup | 10 min | — |
 | `coc:circuit` | Circuit-breaker state | dynamic | State transitions |
+| `coc:key:{id}:unhealthy` | Refused key marker (reason, since) | 1 h (`coc.key_pool.unhealthy_ttl`) | A successful `coc:check-health` probe |
+| `coc:key:cursor` | Round-robin counter | 24 h (`coc.key_pool.cursor_ttl`) | — (losing it restarts the rotation) |
 | `feed:trending:th{n}:p{page}` | Base card DTO list | 5 min | Trending recompute, base publish/hide |
 | `feed:new:p{page}` | Base card DTO list | 60 s | Base publish |
 | `feed:category:{cat}:th{n}:p{page}` | Base card DTO list | 5 min | Trending recompute |
@@ -55,6 +57,7 @@ of defence, not the first.
 | `sitemap:chunk:{n}` | Sitemap XML | 24 h | Nightly regeneration |
 | `ratelimit:*` | Limiter counters | per limiter | Automatic. `/health` uses its own `file` store, so a database outage cannot break it |
 | `platform:health:storage` | Last storage probe result | 15 min | Next `platform:check-health` |
+| `platform:health:coc` | Last CoC key-pool probe result | 15 min | Next `platform:check-health` / `coc:check-health` |
 | `platform:health:heartbeat` | Last scheduler tick | 7 days (expired → `unknown`) | Next `platform:heartbeat` |
 | `media:signed-get:{sha1}` | Signed private media URL | signed TTL − 30 s | — (short TTL is the invalidation) |
 | `assets:publish:{version}` | Publish lock (`Cache::lock`) | 30 min | Release at the end of the run |

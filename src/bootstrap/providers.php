@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Auth\AuthServiceProvider;
+use App\Domain\CocIntegration\CocIntegrationServiceProvider;
 use App\Domain\GameAssets\GameAssetsServiceProvider;
 use App\Domain\Media\MediaServiceProvider;
 use App\Domain\Moderation\ModerationServiceProvider;
@@ -22,4 +23,5 @@ return [
     ModerationServiceProvider::class,
     NotificationsServiceProvider::class,
     GameAssetsServiceProvider::class,
+    CocIntegrationServiceProvider::class,
 ];

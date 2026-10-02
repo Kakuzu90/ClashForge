@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 beforeEach(function () {
     Date::setTestNow('2026-09-30 12:00:00');
     Cache::put(HealthChecker::STORAGE_KEY, 'ok', 900);
+    Cache::put(HealthChecker::COC_KEY, 'ok', 900);
     Cache::forever(HealthChecker::HEARTBEAT_KEY, Date::now()->getTimestamp());
 });
 
@@ -17,7 +18,7 @@ it('reports ok when every check passes', function () {
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertExactJson([
             'status' => 'ok',
-            'checks' => ['database' => 'ok', 'queue' => 'ok', 'storage' => 'ok', 'scheduler' => 'ok'],
+            'checks' => ['database' => 'ok', 'queue' => 'ok', 'storage' => 'ok', 'scheduler' => 'ok', 'coc' => 'ok'],
         ]);
 });
 

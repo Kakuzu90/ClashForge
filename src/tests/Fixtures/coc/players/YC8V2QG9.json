@@ -1,0 +1,51 @@
+{
+  "_fixture": "synthetic",
+  "tag": "#YC8V2QG9",
+  "name": "Fixture Future",
+  "townHallLevel": 18,
+  "expLevel": 260,
+  "trophies": 5800,
+  "bestTrophies": 6100,
+  "warStars": 2100,
+  "attackWins": 60,
+  "defenseWins": 2,
+  "donations": 900,
+  "fieldAddedNextUpdate": {
+    "anything": true
+  },
+  "league": {
+    "id": 29000022,
+    "name": "Legend League",
+    "iconUrls": {
+      "small": "https://api-assets.clashofclans.com/leagues/72/legend.png",
+      "tiny": "https://api-assets.clashofclans.com/leagues/36/legend.png",
+      "medium": "https://api-assets.clashofclans.com/leagues/288/legend.png"
+    }
+  },
+  "troops": [
+    {
+      "name": "Barbarian",
+      "level": 12,
+      "maxLevel": 13,
+      "village": "home"
+    },
+    {
+      "name": "Troop From A Future Update",
+      "level": 1,
+      "maxLevel": 3,
+      "village": "home"
+    }
+  ],
+  "heroes": [
+    {
+      "name": "Hero From A Future Update",
+      "level": 5,
+      "maxLevel": 50,
+      "village": "home"
+    }
+  ],
+  "spells": [],
+  "heroEquipment": [],
+  "achievements": [],
+  "labels": []
+}

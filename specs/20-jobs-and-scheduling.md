@@ -108,7 +108,7 @@ for a full temp volume does not.
 | `GenerateSitemapJob` | Nightly | Public bases + profiles, chunked sitemap index |
 | `ExportUserDataJob` | On request | Builds a ZIP, uploads privately, emails a 7-day signed link |
 | `PruneOperationalTablesJob` | Nightly | `sessions`, `cache` expired rows, `coc_api_requests` >7d, `failed_jobs` >30d, `base_view_events` >30d |
-| `platform:check-health` (command, runs inline) | Every 5 min | R2 reachability (one HEAD, no writes), later the CoC key pool → cached health state read by `/health` |
+| `platform:check-health` (command, runs inline) | Every 5 min | R2 reachability (one HEAD, no writes) and the CoC key pool (`coc:check-health`, one `/locations` call per key) → cached health state read by `/health`; fails when storage is not ok or no CoC key works |
 | `platform:heartbeat` (command) | Every minute | Scheduler liveness marker for `/health` (§6) |
 
 ## 3. Schedule

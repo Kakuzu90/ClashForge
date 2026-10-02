@@ -1,0 +1,5 @@
+{
+  "_fixture": "synthetic",
+  "reason": "accessDenied",
+  "message": "Invalid authorization"
+}

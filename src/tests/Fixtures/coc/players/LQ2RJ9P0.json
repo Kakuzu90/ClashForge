@@ -1,0 +1,40 @@
+{
+  "_fixture": "synthetic",
+  "tag": "#LQ2RJ9P0",
+  "name": "Fixture Clanless",
+  "townHallLevel": 9,
+  "expLevel": 88,
+  "trophies": 1730,
+  "bestTrophies": 1904,
+  "warStars": 120,
+  "attackWins": 12,
+  "defenseWins": 1,
+  "donations": 0,
+  "donationsReceived": 40,
+  "achievements": [],
+  "labels": [],
+  "troops": [
+    {
+      "name": "Barbarian",
+      "level": 5,
+      "maxLevel": 12,
+      "village": "home"
+    }
+  ],
+  "heroes": [
+    {
+      "name": "Barbarian King",
+      "level": 30,
+      "maxLevel": 95,
+      "village": "home"
+    }
+  ],
+  "spells": [
+    {
+      "name": "Lightning Spell",
+      "level": 5,
+      "maxLevel": 11,
+      "village": "home"
+    }
+  ]
+}

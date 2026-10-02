@@ -1,0 +1,13 @@
+{
+  "_fixture": "synthetic",
+  "items": [
+    {
+      "id": 32000000,
+      "name": "Europe",
+      "isCountry": false
+    }
+  ],
+  "paging": {
+    "cursors": {}
+  }
+}

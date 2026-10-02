@@ -44,12 +44,15 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
-| P2-01 | API client, decorators, key pool (+ the dashboard's API sync health panel, from P1-13) | todo | P0-02 | |
-| P2-02 | Attach + token verification flow (+ the attach CTA in the own profile's Accounts empty state, from P1-04) | todo | P2-01, P1-02 | |
+| P2-01 | API client: `CocApiClient` + HTTP client, DTO mappers, `PlayerTag`, key pool, fake + fixtures, use-case services, `coc:check-health` (decorators split to P2-07, rotation to P2-08) | review | P0-02 | tasks/phase-2/P2-01-coc-api-client.md |
+| P2-07 | Client decorators: throttle (rate budgets, interactive/background buckets), circuit breaker (incl. maintenance), cache + negative cache + stale-while-error, `coc_api_requests` log + 7-day prune, `CocApiStatus` + site banner (+ the dashboard's API sync health panel, from P1-13) (split from P2-01) | todo | P2-01, P1-13 | |
+| P2-08 | Key rotation via the developer portal (`coc:rotate-keys`, egress IP detection) + `/leagues` `/locations` reference data (`coc:refresh-reference-data`) (split from P2-01) | todo | P2-01 | |
+| P2-02 | Attach + token verification flow (+ the attach CTA in the own profile's Accounts empty state, from P1-04) | todo | P2-01, P2-07, P1-02 | |
 | P2-03 | Conflicts, disputes, ownership transfer (+ the dashboard's pending disputes panel, from P1-13) | todo | P2-02, P1-06 | |
 | P2-04 | PlayerCard, account detail, progression | todo | P2-02, P0-06 | |
 | P2-05 | Asset pack v1 | todo | P0-06 | |
-| P2-06 | System health page (specs/20 §5–6, NFR-OBS-6): queue depth, oldest pending job, failed jobs grouped by class with retry / delete (audited), CoC key pool and sync success rate; linked from the dashboard's failed-jobs panel (from P1-13) | todo | P2-01, P1-13 | |
+| P2-06 | System health page (specs/20 §5–6, NFR-OBS-6): queue depth, oldest pending job, failed jobs grouped by class with retry / delete (audited), CoC key pool and sync success rate; linked from the dashboard's failed-jobs panel (from P1-13) | todo | P2-01, P2-07, P1-13 | |
+| P2-09 | Tiered sync, snapshots, manual refresh (specs/09 §6, FR-COC-9/10/14): `sync_states`, `coc:sync-accounts`, `SyncCocAccountJob`, snapshot-on-change, stale-data fallback (board gap: listed in specs/25 §4, from P2-01) | todo | P2-02, P2-07 | |
 
 ## Phase 3 — Bases + moderation (MVP)
 

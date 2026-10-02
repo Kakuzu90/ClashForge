@@ -72,6 +72,13 @@ export type StaffAbility = 'access-admin' | 'view-users' | 'view-platform-stats'
 export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pending_deletion';
 }
 }
+namespace CocIntegration {
+namespace Enums {
+export type CocFailureReason = 'throttled' | 'maintenance' | 'server_error' | 'timeout' | 'no_healthy_key' | 'malformed';
+export type CocLookupStatus = 'found' | 'not_found' | 'unavailable';
+export type TokenVerificationStatus = 'ok' | 'invalid' | 'not_found' | 'unavailable';
+}
+}
 namespace GameAssets {
 namespace Data {
 export type GameAssetData = {
