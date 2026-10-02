@@ -6,8 +6,9 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
 /**
- * A tag became verified with its in-game token (specs/13 §3.1). Consumers arrive with their tasks:
- * the owner's notification (P2-12), the clan stub (P2-13), sync (P2-09) and search.
+ * A tag became verified with its in-game token (specs/13 §3.1). `claimId` is the `succeeded` claim
+ * row, so each verification is its own event even for the same row. Consumers: the owner's
+ * notification; the clan stub (P2-13), sync (P2-09) and search arrive with their tasks.
  */
 final class CocAccountVerified implements ShouldDispatchAfterCommit
 {
@@ -16,5 +17,6 @@ final class CocAccountVerified implements ShouldDispatchAfterCommit
     public function __construct(
         public readonly int $accountId,
         public readonly int $userId,
+        public readonly int $claimId,
     ) {}
 }

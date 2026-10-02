@@ -80,15 +80,19 @@ attempt counts). On `ok`:
    - demote it to `unverified`; it keeps its `user_id`, so the previous holder still sees it and can
      verify again, and it loses its featured flag; mark that holder's own `pending` claim rows
      `superseded` (owner decision 2026-10-02, P2-02);
-   - notify the previous holder: *"Someone verified ownership of #TAG with an in-game token. If this
-     was not you, your account may be compromised — secure it and contact support."* (P2-12)
+   - after commit, notify the previous holder, in-app and by an email that is always sent (§8):
+     *"Someone verified #TAG with an in-game API token, so it is no longer verified on your Clash
+     Commons account. If that was not you, someone else can get into your game account: secure it
+     in game, then verify it again with a new token."* The notice names the tag only: whoever took
+     the account over chooses its in-game name. There is no support channel to point to; the
+     dispute path joins the wording with P2-03 (owner decision 2026-10-02, P2-12).
 3. Promote this row: `status='verified'`, `verified_at`, `verification_method='api_token'`.
 4. Recount `users.verified_accounts_count` for the verifier and each previous holder; set as featured
    if the user has no featured account.
 5. Write the claim row as `succeeded` and close the verifier's `pending` rows as `succeeded`.
 6. Write `audit_logs` (`coc_account.verified`, `verified_user_ids` before and after).
-7. Commit, then dispatch `CocAccountVerified` → full profile sync, clan tracking, notification,
-   search indexing.
+7. Commit, then dispatch `CocAccountVerified` (with the `succeeded` claim id) → full profile sync,
+   clan tracking, the verifier's notice ("#TAG (name) is now verified", §8), search indexing.
 8. Auto-resolve any open dispute where this user is the claimant (`auto_resolved`).
 
 **Why token verification silently supersedes an existing verified holder:** possession of a current

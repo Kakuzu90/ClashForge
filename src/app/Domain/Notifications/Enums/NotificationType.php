@@ -24,6 +24,8 @@ enum NotificationType: string implements HasLabelAndColor
     case AccountBanned = 'account_banned';
     case SanctionEnded = 'sanction_ended';
     case MediaProcessingFailed = 'media_processing_failed';
+    case CocAccountVerified = 'coc_account_verified';
+    case CocAccountTakenOver = 'coc_account_taken_over';
 
     public function label(): string
     {
@@ -35,15 +37,17 @@ enum NotificationType: string implements HasLabelAndColor
             self::AccountBanned => 'Account banned',
             self::SanctionEnded => 'Sanction over',
             self::MediaProcessingFailed => 'Upload failed',
+            self::CocAccountVerified => 'Account verified',
+            self::CocAccountTakenOver => 'Account taken over',
         };
     }
 
     public function color(): string
     {
         return match ($this) {
-            self::AccountSuspended, self::AccountBanned, self::MediaProcessingFailed => 'state-danger',
+            self::AccountSuspended, self::AccountBanned, self::MediaProcessingFailed, self::CocAccountTakenOver => 'state-danger',
             self::PasswordChanged, self::NewDeviceSignIn => 'state-warning',
-            self::EmailVerified, self::SanctionEnded => 'state-success',
+            self::EmailVerified, self::SanctionEnded, self::CocAccountVerified => 'state-success',
         };
     }
 
@@ -51,6 +55,7 @@ enum NotificationType: string implements HasLabelAndColor
     {
         return match ($this) {
             self::MediaProcessingFailed => NotificationCategory::Bases,
+            self::CocAccountVerified, self::CocAccountTakenOver => NotificationCategory::Ownership,
             default => NotificationCategory::Security,
         };
     }
@@ -96,6 +101,17 @@ enum NotificationType: string implements HasLabelAndColor
                 body: 'Your '.self::upload($params).' failed to process after several tries. Upload it again.',
                 url: ($params['collection'] ?? null) === 'avatar' ? route('settings.profile.edit', absolute: false) : null,
             ),
+            self::CocAccountVerified => new RenderedNotificationData(
+                title: 'Your Clash of Clans account is verified',
+                body: ucfirst(self::cocAccount($params, 'your account')).' is now verified on your Clash Commons account.',
+                url: null,
+            ),
+            // `method` is stored for the dispute decision's wording (P2-03); a token is the only path now.
+            self::CocAccountTakenOver => new RenderedNotificationData(
+                title: 'Someone else verified one of your accounts',
+                body: 'Someone verified '.self::cocAccount($params, 'one of your Clash of Clans accounts').' with an in-game API token, so it is no longer verified on your Clash Commons account. If that was not you, someone else can get into your game account: secure it in game, then verify it again with a new token.',
+                url: null,
+            ),
         };
     }
 
@@ -133,6 +149,25 @@ enum NotificationType: string implements HasLabelAndColor
             'evidence' => 'report evidence',
             'portfolio' => 'portfolio image',
             default => 'upload',
+        };
+    }
+
+    /**
+     * "#2PP0LJQ (Chief Pat)", the tag alone (the takeover notice stores no name), or the fallback when the row has neither.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    private static function cocAccount(array $params, string $fallback): string
+    {
+        $tag = is_string($params['tag'] ?? null) && $params['tag'] !== '' ? $params['tag'] : null;
+        // Control and direction-override characters could reorder the sentence around the name.
+        $name = is_string($params['name'] ?? null) ? trim((string) preg_replace('/[\p{Cc}\p{Cf}]/u', '', $params['name'])) : '';
+        $name = $name === '' ? null : $name;
+
+        return match (true) {
+            $tag === null => $fallback,
+            $name === null => $tag,
+            default => "{$tag} ({$name})",
         };
     }
 

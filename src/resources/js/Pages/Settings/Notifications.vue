@@ -52,13 +52,14 @@ function submit() {
                             v-else
                             v-model="form.email_categories[category.key]"
                             :label="category.label"
+                            :hint="category.hint ?? undefined"
                             :disabled="!form.email_enabled || form.processing || !settings.canUpdate"
                             :error="form.errors[`email_categories.${category.key}` as keyof typeof form.errors]"
                         />
                     </template>
                     <p v-if="form.errors.email_categories" role="alert" class="text-sm text-danger-fg">{{ form.errors.email_categories }}</p>
                     <p class="text-sm text-fg-secondary">
-                        Bases includes notices about failed uploads. Other categories apply as those features open.
+                        Accounts covers verified Clash of Clans accounts, and Bases covers failed uploads. Other categories apply as those features open.
                     </p>
                 </fieldset>
                 <div class="flex flex-wrap items-center gap-3">

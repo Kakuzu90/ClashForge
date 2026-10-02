@@ -175,7 +175,7 @@ class VerifyOwnershipService
 
             CocAccountClaim::query()->where('coc_account_id', $mine->id)->where('user_id', $user->id)
                 ->where('status', ClaimStatus::Pending)->update(['status' => ClaimStatus::Succeeded]);
-            $this->claims->record($user, $tag, $mine->id, ClaimStatus::Succeeded);
+            $claim = $this->claims->record($user, $tag, $mine->id, ClaimStatus::Succeeded);
 
             $this->recount($user->id);
             foreach ($superseded as $row) {
@@ -195,7 +195,7 @@ class VerifyOwnershipService
                 context: ['tag' => $tag->value, 'method' => VerificationMethod::ApiToken->value],
             ));
 
-            CocAccountVerified::dispatch($mine->id, $user->id);
+            CocAccountVerified::dispatch($mine->id, $user->id, $claim->id);
             foreach ($previous as $fromUserId) {
                 CocAccountOwnershipTransferred::dispatch($mine->id, $fromUserId, $user->id, VerificationMethod::ApiToken);
             }

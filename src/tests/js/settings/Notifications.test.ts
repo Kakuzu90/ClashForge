@@ -34,9 +34,10 @@ const settings = {
     emailEnabled: true,
     canUpdate: true,
     categories: [
-        { key: 'security', label: 'Security', enabled: true, locked: true },
-        { key: 'bases', label: 'Bases', enabled: true, locked: false },
-        { key: 'social', label: 'Social', enabled: false, locked: false },
+        { key: 'security', label: 'Security', enabled: true, locked: true, hint: null },
+        { key: 'ownership', label: 'Accounts', enabled: true, locked: false, hint: 'Takeover alerts are always sent.' },
+        { key: 'bases', label: 'Bases', enabled: true, locked: false, hint: null },
+        { key: 'social', label: 'Social', enabled: false, locked: false, hint: null },
     ],
 };
 
@@ -51,7 +52,7 @@ describe('Settings/Notifications', () => {
         const wrapper = mount(Notifications, { props: { settings } });
         expect(wrapper.text()).toContain('Always on');
         await wrapper.get('form').trigger('submit');
-        expect(submitted).toEqual([{ url: '/settings/notifications', email_enabled: true, email_categories: { bases: true, social: false } }]);
+        expect(submitted).toEqual([{ url: '/settings/notifications', email_enabled: true, email_categories: { ownership: true, bases: true, social: false } }]);
     });
 
     it('disables categories without losing their choices when global email is off', async () => {
@@ -60,7 +61,7 @@ describe('Settings/Notifications', () => {
         await switches[0].setValue(false);
         expect(switches[1].attributes('disabled')).toBeDefined();
         await wrapper.get('form').trigger('submit');
-        expect(submitted[0]).toMatchObject({ email_enabled: false, email_categories: { bases: true, social: false } });
+        expect(submitted[0]).toMatchObject({ email_enabled: false, email_categories: { ownership: true, bases: true, social: false } });
     });
 
     it('focuses the invalid category after a refused update', async () => {
@@ -69,7 +70,15 @@ describe('Settings/Notifications', () => {
         await wrapper.get('form').trigger('submit');
         await new Promise((resolve) => setTimeout(resolve));
         expect(wrapper.text()).toContain('Choose on or off.');
-        expect(document.activeElement).toBe(wrapper.findAll('input[role="switch"]')[1].element);
+        expect(document.activeElement).toBe(wrapper.findAll('input[role="switch"]')[2].element);
+    });
+
+    it('describes the Accounts toggle with its hint', () => {
+        const wrapper = mount(Notifications, { props: { settings } });
+        const accounts = wrapper.findAll('input[role="switch"]')[1];
+        const hint = wrapper.get(`#${accounts.attributes('aria-describedby')}`);
+        expect(hint.text()).toBe('Takeover alerts are always sent.');
+        expect(wrapper.findAll('input[role="switch"]')[2].attributes('aria-describedby')).toBeUndefined();
     });
 
     it('honors the server update ability', () => {

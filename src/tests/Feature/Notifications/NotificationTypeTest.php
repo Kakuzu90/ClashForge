@@ -32,6 +32,26 @@ it('says lifted or ended, ban or suspension', function () {
         ->and(NotificationType::SanctionEnded->render(['sanction' => 'suspension', 'expired' => true])->body)->toStartWith('It has ended.');
 });
 
+it('names the account, or falls back when the row predates its parameters (specs/13 §8)', function () {
+    $params = ['tag' => '#2PQ8GRJC', 'name' => 'Chief Pat', 'method' => 'api_token'];
+
+    expect(NotificationType::CocAccountVerified->render($params)->body)->toBe('#2PQ8GRJC (Chief Pat) is now verified on your Clash Commons account.')
+        ->and(NotificationType::CocAccountVerified->render([])->body)->toBe('Your account is now verified on your Clash Commons account.')
+        ->and(NotificationType::CocAccountVerified->render(['tag' => '#2PQ8GRJC', 'name' => '  '])->body)->toStartWith('#2PQ8GRJC is now verified')
+        ->and(NotificationType::CocAccountTakenOver->render($params)->body)->toStartWith('Someone verified #2PQ8GRJC (Chief Pat) with an in-game API token')
+        ->and(NotificationType::CocAccountTakenOver->render($params)->body)->toContain('secure it in game, then verify it again with a new token.')
+        ->and(NotificationType::CocAccountTakenOver->render([])->body)->toStartWith('Someone verified one of your Clash of Clans accounts')
+        ->and(NotificationType::CocAccountTakenOver->render($params)->url)->toBeNull();
+});
+
+it('files both ownership notices under Accounts', function () {
+    expect(NotificationType::CocAccountVerified->category())->toBe(NotificationCategory::Ownership)
+        ->and(NotificationType::CocAccountTakenOver->category())->toBe(NotificationCategory::Ownership)
+        ->and(NotificationType::CocAccountVerified->color())->toBe('state-success')
+        ->and(NotificationType::CocAccountTakenOver->color())->toBe('state-danger')
+        ->and(NotificationCategory::Ownership->emailHint())->toBe('Takeover alerts are always sent.');
+});
+
 it('lists only the categories with a type as in use', function () {
-    expect(NotificationCategory::inUse())->toBe([NotificationCategory::Security, NotificationCategory::Bases]);
+    expect(NotificationCategory::inUse())->toBe([NotificationCategory::Security, NotificationCategory::Ownership, NotificationCategory::Bases]);
 });

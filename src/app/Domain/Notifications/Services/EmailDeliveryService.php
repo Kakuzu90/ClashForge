@@ -4,6 +4,7 @@ namespace App\Domain\Notifications\Services;
 
 use App\Domain\Notifications\Enums\NotificationCategory;
 use App\Domain\Notifications\Enums\NotificationType;
+use App\Domain\Notifications\Jobs\SendEmailNotificationJob;
 use App\Domain\Notifications\Models\EmailDelivery;
 use App\Domain\Notifications\Notifications\NonSecurityEmail;
 use App\Domain\Notifications\Support\UnsubscribeCapability;
@@ -16,6 +17,17 @@ use Illuminate\Support\Facades\Mail;
 class EmailDeliveryService
 {
     public function __construct(private readonly EmailPreferenceService $preferences) {}
+
+    /**
+     * Queues a non-security email for another module, which cannot dispatch this module's job
+     * (specs/19). Preferences, the daily cap and the receipt are checked when it runs.
+     *
+     * @param  array<string, string|int|bool|null>  $params
+     */
+    public function queue(int $userId, NotificationType $type, string $eventKey, array $params = []): void
+    {
+        SendEmailNotificationJob::dispatch($userId, $type, $eventKey, $params);
+    }
 
     /** @param array<string, string|int|bool|null> $params */
     public function send(int $userId, NotificationType $type, string $eventKey, array $params): void

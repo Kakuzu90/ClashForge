@@ -38,6 +38,7 @@ it('lists the account\'s notifications newest first, rendered, with the tabs in 
             ->where('tabs', [
                 ['value' => null, 'label' => 'All'],
                 ['value' => 'security', 'label' => 'Security'],
+                ['value' => 'ownership', 'label' => 'Accounts'],
                 ['value' => 'bases', 'label' => 'Bases'],
             ])
             ->has('notifications.entries', 2)

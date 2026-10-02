@@ -21,7 +21,7 @@ class EmailPreferenceService
         return new EmailPreferencesData(
             $settings->non_security_email_enabled,
             array_map(fn (NotificationCategory $category): EmailCategoryData => new EmailCategoryData(
-                $category->value, $category->label(), $this->categoryEnabled($settings, $category), $category === NotificationCategory::Security,
+                $category->value, $category->label(), $this->categoryEnabled($settings, $category), $category === NotificationCategory::Security, $category->emailHint(),
             ), NotificationCategory::cases()),
             Gate::forUser($user)->allows('update', $settings),
         );

@@ -47,6 +47,17 @@ enum NotificationCategory: string implements HasLabelAndColor
     }
 
     /**
+     * A line under the category's email toggle, for mail the toggle does not stop (specs/16 §5).
+     */
+    public function emailHint(): ?string
+    {
+        return match ($this) {
+            self::Ownership => 'Takeover alerts are always sent.',
+            default => null,
+        };
+    }
+
+    /**
      * @return list<NotificationType>
      */
     public function types(): array

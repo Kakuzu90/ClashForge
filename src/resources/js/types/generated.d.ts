@@ -192,6 +192,7 @@ key: string,
 label: string,
 enabled: boolean,
 locked: boolean,
+hint: string | null,
 };
 export type EmailPreferencesData = {
 emailEnabled: boolean,
@@ -225,7 +226,7 @@ url: string | null,
 }
 namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
-export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed';
+export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over';
 export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
 }
 }

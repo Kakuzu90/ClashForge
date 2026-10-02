@@ -34,8 +34,8 @@ longer available", with no link.
 | | 2FA enabled/disabled | I + E* | — | immediate |
 | | Account suspended / banned | I + E* (email since P1-14; in-app since P1-07) | — | immediate |
 | | Sanction lifted / expired | I + E (email since P1-14; in-app since P1-07) | — | immediate |
-| **Ownership** | CoC account verified | I + E | — | immediate |
-| | Your verified account was claimed by someone else | I + E* | — | immediate |
+| **Ownership** | CoC account verified | I + E (P2-12; names the tag and in-game name) | — | immediate |
+| | Your verified account was claimed by someone else | I + E* (P2-12; names the tag only, never the new holder or the in-game name) | — | immediate |
 | | Dispute opened against you | I + E | — | immediate |
 | | Dispute response reminder (day 3, day 6) | I + E | — | scheduled |
 | | Dispute decision | I + E | — | immediate |
@@ -141,6 +141,11 @@ The link lifetime is `platform.notifications.unsubscribe_link_days` (30); the ad
 an HMAC-SHA256 with the application key, so the URL carries no address or plain address hash.
 Missing preference rows read defaults; GET does not create them. Saving email controls preserves
 stored in-app and digest choices.
+
+A category's toggle carries a hint when some of its mail is E* and the toggle cannot stop it:
+Accounts reads "Takeover alerts are always sent." (P2-12). A module that is not an edge module queues
+its preference-checked mail with `EmailDeliveryService::queue()`; its E* mail goes out as a Laravel
+notification listing `mail` beside `InAppChannel`.
 
 ## 6. In-app UX
 

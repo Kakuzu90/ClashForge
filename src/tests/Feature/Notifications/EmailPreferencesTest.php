@@ -21,7 +21,9 @@ it('renders defaults without creating a preference row on GET', function () {
         ->assertInertia(fn (Assert $page) => $page->component('Settings/Notifications')
             ->where('settings.emailEnabled', true)->where('settings.canUpdate', true)
             ->has('settings.categories', count(NotificationCategory::cases()))
-            ->where('settings.categories.0', ['key' => 'security', 'label' => 'Security', 'enabled' => true, 'locked' => true])
+            ->where('settings.categories.0', ['key' => 'security', 'label' => 'Security', 'enabled' => true, 'locked' => true, 'hint' => null])
+            ->where('settings.categories.1', ['key' => 'ownership', 'label' => 'Accounts', 'enabled' => true, 'locked' => false, 'hint' => 'Takeover alerts are always sent.'])
+            ->where('settings.categories.2.hint', null)
             ->where('settings.categories.2.enabled', true)
             ->where('settings.categories.6.enabled', false)
             ->missing('settings.digestFrequency')->missing('settings.userId')->missing('settings.email'));
