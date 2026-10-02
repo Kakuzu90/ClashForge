@@ -32,7 +32,7 @@ Shared setup used by several cases below:
 - Preconditions: Fresh seed. Signed in as `test_admin`.
 - Steps:
   1. Click "Admin" in the top bar.
-- Expected: URL `/admin`, tab title "Admin". Heading "Dashboard" and a "Back to site" button. Nav Dashboard · Users · Logs with "Dashboard" current. Three panels: "New sign-ups" ("Accounts created, deleted ones included."), "Failed jobs" ("Jobs that used up their retries."), "Media storage" ("Uploads and their resized copies in the bucket.", full width on desktop).
+- Expected: URL `/admin`, tab title "Admin". Heading "Dashboard" and a "Back to site" button beside it. Nav Dashboard · Users · Logs with "Dashboard" current, and a second "Back to site" link (chevron icon) pinned at the bottom of the left sidebar (TC-P1-13-033). Three panels: "New sign-ups" ("Accounts created, deleted ones included."), "Failed jobs" ("Jobs that used up their retries."), "Media storage" ("Uploads and their resized copies in the bucket.", full width on desktop).
 
 ### TC-P1-13-002: Sign-ups panel after a fresh seed
 - Priority: High · Type: Functional
@@ -189,23 +189,25 @@ Shared setup used by several cases below:
   1. Open `/admin`.
 - Expected: Same three panels and figures as for `test_admin`.
 
-### TC-P1-13-020: Moderator gets an empty state and no panels
+### TC-P1-13-020: Moderator is refused the dashboard and has Reports instead
 - Priority: High · Type: Authorization
-- Ref: Open question 1 / task Acceptance "States"
+- Ref: specs/04 §2–3 (`access-admin` admin+) / specs/18 §6 Moderation / owner decision 2026-10-02 (replaces the moderator empty state, Open question 1)
 - Preconditions: Signed in as `test_moderator`.
 - Steps:
-  1. Click "Admin" in the top bar.
-- Expected: `/admin` loads with heading "Dashboard", nav "Dashboard" only, and an empty state "Nothing to review yet" / "Open reports and the moderation queue will show here once reporting goes live." No panels, skeletons or numbers.
+  1. Look at the top bar.
+  2. Type `/admin` in the address bar.
+  3. Click "Reports" in the top bar.
+- Expected: Step 1: "Reports" before the bell; no "Admin" link. Step 2: "403 | This action is unauthorized."; no "Dashboard" heading, no "Nothing to review yet" empty state, no panels or skeletons. An `auth.permission_denied` line is logged. Step 3: `/moderation/reports` in the member layout (tab title "Reports"), heading "Reports" and the empty state "No open reports" / "Reports from members land here for review. Nothing is waiting right now."
 
-### TC-P1-13-021: Panels the moderator may not see are absent from the props
+### TC-P1-13-021: The deferred panels are 403 for a moderator
 - Priority: High · Type: Security
-- Ref: Decision 2 / task Acceptance "panels ... absent from props, not just hidden"
-- Preconditions: Signed in as `test_moderator`, DevTools open.
+- Ref: Decision 2 / specs/04 §2 `view-platform-stats` admin+ / owner decision 2026-10-02
+- Preconditions: Signed in as `test_moderator` on `/moderation/reports`, DevTools open.
 - Steps:
-  1. Reload `/admin`; inspect the page JSON (`data-page`) and the Network tab.
-  2. In the console run:
-     `const p = JSON.parse(document.querySelector('[data-page]').dataset.page); await fetch('/admin', {headers: {'X-Inertia': 'true', 'X-Inertia-Version': p.version, 'X-Inertia-Partial-Component': 'Admin/Dashboard', 'X-Inertia-Partial-Data': 'signups,failedJobs,storage'}}).then(r => r.json()).then(j => j.props)`
-- Expected: 1: props have `platformStats: false`, no `signups`, `failedJobs` or `storage` key, no `deferredProps`, and no follow-up partial requests. 2: the response is 200 with no data for `signups`, `failedJobs` or `storage` (absent or `null`).
+  1. In the console run:
+     `const p = JSON.parse(document.querySelector('[data-page]').dataset.page); await fetch('/admin', {headers: {'X-Inertia': 'true', 'X-Inertia-Version': p.version, 'X-Inertia-Partial-Component': 'Admin/Dashboard', 'X-Inertia-Partial-Data': 'signups,failedJobs,storage'}}).then(async r => [r.status, await r.text()])`
+  2. Repeat with `'X-Inertia-Partial-Data'` set to `'signups'`, then `'failedJobs'`, then `'storage'` alone.
+- Expected: Every request returns `403`; no response body contains `signups`, `failedJobs`, `storage`, a count or a job name. One `auth.permission_denied` line per request in the security log.
 
 ### TC-P1-13-022: Regular user and guest are refused
 - Priority: High · Type: Authorization
@@ -214,7 +216,7 @@ Shared setup used by several cases below:
 - Steps:
   1. Signed in as `test_user`, open `/admin`.
   2. Signed out, open `/admin`.
-- Expected: 1: "403 | This action is unauthorized." and no "Admin" link in the top bar. 2: redirect to `/login`.
+- Expected: 1: "403 | This action is unauthorized." and no "Admin" or "Reports" link in the top bar. 2: redirect to `/login`.
 
 ### TC-P1-13-023: Restricted and pending-deletion admins still see the panels
 - Priority: High · Type: Authorization
@@ -225,22 +227,24 @@ Shared setup used by several cases below:
   2. Set it to `pending_deletion` (`deletion_requested_at` now, `deletion_previous_status` `active`); reload.
 - Expected: All three panels load in both states.
 
-### TC-P1-13-024: Restricted moderator gets the empty state
-- Priority: Low · Type: Authorization
-- Ref: specs/04 §3
+### TC-P1-13-024: Restricted moderator is refused too
+- Priority: Medium · Type: Authorization
+- Ref: specs/04 §3 / owner decision 2026-10-02
 - Preconditions: `test_moderator` `status` `restricted`. Signed in as `test_moderator`.
 - Steps:
   1. Open `/admin`.
-- Expected: The "Nothing to review yet" empty state, as in TC-P1-13-020.
+  2. Run the partial request from TC-P1-13-021 step 1 from `/moderation/reports`.
+  3. Click "Reports" in the top bar.
+- Expected: Steps 1–2: 403, as for an unrestricted moderator; no panel data. Step 3: `/moderation/reports` opens (reading stays open to restricted staff).
 
 ### TC-P1-13-025: Suspended staff go to the notice; banned staff are signed out
 - Priority: High · Type: Authorization
-- Ref: specs/04 §1
+- Ref: specs/04 §1 / owner decision 2026-10-02
 - Preconditions: Signed in as `test_admin` (and separately `test_moderator`).
 - Steps:
   1. In Adminer set the account's `status` `suspended`, `status_expires_at` next week; open `/admin`.
   2. Set `status` `banned`; reload `/admin`.
-- Expected: 1: redirect to `/account/suspended` ("Your account is suspended"). 2: redirect to `/login` with "This account is banned, so it cannot sign in."
+- Expected: 1: redirect to `/account/suspended` ("Your account is suspended"), for the moderator too (the suspension notice comes before the moderator's 403). 2: redirect to `/login` with "This account is banned, so it cannot sign in."
 
 ## Security
 
@@ -305,3 +309,35 @@ Shared setup used by several cases below:
   1. View `/admin` at desktop width.
   2. In DevTools device mode set 375 px and reload.
 - Expected: 1: "New sign-ups" and "Failed jobs" side by side; "Media storage" spans both columns. 2: panels stack in one column; the nav is behind "Menu"; the three sign-up figures stay on one row and readable; the failed-jobs and storage tables scroll inside their own area; long job names wrap; no horizontal page scroll.
+
+### TC-P1-13-033: "Back to site" is pinned at the bottom of the sidebar and the frame stays fixed
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §6 Admin / owner decision 2026-10-02
+- Preconditions: Signed in as `test_admin`, with failed jobs and an avatar present (so the page is taller than a short window). Desktop width.
+- Steps:
+  1. Open `/admin` and look at the left sidebar.
+  2. Shrink the browser window height to about 500 px (or zoom to 200%) and scroll the panels to the end with the mouse wheel.
+  3. Click "Back to site" at the bottom of the sidebar.
+- Expected: Step 1: the sidebar runs the full height under the top bar; Dashboard · Users · Logs sit at the top and "Back to site", with a left chevron and a thin line above it, sits at the very bottom, apart from the nav items. Step 2: only the content column scrolls; the top bar and the sidebar (with "Back to site" still visible at its bottom) do not move; the footer is the last thing in the content column. Step 3: the member home page `/` opens in the member layout.
+
+### TC-P1-13-034: Keyboard reaches the sidebar, "Back to site" and the scrolling content
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §6 Admin (keyboard-first), §8 / owner decision 2026-10-02
+- Preconditions: Signed in as `test_admin` on `/admin` at desktop width, window short enough that the content column scrolls (TC-P1-13-033 step 2).
+- Steps:
+  1. Reload and press Tab repeatedly from the top of the page.
+  2. Shift+Tab back to "Back to site" and press Enter.
+  3. Go back to `/admin`, press Tab once and Enter on "Skip to content", then press Page Down and End.
+- Expected: Step 1: the order is "Skip to content", the wordmark ("Clash Commons home"), Dashboard, Users, Logs, "Back to site", then the dashboard's own "Back to site" button and anything focusable in the panels (the scrollable table regions); each shows a visible focus ring; nothing focused is hidden behind the fixed top bar. Step 2: `/` opens. Step 3: focus moves to the main content and Page Down / End scroll the content column to the footer while the top bar and sidebar stay in place.
+
+### TC-P1-13-035: Below 768 px the nav folds behind "Menu" with "Back to site" last
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §6 Admin / owner decision 2026-10-02
+- Preconditions: Signed in as `test_admin`. DevTools device mode.
+- Steps:
+  1. Set 375 px wide, open `/admin`.
+  2. Tap "Menu".
+  3. Tap "Users".
+  4. Tap "Menu", then "Back to site".
+  5. Back on `/admin`, set the width to 767 px, then to 768 px.
+- Expected: Step 1: the top bar shows the wordmark, "Admin" and a "Menu" button (`aria-expanded="false"`); no sidebar; the whole page scrolls normally with the top bar staying at the top. Step 2: `aria-expanded="true"`; the menu opens under the top bar listing Dashboard, Users, Logs and, last, "Back to site" with its chevron; every item is at least 44 px tall. Step 3: `/admin/users` opens and the menu closes. Step 4: `/` opens. Step 5: at 767 px the "Menu" button shows; at 768 px it is gone and the fixed left sidebar with "Back to site" at its bottom takes its place.

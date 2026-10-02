@@ -87,7 +87,7 @@ between cases (it resets every limiter) unless the case tests a limit.
 - Preconditions: on `/email/verify` as an unverified account; Mailpit cleared.
 - Steps:
   1. Press "Send a new link".
-- Expected: a success alert "A new link is on its way. It expires in 60 minutes."; Mailpit has a new "Confirm your Clash Commons email" message to that account's address.
+- Expected: a green success alert "A new link is on its way. It expires in 60 minutes." above the card, on the page itself (not a toast, unchanged by the 2026-10-02 toast change); Mailpit has a new "Confirm your Clash Commons email" message to that account's address.
 
 ### TC-P1-08-010: Home hero register button for guests
 - Priority: Low · Type: UI state
@@ -204,12 +204,12 @@ between cases (it resets every limiter) unless the case tests a limit.
 
 ### TC-P1-08-022: Unverified account: settings open, uploads blocked
 - Priority: High · Type: Authorization
-- Ref: FR-AUTH-4, Decision 10
+- Ref: FR-AUTH-4, Decision 10, owner decision 2026-10-02 (crop before upload)
 - Preconditions: signed in to an unverified account.
 - Steps:
   1. On `/settings/profile` change the display name and save.
-  2. Try to upload an avatar.
-- Expected: step 1 saves. Step 2 is refused: the `/uploads` request answers 403 and the avatar field shows an error; no `media` row is created.
+  2. Press "Upload photo", choose a JPEG, then press "Save photo" in the "Crop your photo" dialog.
+- Expected: step 1 saves with the success toast "Profile saved.". Step 2 is refused: the `/uploads` request answers 403 and the avatar field shows an error; no `media` row is created.
 
 ## Security
 
@@ -383,12 +383,13 @@ between cases (it resets every limiter) unless the case tests a limit.
 
 ### TC-P1-08-042: Resend limit, 3 per hour per account
 - Priority: High · Type: Security
-- Ref: specs/04 §4 `verify-email-resend`, Decision 3 (`verify_resend_per_hour` 3)
+- Ref: specs/04 §4 `verify-email-resend`, Decision 3 (`verify_resend_per_hour` 3), owner decision 2026-10-02 (flash toasts)
 - Preconditions: on `/email/verify` as an unverified account with no resends in the last hour.
 - Steps:
   1. Press "Send a new link" 3 times.
-  2. Press it a 4th time.
-- Expected: requests 1–3 show the success alert and send an email each. Step 2 shows a warning alert "You asked for a new link a few times already. Try again in an hour." and sends nothing.
+  2. Press it a 4th time and wait 10 s.
+  3. Press "Dismiss notification" on the toast, then press "Send a new link" a 5th time.
+- Expected: requests 1–3 show the green success alert on the page and send an email each. Step 2 shows a danger toast "You asked for a new link a few times already. Try again in an hour." (bottom right, above the bottom tabs below 768 px) that stays after 10 s; nothing shows inline on the page for it and nothing is sent. Step 3 closes the toast, then the same danger toast shows again; still no email.
 
 ### TC-P1-08-043: An older link still works after a resend
 - Priority: Low · Type: Edge case
@@ -417,3 +418,34 @@ between cases (it resets every limiter) unless the case tests a limit.
   1. Open `/register`, trigger field errors, then open `/register/sent`, a verification link and `/email/verify` (signed in, unverified).
   2. On `/register` follow "Sign in"; on `/login` follow "Create an account".
 - Expected: no horizontal scroll; the masked address and the username wrap inside their cards; the button shows its loading state while submitting; the hidden `website` field is never visible or reachable with Tab. The links go to `/login` and `/register`.
+
+### TC-P1-08-046: Show and hide both register passwords
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §8, owner decision 2026-10-02 (password toggle)
+- Preconditions: signed out; Mailpit empty; `/register` open.
+- Steps:
+  1. Fill email `qa14@example.com`, username `qa_fourteen`, and `Ember-Lantern-4417` in "Password" and "Repeat the password".
+  2. Press the eye button in "Password".
+  3. Press the eye button in "Repeat the password", then "Hide password" in "Password".
+  4. Leave "Repeat the password" showing as text, wait 3 seconds and press "Create account".
+- Expected: Email and Username have no toggle. Step 2 shows `Ember-Lantern-4417` in "Password" only; its button is now "Hide password" (`aria-pressed="true"`) while "Repeat the password" stays masked with "Show password". Step 3 leaves only "Repeat the password" revealed. The values never change. Step 4 registers (the "Check your email" page).
+
+### TC-P1-08-047: Register password toggles with the keyboard
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §8, owner decision 2026-10-02 (password toggle)
+- Preconditions: signed out; `/register` open.
+- Steps:
+  1. From Email (focused on load), press Tab until focus is on "Password"; type `Ember-Lantern-4417`.
+  2. Press Tab; press Space.
+  3. Press Tab, type `Ember-Lantern-4417`, press Tab, then Enter.
+  4. Press Enter on the same toggle again.
+- Expected: the Tab order is Email, Username, Password, its "Show password" button, Repeat the password, its "Show password" button, then the bot check and "Create account"; the hidden `website` field is skipped. Each toggle shows a focus ring. Step 2 reveals "Password". Step 3 reveals "Repeat the password". Step 4 masks it again. Space and Enter on a toggle never submit the form: no request, no field errors, both values kept.
+
+### TC-P1-08-048: Revealed passwords are cleared after a failed submit
+- Priority: Low · Type: Edge case
+- Ref: FR-AUTH-2, owner decision 2026-10-02 (password toggle)
+- Preconditions: signed out; `/register` open.
+- Steps:
+  1. Enter valid values with `Ember-Lantern-4417` and `Ember-Lantern-4418`; reveal both password fields.
+  2. Wait 3 seconds and submit.
+- Expected: "The two password entries do not match." under Password, and both password fields are emptied, as in TC-P1-08-018; typing again in a revealed field shows the new text, and "Hide password" still masks it.

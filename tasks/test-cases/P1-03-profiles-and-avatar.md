@@ -9,6 +9,23 @@ written as `H` below). Profile edits made directly in Adminer are hidden from `/
 (cache); edit through the page unless a case says otherwise. `docker compose exec app php artisan cache:clear` resets the
 limiters after TC-P1-03-037 and TC-P1-03-041.
 
+Since 2026-10-02 (owner decision) a picked photo opens the "Crop your photo" dialog first; "Save photo" uploads the
+cropped square, re-encoded in the browser as WebP (JPEG where the browser cannot encode WebP), at most 512 × 512 px and
+never upscaled, under the name of the picked file with a `.webp` / `.jpg` extension (`photo.jpg` uploads as
+`photo.webp`). "Upload a photo" in a case below means: pick the file, then click "Save photo" without moving it. Files
+the browser cannot open stop in the dialog, and the re-encode removes animation, oversize dimensions and file size, so
+the server-side refusals for those cannot be reached through the page any more. Those cases send the raw file with
+these Console helpers (Chrome; console calls count as a user gesture, so `pick()` opens the file picker):
+```js
+const H = {'Content-Type': 'application/json', Accept: 'application/json', 'X-XSRF-TOKEN': t};
+const pick = () => new Promise((r) => { const i = Object.assign(document.createElement('input'), {type: 'file'}); i.onchange = () => r(i.files[0]); i.click(); });
+const raw = async (blob, name, mime) => { const i = await fetch('/uploads/intent', {method: 'POST', headers: H, body: JSON.stringify({collection: 'avatar', filename: name, size: blob.size, mime})}).then((r) => r.json()); console.log(i); if (!i.mediaUlid) return; await fetch(i.uploadUrl, {method: i.uploadMethod, headers: i.uploadHeaders, body: blob}); const c = await fetch(`/uploads/${i.mediaUlid}/complete`, {method: 'POST', headers: H}); console.log(i.mediaUlid, c.status, await c.text()); };
+```
+A raw upload is never attached, so the avatar card does not change; check the `media` row in Adminer a few seconds later.
+
+Saves and removals answer with a toast (bottom right, above the tab bar on mobile): success toasts close after about
+5 s, danger toasts stay until dismissed. The forms show no inline "Saved." text any more (owner decision 2026-10-02).
+
 ## Happy path
 
 ### TC-P1-03-001: Profile settings page renders for the owner
@@ -32,7 +49,7 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
   4. YouTube `clashchief`, Twitch `clashchief_tv`, X `@clash_chief`, Discord `Clash.Chief`.
   5. Click "Save profile", then reload the page.
   6. In Adminer view the user's `profiles` row.
-- Expected: The button shows a loading state, then "Saved." appears beside it. After reload every value is still there (YouTube and X shown without the `@`, since the prefix supplies it). DB: `display_name` = `Clash Chief`, `country_code` = `DE`, `timezone` = `Europe/Berlin`, `languages` = `{en,de}`, `socials` = `{"youtube": "@clashchief", "twitch": "clashchief_tv", "x": "clash_chief", "discord": "clash.chief"}`. The avatar initials change to "CC".
+- Expected: The button shows a loading state, then a success toast "Profile saved." appears and closes by itself after about 5 s; no "Saved." text beside the button. After reload every value is still there (YouTube and X shown without the `@`, since the prefix supplies it). DB: `display_name` = `Clash Chief`, `country_code` = `DE`, `timezone` = `Europe/Berlin`, `languages` = `{en,de}`, `socials` = `{"youtube": "@clashchief", "twitch": "clashchief_tv", "x": "clash_chief", "discord": "clash.chief"}`. The avatar initials change to "CC".
 
 ### TC-P1-03-003: Clearing choices and the display name stores null
 - Priority: Medium · Type: Functional
@@ -42,7 +59,7 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
   1. Set Country, Timezone and Main language to "Not set"; keep Second language German.
   2. Empty the Display name field and click "Save profile".
   3. Reload and check the `profiles` row in Adminer.
-- Expected: "Saved." DB: `country_code`, `timezone` and `display_name` are NULL; `languages` = `{de}` (the empty slot is dropped, German moves to the first position after reload). The avatar falls back to the username initial "T".
+- Expected: Toast "Profile saved." DB: `country_code`, `timezone` and `display_name` are NULL; `languages` = `{de}` (the empty slot is dropped, German moves to the first position after reload). The avatar falls back to the username initial "T".
 
 ### TC-P1-03-004: The same language twice is stored once
 - Priority: Low · Type: Edge case
@@ -64,32 +81,33 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 
 ### TC-P1-03-006: Upload a JPEG avatar
 - Priority: High · Type: Functional
-- Ref: FR-PROFILE-3; specs/10 §3, §5
-- Preconditions: signed in as `test_user` (verified); no avatar; a JPEG of about 1000 × 800 px and under 2 MB (`photo.jpg`); all containers running.
+- Ref: FR-PROFILE-3; specs/10 §3, §5; specs/18 §6 "Profile" (crop dialog, owner decision 2026-10-02)
+- Preconditions: signed in as `test_user` (verified); no avatar; a JPEG of about 1000 × 800 px and under 2 MB (`photo.jpg`); all containers running; DevTools Network open.
 - Steps:
   1. In the Avatar card click "Upload photo" and pick `photo.jpg`.
-  2. Watch the card until it settles.
-  3. In Adminer: `SELECT id, ulid, status, collection, attachable_type, attachable_id, expires_at FROM media ORDER BY id DESC LIMIT 1;`, then `SELECT name, width, height FROM media_variants WHERE media_id = <id>;` and the user's `profiles.avatar_media_id`.
-- Expected: The card shows "Uploading photo.jpg" with a progress bar, then "Preparing your photo", then the new photo replaces the initials (cropped square). The button now reads "Change photo" and a "Remove" button appears. DB: `status` = `ready`, `collection` = `avatar`, `attachable_*` point at the profile, `expires_at` NULL; three variants, 512 × 512, 128 × 128 and 48 × 48; `profiles.avatar_media_id` = that id.
+  2. In the "Crop your photo" dialog drag the photo a little to the left, then click "Save photo".
+  3. Watch the card until it settles; note the PUT request to the storage host in Network (request `Content-Type` and size).
+  4. In Adminer: `SELECT id, ulid, status, collection, mime, attachable_type, attachable_id, expires_at FROM media ORDER BY id DESC LIMIT 1;`, then `SELECT name, width, height FROM media_variants WHERE media_id = <id>;` and the user's `profiles.avatar_media_id`.
+- Expected: The dialog opens with the photo centred in the square frame (the short side fills it) and nothing uploads until "Save photo". After saving, the dialog closes and the card shows "Uploading photo.webp" with a progress bar, then "Preparing your photo", then the new photo replaces the initials, showing the area that was inside the round guide. A success toast "Avatar updated." appears. The button now reads "Change photo" and a "Remove" button appears. The PUT carries `image/webp` (`image/jpeg` and `photo.jpg` in a browser that cannot encode WebP), a 512 × 512 image well under 2 MB. DB: `status` = `ready`, `collection` = `avatar`, `attachable_*` point at the profile, `expires_at` NULL; three variants, 512 × 512, 128 × 128 and 48 × 48; `profiles.avatar_media_id` = that id.
 
 ### TC-P1-03-007: PNG and WebP avatars are accepted
 - Priority: Medium · Type: Functional
-- Ref: specs/10 §4; `media.image.mimes`
-- Preconditions: as TC-P1-03-006; a PNG and a WebP, each 400 × 400 px and under 2 MB.
+- Ref: specs/10 §4; `media.image.mimes`; owner decision 2026-10-02 (crop re-encodes)
+- Preconditions: as TC-P1-03-006; a PNG with a transparent background and a WebP, each 400 × 400 px and under 2 MB.
 - Steps:
-  1. Upload the PNG and wait for it to show.
-  2. Upload the WebP and wait for it to show.
-- Expected: Both finish and show as the avatar; each new `media` row ends `ready` with three square variants.
+  1. Upload the PNG (crop dialog, "Save photo") and wait for it to show.
+  2. Upload the WebP the same way and wait for it to show.
+- Expected: Both open in the crop dialog, finish and show as the avatar, each with the toast "Avatar updated.". Both reach the server as 400 × 400 WebP (not upscaled to 512); the PNG keeps its transparency (with the JPEG fallback, transparent areas turn white, not black). Each new `media` row ends `ready` with three square variants.
 
 ### TC-P1-03-008: A new avatar replaces the old one, whose objects are deleted
 - Priority: High · Type: Functional
 - Ref: task Acceptance "A new avatar replaces the old one"; Decisions "Releasing an avatar"; specs/10 §8
 - Preconditions: `test_user` has a ready avatar (note its `media.id` and `path` in Adminer); MinIO console http://localhost:9001 open on the media bucket.
 - Steps:
-  1. Click "Change photo" and upload a different image.
+  1. Click "Change photo", pick a different image and click "Save photo" in the crop dialog.
   2. When it shows, re-query the old `media` row in Adminer.
   3. Look for the old object keys in the MinIO console.
-- Expected: The new photo shows. The old row is briefly `deleting` with `attachable_*` NULL, then disappears (hard-deleted by the queue, not soft-deleted). Its original and variant objects are gone from the bucket. `profiles.avatar_media_id` points at the new row.
+- Expected: The new photo shows with the toast "Avatar updated.". The old row is briefly `deleting` with `attachable_*` NULL, then disappears (hard-deleted by the queue, not soft-deleted). Its original and variant objects are gone from the bucket. `profiles.avatar_media_id` points at the new row.
 
 ### TC-P1-03-009: Remove the avatar
 - Priority: High · Type: Functional
@@ -99,16 +117,16 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
   1. Click "Remove".
   2. Check the card, the header avatar and `/u/test_user`.
   3. Check `profiles.avatar_media_id` and the old `media` row in Adminer.
-- Expected: The card falls back to initials, "Remove" disappears and the button reads "Upload photo". The header avatar and the public profile show initials too, straight away. `avatar_media_id` is NULL and the old media row is gone after the queue runs.
+- Expected: A success toast "Avatar removed." appears. The card falls back to initials, "Remove" disappears and the button reads "Upload photo". The header avatar and the public profile show initials too, straight away. `avatar_media_id` is NULL and the old media row is gone after the queue runs.
 
 ### TC-P1-03-010: Re-uploading the same file is allowed
 - Priority: Medium · Type: Edge case
 - Ref: specs/23 §4 "the same file is uploaded twice"
 - Preconditions: `test_user` has `photo.jpg` as a ready avatar.
 - Steps:
-  1. Click "Change photo" and pick the same `photo.jpg` again.
+  1. Click "Change photo" and pick the same `photo.jpg` again; click "Save photo".
   2. Check the `media` table.
-- Expected: A new upload starts (progress shown) and finishes; a new `media` row is attached and the previous row is released and deleted. No error about duplicates.
+- Expected: The crop dialog opens again for the same file (picking it twice is not ignored); after "Save photo" a new upload starts (progress shown) and finishes; a new `media` row is attached and the previous row is released and deleted. No error about duplicates.
 
 ### TC-P1-03-011: Header avatar uses the 48 px variant
 - Priority: Medium · Type: Functional
@@ -186,72 +204,80 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 
 ### TC-P1-03-019: Unsupported file type is refused before upload
 - Priority: High · Type: Validation
-- Ref: specs/10 §3 "Intent endpoint rules"; `media.image.types_label`
-- Preconditions: signed in as `test_user`; a GIF file `anim.gif` and a PDF.
+- Ref: specs/10 §3 "Intent endpoint rules"; `media.image.types_label`; owner decision 2026-10-02 (crop first)
+- Preconditions: signed in as `test_user`, CSRF token `t` and `H` set; a GIF file `anim.gif` (at least 200 × 200 px) and a PDF.
 - Steps:
-  1. Click "Upload photo"; in the file picker switch to "All files" and pick `anim.gif`.
-  2. Repeat with the PDF.
-  3. Check the `media` table.
-- Expected: Each time the card shows "This file type is not supported. Use a JPEG, PNG or WebP image." with a "Try again" link; the avatar is unchanged and no new `media` row exists.
+  1. Click "Upload photo"; in the file picker switch to "All files" and pick the PDF.
+  2. Click "Cancel". Pick `anim.gif` the same way and click "Save photo".
+  3. In the Console run `fetch('/uploads/intent', {method: 'POST', headers: H, body: JSON.stringify({collection: 'avatar', filename: 'anim.gif', size: 1000, mime: 'image/gif'})}).then(async r => console.log(r.status, await r.text()))`.
+  4. Check the `media` table.
+- Expected: Step 1: the crop dialog shows the alert "This photo could not be opened. Choose a different one." with no photo, hint or usable zoom, and "Save photo" disabled; nothing is sent. Step 2: the browser opens the GIF, so the dialog shows its first frame and "Save photo" uploads it as a still WebP; it becomes the avatar (the server never receives a GIF). Step 3: 422 with `mime` "This file type is not supported. Use a JPEG, PNG or WebP image." No `media` row is created for the PDF or for step 3.
 
 ### TC-P1-03-020: File over 2 MB is refused
 - Priority: High · Type: Validation
-- Ref: specs/10 §8 (1 avatar ≤ 2 MB); `media.collections.avatar.max_bytes`
-- Preconditions: a JPEG of about 3 MB.
+- Ref: specs/10 §8 (1 avatar ≤ 2 MB); `media.collections.avatar.max_bytes`; owner decision 2026-10-02 (crop re-encodes)
+- Preconditions: signed in as `test_user`, `H` set; a JPEG of about 3 MB (a large phone photo).
 - Steps:
-  1. Upload the 3 MB JPEG as the avatar.
-- Expected: "This file is larger than 2 MB." with "Try again"; no new `media` row; avatar unchanged.
+  1. Upload the 3 MB JPEG through the page (crop dialog, "Save photo"); note the PUT size in Network.
+  2. In the Console run `fetch('/uploads/intent', {method: 'POST', headers: H, body: JSON.stringify({collection: 'avatar', filename: 'big.jpg', size: 3 * 1024 * 1024, mime: 'image/jpeg'})}).then(async r => console.log(r.status, await r.text()))`.
+- Expected: Step 1: the crop dialog opens the file; the cropped 512 × 512 WebP that is sent is far under 2 MB, so the upload succeeds ("Avatar updated."). Step 2: 422 with `size` "This file is larger than 2 MB."; no new `media` row.
 
 ### TC-P1-03-021: Image smaller than 200 × 200 px
 - Priority: High · Type: Validation
-- Ref: specs/10 §10; `media.image.min_width` / `min_height` 200
+- Ref: specs/10 §10; `media.image.min_width` / `min_height` 200; owner decision 2026-10-02 (never upscaled)
 - Preconditions: a PNG of 199 × 199 px and one of 150 × 400 px.
 - Steps:
-  1. Upload the 199 × 199 PNG; wait for processing.
+  1. Pick the 199 × 199 PNG; in the crop dialog click "Save photo"; wait for processing.
   2. Repeat with the 150 × 400 PNG.
   3. Check the newest `media` rows.
-- Expected: Each ends with "This image is too small. It needs to be at least 200 × 200 pixels." and "Try again". Rows: `status` = `failed`, `failure_reason` = `dimensions_too_small`, not attached. The current avatar is unchanged.
+- Expected: The crop dialog opens both (zoom controls disabled, see TC-P1-03-052) and does not enlarge them: 199 × 199 and 150 × 150 are sent. Each upload then ends with "This image is too small. It needs to be at least 200 × 200 pixels." and "Try again". Rows: `status` = `failed`, `failure_reason` = `dimensions_too_small`, not attached. The current avatar is unchanged.
 
 ### TC-P1-03-022: Image at exactly 200 × 200 px
 - Priority: Low · Type: Edge case
 - Ref: `media.image.min_width` / `min_height`
 - Preconditions: a PNG of exactly 200 × 200 px.
 - Steps:
-  1. Upload it.
-- Expected: Accepted and shown as the avatar; the `media` row ends `ready` with three variants.
+  1. Pick it; in the crop dialog note the zoom controls, then click "Save photo".
+- Expected: Zoom out, the slider and zoom in are disabled (no room to zoom without going under 200 px). The 200 × 200 crop is accepted and shown as the avatar ("Avatar updated."); the `media` row ends `ready` with three variants.
 
 ### TC-P1-03-023: Image larger than 6000 × 6000 px
 - Priority: Medium · Type: Validation
-- Ref: `media.image.max_width` / `max_height` 6000
-- Preconditions: a single-colour PNG of 6001 × 6001 px saved under 2 MB.
+- Ref: `media.image.max_width` / `max_height` 6000; owner decision 2026-10-02 (crop re-encodes)
+- Preconditions: signed in as `test_user`; `H`, `pick` and `raw` set (Notes); a single-colour PNG of 6001 × 6001 px saved under 2 MB (`big.png`).
 - Steps:
-  1. Upload it and wait.
-- Expected: "This image is too large. The limit is 6000 × 6000 pixels."; row `failed` with `failure_reason` = `dimensions_too_large`; avatar unchanged.
+  1. Upload `big.png` through the page (crop dialog, "Save photo").
+  2. In the Console run `raw(await pick(), 'big.png', 'image/png')` and pick `big.png`; wait a few seconds.
+  3. Check the newest `media` row.
+- Expected: Step 1: the crop dialog scales it down and a 512 × 512 WebP is sent; it is accepted ("Avatar updated."). Step 2 (raw file): row `failed` with `failure_reason` = `dimensions_too_large` (the page would show "This image is too large. The limit is 6000 × 6000 pixels."); the avatar is unchanged.
 
 ### TC-P1-03-024: Animated image is refused
 - Priority: Medium · Type: Validation
-- Ref: `MediaFailureReason::Animated`
-- Preconditions: an animated WebP (or APNG saved as `.png`) of at least 200 × 200 px, under 2 MB.
+- Ref: `MediaFailureReason::Animated`; owner decision 2026-10-02 (crop re-encodes)
+- Preconditions: signed in as `test_user`; `H`, `pick` and `raw` set (Notes); an animated WebP (`anim.webp`) of at least 200 × 200 px, under 2 MB.
 - Steps:
-  1. Upload it and wait.
-- Expected: "Animated images are not supported here. Upload a still image."; row `failed`, `failure_reason` = `animated`.
+  1. Upload `anim.webp` through the page (crop dialog, "Save photo").
+  2. In the Console run `raw(await pick(), 'anim.webp', 'image/webp')` and pick `anim.webp`; wait a few seconds.
+  3. Check the newest `media` row.
+- Expected: Step 1: the dialog shows one still frame and the saved crop is a still WebP, accepted as the avatar. Step 2 (raw file): row `failed`, `failure_reason` = `animated` (page copy "Animated images are not supported here. Upload a still image.").
 
 ### TC-P1-03-025: Non-image renamed to .png is held for review
 - Priority: High · Type: Security
-- Ref: specs/10 §9–§10 (real MIME check, quarantine)
-- Preconditions: a text file containing `hello` renamed to `fake.png`.
+- Ref: specs/10 §9–§10 (real MIME check, quarantine); owner decision 2026-10-02 (crop first)
+- Preconditions: signed in as `test_user`; `H` and `raw` set (Notes); a text file containing `hello` renamed to `fake.png`.
 - Steps:
-  1. Upload `fake.png` and wait.
-  2. Check the newest `media` row.
-- Expected: "This file is being held for review and was not published." Row `status` = `quarantined`, `failure_reason` = `suspicious_content`, not attached, no variants. The avatar is unchanged.
+  1. Click "Upload photo" and pick `fake.png`.
+  2. Click "Cancel". In the Console run `raw(new Blob(['hello'], {type: 'image/png'}), 'fake.png', 'image/png')`; wait a few seconds.
+  3. Check the newest `media` row.
+- Expected: Step 1: the crop dialog shows "This photo could not be opened. Choose a different one."; nothing is uploaded. Step 2 (raw bytes): row `status` = `quarantined`, `failure_reason` = `suspicious_content`, not attached, no variants (page copy "This file is being held for review and was not published."). The avatar is unchanged.
 
 ### TC-P1-03-026: Damaged image cannot be read
 - Priority: Low · Type: Validation
-- Ref: `MediaFailureReason::Undecodable`
-- Preconditions: a JPEG cut to its first 300 bytes (e.g. `head -c 300 photo.jpg > broken.jpg`).
+- Ref: `MediaFailureReason::Undecodable`; owner decision 2026-10-02 (crop first)
+- Preconditions: signed in as `test_user`; `H`, `pick` and `raw` set (Notes); a JPEG cut to its first 300 bytes (e.g. `head -c 300 photo.jpg > broken.jpg`).
 - Steps:
-  1. Upload `broken.jpg` and wait.
-- Expected: "This image could not be read. It may be damaged; try exporting it again."; row `failed`, `failure_reason` = `undecodable`.
+  1. Click "Upload photo" and pick `broken.jpg`; then click "Cancel".
+  2. In the Console run `raw(await pick(), 'broken.jpg', 'image/jpeg')` and pick `broken.jpg`; wait a few seconds; check the newest `media` row.
+- Expected: Step 1: the crop dialog shows "This photo could not be opened. Choose a different one."; nothing is uploaded. Step 2 (raw file): row `failed`, `failure_reason` = `undecodable` (page copy "This image could not be read. It may be damaged; try exporting it again.").
 
 ## Authorization / account status
 
@@ -261,9 +287,9 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Preconditions: in Adminer `UPDATE users SET status = 'restricted', status_expires_at = NULL WHERE username = 'test_user';`; signed in as `test_user`.
 - Steps:
   1. Change the bio and save.
-  2. Upload a valid JPEG avatar.
+  2. Upload a valid JPEG avatar (crop dialog, "Save photo").
   3. Reset: `UPDATE users SET status = 'active' WHERE username = 'test_user';`
-- Expected: Both succeed ("Saved."; the new avatar shows).
+- Expected: Both succeed: toast "Profile saved." for step 1; the new avatar shows with the toast "Avatar updated." for step 2.
 
 ### TC-P1-03-028: Unverified account edits fields but cannot upload
 - Priority: High · Type: Authorization
@@ -271,9 +297,9 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Preconditions: in Adminer `UPDATE users SET email_verified_at = NULL WHERE username = 'test_user';`; signed in as `test_user`.
 - Steps:
   1. Change the display name and save.
-  2. Try to upload a valid JPEG avatar.
+  2. Try to upload a valid JPEG avatar: pick it and click "Save photo" in the crop dialog.
   3. Reset: `UPDATE users SET email_verified_at = now() WHERE username = 'test_user';`
-- Expected: Step 1 saves ("Saved."). Step 2 fails with "Your email address is not verified." under the avatar and no `media` row is created. The verify-email banner shows at the top of the page.
+- Expected: Step 1 saves (toast "Profile saved."). Step 2: the crop dialog opens and closes normally (it runs in the browser); the upload then fails with "Your email address is not verified." under the avatar and no `media` row is created. The verify-email banner shows at the top of the page.
 
 ### TC-P1-03-029: Suspended account cannot save or upload
 - Priority: High · Type: Authorization
@@ -281,9 +307,9 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Preconditions: signed in as `test_user` on `/settings/profile`; then in Adminer `UPDATE users SET status = 'suspended', status_expires_at = NULL WHERE username = 'test_user';`
 - Steps:
   1. Without reloading, change the bio and click "Save profile".
-  2. Go back to `/settings/profile` and try "Upload photo" with a valid JPEG.
+  2. Go back to `/settings/profile` and try "Upload photo" with a valid JPEG, clicking "Save photo" in the crop dialog.
   3. Reset the status to `active`.
-- Expected: Step 1 lands on a 403 page "Your account is suspended" / "Changes are off until the suspension ends."; the bio is unchanged. The settings page itself still opens (read access). Step 2 fails with "This account is suspended." and no `media` row.
+- Expected: Step 1 lands on a 403 page "Your account is suspended" / "Changes are off until the suspension ends."; the bio is unchanged. The settings page itself still opens (read access). Step 2: the crop dialog still works; the upload after it fails with "This account is suspended." and no `media` row.
 
 ### TC-P1-03-030: Pending-deletion account cannot save or upload
 - Priority: Medium · Type: Authorization
@@ -291,9 +317,9 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Preconditions: signed in as `test_user` on `/settings/profile`; then in Adminer `UPDATE users SET status = 'pending_deletion', deletion_requested_at = now(), deletion_previous_status = 'active' WHERE username = 'test_user';`
 - Steps:
   1. Without reloading, change the bio and save.
-  2. Try to upload a valid JPEG.
+  2. Try to upload a valid JPEG (crop dialog, "Save photo").
   3. Reset: `UPDATE users SET status = 'active', deletion_requested_at = NULL, deletion_previous_status = NULL WHERE username = 'test_user';`
-- Expected: Step 1: 403 page "Your account is scheduled for deletion" / "Changes are off while the deletion is pending."; nothing saved. Step 2: "Your account status does not allow this right now."
+- Expected: Step 1: 403 page "Your account is scheduled for deletion" / "Changes are off while the deletion is pending."; nothing saved. Step 2: after the crop dialog closes, the upload fails with "Your account status does not allow this right now."
 
 ### TC-P1-03-031: Guests cannot open profile settings
 - Priority: Medium · Type: Authorization
@@ -357,8 +383,10 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Preconditions: signed in as `test_user`, CSRF token `t` set.
 - Steps:
   1. Run `for (let i = 0; i < 125; i++) { const r = await fetch('/settings/profile', {method: 'PATCH', headers: {...H, Accept: 'text/html'}, redirect: 'manual', body: JSON.stringify({display_name: 'n' + i, bio: '', country_code: '', languages: [], timezone: '', socials: {}})}); }` and then check `profiles.display_name` in Adminer.
-  2. Check `storage/logs/security-<date>.log` (`docker compose exec app tail -n 5 storage/logs/security-$(date +%F).log`).
-- Expected: The display name stops at `n119`: writes past 120 in the minute are not applied (redirected back with the flash error "Too many changes. Wait a minute and try again."). The security log has `auth.rate_limited` with `limiter` `global-write`. After a minute saving works again. Note: the settings page does not render that flash as built; record whether any message shows.
+  2. Within the same minute, change the bio in the page and click "Save profile"; leave the page alone for 10 seconds.
+  3. Check `storage/logs/security-<date>.log` (`docker compose exec app tail -n 5 storage/logs/security-$(date +%F).log`).
+  4. After a minute, save again.
+- Expected: The display name stops at `n119`: writes past 120 in the minute are not applied. Step 2: the bio is not saved and a danger toast "Too many changes. Wait a minute and try again." appears and stays until its "Dismiss notification" button is pressed (it does not close after 5 s); no "Profile saved." toast. The security log has `auth.rate_limited` with `limiter` `global-write`. Step 4 saves with the toast "Profile saved.".
 
 ## Edge cases
 
@@ -368,7 +396,7 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Preconditions: signed in as `test_user`; DevTools Network open.
 - Steps:
   1. In Network, block the request URL pattern `*/complete` (right-click, "Block request URL").
-  2. Upload a valid JPEG.
+  2. Upload a valid JPEG (crop dialog, "Save photo").
   3. Check the newest `media` row (`status`, `expires_at`).
   4. Run `UPDATE media SET expires_at = now() - interval '1 minute' WHERE ulid = '<ulid>';` then `docker compose exec app php artisan media:sweep-orphans`.
   5. Re-query the row after a few seconds; unblock the URL.
@@ -379,7 +407,7 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Ref: task Scope states "processing"; specs/10 §10
 - Preconditions: `docker compose stop queue-media`; signed in as `test_user`.
 - Steps:
-  1. Upload a valid JPEG; leave the page open for about 3–4 minutes.
+  1. Upload a valid JPEG (crop dialog, "Save photo"); leave the page open for about 3–4 minutes.
   2. `docker compose start queue-media`, wait 10 seconds, click "Check again".
 - Expected: The card shows "Preparing your photo" while waiting, then "This is taking longer than usual. Check again". After "Check again" the photo is processed and set as the avatar.
 
@@ -388,9 +416,9 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Ref: specs/10 §10 (PUT retried twice)
 - Preconditions: `docker compose stop minio`; signed in as `test_user`.
 - Steps:
-  1. Upload a valid JPEG.
+  1. Upload a valid JPEG (crop dialog, "Save photo").
   2. `docker compose start minio`, wait until it is up, click "Try again".
-- Expected: After the retries fail: "The upload did not finish. Check your connection and try again." with "Try again". The retry runs the whole upload again and the avatar is set.
+- Expected: After the retries fail: "The upload did not finish. Check your connection and try again." with "Try again". The retry sends the same cropped file again without reopening the crop dialog, and the avatar is set ("Avatar updated.").
 
 ### TC-P1-03-041: Upload intents are limited to 30 an hour
 - Priority: Low · Type: Edge case
@@ -398,8 +426,8 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 - Preconditions: signed in as `test_user`, CSRF token `t` set.
 - Steps:
   1. Run `for (let i = 0; i < 31; i++) { const r = await fetch('/uploads/intent', {method: 'POST', headers: H, body: JSON.stringify({collection: 'avatar', filename: 'a.png', size: 1000, mime: 'image/png'})}); console.log(i + 1, r.status); }`
-  2. Try a normal avatar upload in the page.
-- Expected: Requests 1–30 answer 201, the 31st 429. The page upload fails with "Too Many Attempts." until the hour window resets.
+  2. Try a normal avatar upload in the page (crop dialog, "Save photo").
+- Expected: Requests 1–30 answer 201, the 31st 429. The crop dialog still opens and saves; the upload after it fails with "Too Many Attempts." under the avatar until the hour window resets.
 
 ## UI states
 
@@ -415,18 +443,138 @@ limiters after TC-P1-03-037 and TC-P1-03-041.
 
 ### TC-P1-03-043: Saving and field-error states
 - Priority: Medium · Type: UI state
-- Ref: task Scope states "saved, field errors"
+- Ref: task Scope states "saved, field errors"; specs/18 §6 Toast (owner decision 2026-10-02)
 - Preconditions: signed in as `test_user`; DevTools Network throttling "Slow 3G".
 - Steps:
-  1. Change the bio and save; watch the button.
+  1. Change the bio and save; watch the button and the bottom-right corner.
   2. Enter an invalid Twitch handle and an invalid Discord name; save.
-- Expected: Step 1: the button shows a loading state and cannot be pressed twice; "Saved." appears and fades. Step 2: both fields show their hints and focus lands on the first invalid field (Twitch).
+- Expected: Step 1: the button shows a loading state and cannot be pressed twice; then a success toast "Profile saved." (`role="status"`) appears bottom right and closes by itself after about 5 s; nothing appears beside the button. Step 2: both fields show their hints, focus lands on the first invalid field (Twitch) and no toast appears.
 
 ### TC-P1-03-044: Layout at 375 px and desktop
 - Priority: Medium · Type: UI state
-- Ref: task Acceptance "States"; Decisions "Header", R-31
+- Ref: task Acceptance "States"; Decisions "Header", R-31; member layout (owner decision 2026-10-02)
 - Preconditions: signed in as `test_user` with a display name and an avatar.
 - Steps:
-  1. In DevTools device mode set 375 × 812 and load `/settings/profile`; scroll the whole page.
+  1. In DevTools device mode set 375 × 812 and load `/settings/profile`; scroll the whole page; save the form once.
   2. Switch to 1280 px wide.
-- Expected: At 375 px: no horizontal scroll; the header shows the short "CC" wordmark beside the avatar menu; the settings sub-nav scrolls sideways; country / timezone and the language slots stack in one column; the avatar card wraps without overlap. At 1280 px: country and timezone sit side by side, the three language slots in one row, the sub-nav is a left column.
+- Expected: At 375 px: no horizontal scroll; the top bar shows the short "CC" wordmark, then the bell and the avatar menu on the right, with no nav links in it; the primary nav is the bottom tab bar, which does not cover the last field or the footer; the "Profile saved." toast sits above the tab bar; the settings sub-nav scrolls sideways; country / timezone and the language slots stack in one column; the avatar card wraps without overlap. At 1280 px: no sidebar; the top bar reads wordmark, then the primary nav as plain text links ("Home"), then on the right the bell and the avatar menu; no nav item is gold on this page; no bottom tab bar. Country and timezone sit side by side, the three language slots in one row, the settings sub-nav is a left column.
+
+## Crop dialog
+
+Added 2026-10-02 (owner decision). Unless a case says otherwise: signed in as `test_user` (active, verified) on
+`/settings/profile`, `photo.jpg` is the 1000 × 800 px JPEG from TC-P1-03-006, and DevTools Network is open.
+
+### TC-P1-03-045: Picking a photo opens the crop dialog
+- Priority: High · Type: Functional
+- Ref: specs/18 §6 "Profile"; owner decision 2026-10-02
+- Preconditions: as the section note.
+- Steps:
+  1. Click "Upload photo" and pick `photo.jpg`.
+  2. Read the dialog and check Network.
+- Expected: A modal opens (a bottom sheet below 640 px) with the title "Crop your photo", the line "Your photo shows as a circle across the site." and a "Close" (×) button. While the file opens, a spinner shows in the frame. Then the photo fills a square frame, darkened outside a round guide with a thin ring; below it the hint "Drag to move, scroll or pinch to zoom."; a row with a zoom-out button, a zoom slider at its lowest position, a zoom-in button and "Reset"; and the buttons "Cancel" and "Save photo" side by side. The page behind does not scroll. No request to `/uploads/intent` has been sent yet and no `media` row exists.
+
+### TC-P1-03-046: Drag, wheel, slider and buttons; the photo always covers the frame
+- Priority: High · Type: Functional
+- Ref: owner decision 2026-10-02 (drag to reposition, zoom with slider / wheel / pinch, image always covers the frame)
+- Preconditions: the crop dialog open with `photo.jpg` (landscape).
+- Steps:
+  1. Drag the photo right as far as it goes, then try to drag it up and down.
+  2. Scroll the mouse wheel up over the frame with the pointer on a corner of the photo; then scroll down past the start.
+  3. Drag the slider to the far right; press "Zoom out" a few times, then "Zoom in".
+  4. While zoomed in, drag in every direction as far as it goes.
+  5. Position a recognisable detail inside the round guide and click "Save photo".
+- Expected: Step 1: the photo follows the pointer sideways until its left edge meets the frame's left edge, then stops; it does not move up or down at the starting zoom (the short side already fills the frame), and no empty background ever shows. Step 2: scrolling up zooms in around the pointer (the point under it stays put); scrolling back down stops at the starting size, never smaller. Step 3: the slider zooms up to 400 % (`aria-valuetext` reads "400%" at the end); each button press moves the zoom by 10 points. Step 4: the photo always covers the whole frame; at the edges it stops instead of revealing the background. Step 5: the uploaded avatar shows exactly the framed detail, as a circle in the card and the header.
+
+### TC-P1-03-047: Touch drag and pinch
+- Priority: Medium · Type: Functional
+- Ref: owner decision 2026-10-02 (pointer / touch, pinch to zoom)
+- Preconditions: a phone (or a tablet) on the same network, signed in as `test_user` at `http://<host LAN IP>:8080/settings/profile`.
+- Steps:
+  1. Pick a photo from the gallery; in the dialog drag the photo with one finger.
+  2. Pinch outwards and inwards on the frame.
+  3. Drag the slider with a finger; tap "Cancel". (This case checks the dialog only; uploads from another device depend on the storage URL being reachable from it.)
+- Expected: One finger moves the photo and the page does not scroll or zoom behind it; pinching zooms around the point between the fingers and stops at the starting size and at the upper limit; the slider and buttons are easy to hit (44 px tall). "Cancel" closes the sheet with nothing uploaded.
+
+### TC-P1-03-048: Keyboard only
+- Priority: High · Type: Functional
+- Ref: owner decision 2026-10-02 (arrow keys pan, Shift = larger step, + and - zoom); specs/18 §8 (keyboard, focus trap)
+- Preconditions: as the section note; use the keyboard only from step 2 on.
+- Steps:
+  1. Click "Upload photo" and pick `photo.jpg`.
+  2. Note where focus is; press Tab until the frame is focused.
+  3. Press `+` three times, then Arrow Right, Arrow Down, Arrow Left, Arrow Up once each; then Shift+Arrow Right.
+  4. Press `-` once; Tab to the slider and press Arrow Right / Arrow Left.
+  5. Keep pressing Tab, then Shift+Tab, around the whole dialog.
+  6. Tab to "Save photo" and press Enter.
+- Expected: Step 2: focus starts on "Close"; the next Tab reaches the frame, which shows a visible focus ring. Step 3: `+` zooms in by 10 points per press (`=` works too); each arrow moves the photo a small step (one twentieth of the frame) in that direction; Shift+arrow moves it a larger step (a fifth of the frame); the page does not scroll. Step 4: `-` zooms out (`_` too); the slider moves with the arrow keys. Step 5: focus cycles Close, frame, "Zoom out", slider, "Zoom in", "Reset", "Cancel", "Save photo" and back to Close; it never leaves the dialog. Step 6: the crop uploads as in TC-P1-03-006.
+
+### TC-P1-03-049: Reset returns to the starting crop
+- Priority: Medium · Type: Functional
+- Ref: owner decision 2026-10-02 (Reset)
+- Preconditions: the crop dialog open with `photo.jpg`.
+- Steps:
+  1. Zoom in with the slider and drag the photo into a corner.
+  2. Click "Reset".
+  3. Click "Save photo".
+- Expected: Step 2: the photo is centred again at the starting zoom (short side fills the frame) and the slider is back at its lowest position. Step 3 uploads that centred square.
+
+### TC-P1-03-050: Cancel, Esc, the close button and the backdrop upload nothing
+- Priority: High · Type: Functional
+- Ref: owner decision 2026-10-02 ("Cancel", Esc and the close button upload nothing)
+- Preconditions: `test_user` has a ready avatar; note its `media.id`.
+- Steps:
+  1. Click "Change photo", pick `photo.jpg`, move it, click "Cancel".
+  2. Pick the same file again and press Esc.
+  3. Pick it again and click the "Close" (×) button.
+  4. Pick it again and click the darkened backdrop outside the dialog.
+  5. Check Network and the `media` table.
+  6. Pick `photo.jpg` once more and click "Save photo".
+- Expected: Steps 1–4: the dialog closes each time, the card keeps the old photo with no progress bar and no error, and no toast appears. Step 5: no request to `/uploads/intent`, `/uploads/.../complete` or `/settings/profile/avatar`; no new `media` row; `avatar_media_id` unchanged. Step 6: the dialog opens again for the same file, starting centred (the earlier move is not kept), and the upload works.
+
+### TC-P1-03-051: Output size and format
+- Priority: Medium · Type: Functional
+- Ref: owner decision 2026-10-02 (512 px max, WebP or JPEG fallback, quality stepped down to fit max bytes, never upscaled)
+- Preconditions: as the section note; a 300 × 300 PNG (`small.png`); a 4000 × 3000 phone photo (`large.jpg`).
+- Steps:
+  1. Upload `large.jpg` without zooming; select the PUT to the storage host in Network and note its request `Content-Type` and size; open the uploaded original from the `media` row's `path` in the MinIO console.
+  2. Upload `large.jpg` again zoomed in fully (400 %).
+  3. Upload `small.png` without zooming.
+- Expected: Step 1: the card shows "Uploading large.webp"; the PUT is `image/webp`, a 512 × 512 image far below 2 MB. Step 2: also 512 × 512 (the 750 px crop is scaled down). Step 3: a 300 × 300 `small.webp`, not enlarged to 512. In a browser without WebP encoding the files are `image/jpeg` / `.jpg` with a white background where the source was transparent. Each upload is accepted and processed ("Avatar updated.").
+
+### TC-P1-03-052: Photo at or below the minimum size
+- Priority: Medium · Type: Edge case
+- Ref: owner decision 2026-10-02 (small photos still hit the server's minimum-size check); `media.image.min_width` / `min_height` 200
+- Preconditions: a 199 × 199 PNG and a 250 × 250 PNG.
+- Steps:
+  1. Pick the 199 × 199 PNG; look at the zoom controls; try to drag the photo; click "Save photo".
+  2. Pick the 250 × 250 PNG; drag the slider to the far right; click "Save photo".
+- Expected: Step 1: "Zoom out", the slider and "Zoom in" are disabled and dragging does nothing (the photo already fits the frame exactly); "Reset" and "Save photo" work. The 199 × 199 crop is uploaded and the server refuses it: "This image is too small. It needs to be at least 200 × 200 pixels." with "Try again" (as TC-P1-03-021). Step 2: the slider stops at 125 % (a 200 px crop), never below the minimum; the 200 × 200 result is accepted.
+
+### TC-P1-03-053: HEIC or a file the browser cannot open
+- Priority: Medium · Type: Validation
+- Ref: owner decision 2026-10-02 (a file that cannot be decoded shows an inline alert in the dialog)
+- Preconditions: an iPhone photo `IMG_0001.heic`; `broken.jpg` from TC-P1-03-026; Chrome on desktop.
+- Steps:
+  1. Click "Upload photo", switch the picker to "All files" and pick `IMG_0001.heic`.
+  2. Read the dialog; press Tab through it; click "Cancel".
+  3. Repeat with `broken.jpg`.
+  4. In Safari on macOS, pick `IMG_0001.heic` again.
+- Expected: Steps 1–3 (Chrome): the dialog shows the alert "This photo could not be opened. Choose a different one." (`role="alert"`) in place of the photo; the hint is hidden, zoom controls, "Reset" and "Save photo" are disabled, and the frame is not focusable. "Cancel" closes it; nothing is uploaded and the card shows no error. Step 4 (Safari, which can open HEIC): the photo opens in the dialog normally and saves as a `.jpg` or `.webp` upload that is accepted.
+
+### TC-P1-03-054: Screen reader names and roles
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §8; owner decision 2026-10-02
+- Preconditions: the crop dialog open with `photo.jpg`; DevTools Accessibility pane (or VoiceOver / NVDA).
+- Steps:
+  1. Inspect the dialog, the frame, the slider and each button.
+- Expected: The dialog has `role="dialog"`, `aria-modal="true"`, its name "Crop your photo" and description "Your photo shows as a circle across the site.". The frame has `role="application"` and the name "Photo position", described by "Drag to move, scroll or pinch to zoom. Arrow keys move the photo, + and - zoom." (the second sentence is screen-reader only). The slider is labelled "Zoom" and announces a percentage ("100%" at the start). Icon buttons are named "Zoom out", "Zoom in" and "Close"; text buttons read "Reset", "Cancel", "Save photo". The canvas and the round guide are hidden from assistive tech. While the file opens, the frame announces "Opening your photo".
+
+### TC-P1-03-055: The dialog never scrolls (375 × 600 and 1280 × 720)
+- Priority: Medium · Type: UI state
+- Ref: owner decision 2026-10-02 (fits 375 × 600 and 1280 × 720, Cancel and Save side by side); R-31
+- Preconditions: as the section note.
+- Steps:
+  1. In DevTools device mode set 375 × 600; open the crop dialog with `photo.jpg`.
+  2. In the Console run `const d = document.querySelector('[role=dialog]'); [d.scrollHeight, d.clientHeight]`.
+  3. Repeat at 1280 × 720 (no device mode).
+- Expected: At 375 × 600 the dialog is a bottom sheet showing the title, description, the whole frame (smaller, at least 160 px), the hint, the zoom row and "Cancel" / "Save photo" side by side in one row, all without scrolling; the two numbers in step 2 are equal; no horizontal scroll. At 1280 × 720 it is a centred dialog with the frame at full size (320 px), "Cancel" and "Save photo" aligned right, and again no scrollbar inside the dialog or on the page behind it.

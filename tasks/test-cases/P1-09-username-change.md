@@ -17,18 +17,18 @@ Current-password guesses share the `password-confirm` limiter (5 a minute, 20 an
 - Preconditions: fresh seed; signed in as `test_user` (verified, never renamed).
 - Steps:
   1. Open `/settings/profile` and find the "Username" card (between Avatar and the profile form).
-- Expected: Text "You are @test_user. You can change it once every 30 days. Your old username stays yours for 90 days, and links to it lead to your profile until then." A "New username" field with an `@` prefix and hint "3 to 20 lowercase letters, numbers or underscores.", a "Current password" field, and a "Change username" button.
+- Expected: Text "You are @test_user. You can change it once every 30 days. Your old username stays yours for 90 days, and links to it lead to your profile until then." A "New username" field with an `@` prefix and hint "3 to 20 lowercase letters, numbers or underscores.", a "Current password" field with a "Show password" button inside it (TC-P1-09-042), and a "Change username" button.
 
 ### TC-P1-09-002: Change the username
 - Priority: High · Type: Functional
-- Ref: FR-PROFILE-7; task Scope "Domain", Decisions 3 and 6
+- Ref: FR-PROFILE-7; task Scope "Domain", Decisions 3 and 6; specs/18 §6 Toast (owner decision 2026-10-02)
 - Preconditions: as TC-P1-09-001.
 - Steps:
   1. New username `clash_chief`, current password `password`, click "Change username".
   2. Look at the card, the header and `/u/clash_chief`.
   3. In Adminer: `SELECT username, username_changed_at FROM users WHERE email = 'test@example.com';`, `SELECT * FROM username_history ORDER BY id DESC LIMIT 1;`, `SELECT action, before, after, actor_id FROM audit_logs ORDER BY id DESC LIMIT 1;`
   4. Check Mailpit and `docker compose exec app tail -n 3 storage/logs/security-$(date +%F).log`.
-- Expected: The fields clear; the card now reads "You are @clash_chief." and shows the locked line instead of the form. The header menu shows `clash_chief`. `/u/clash_chief` renders the profile. DB: `username` = `clash_chief`, `username_changed_at` = now; a history row (`test_user`, `released_at` = now, `reserved_forever` false); an audit row `user.username_changed`, before `test_user`, after `clash_chief`, actor = this account. Security log line `auth.username_changed` with `from` / `to`. No email in Mailpit. (The server flash "Username changed to @clash_chief. Links to your old name lead here for 90 days." is not rendered on this page as built; note if it appears.)
+- Expected: A success toast "Username changed to @clash_chief. Links to your old name lead here for 90 days." appears bottom right and closes by itself after about 5 s. The fields clear; the card now reads "You are @clash_chief." and shows the locked line instead of the form. The header menu shows `clash_chief`. `/u/clash_chief` renders the profile. DB: `username` = `clash_chief`, `username_changed_at` = now; a history row (`test_user`, `released_at` = now, `reserved_forever` false); an audit row `user.username_changed`, before `test_user`, after `clash_chief`, actor = this account. Security log line `auth.username_changed` with `from` / `to`. No email in Mailpit.
 
 ### TC-P1-09-003: Input is trimmed and lowercased
 - Priority: Medium · Type: Functional
@@ -36,7 +36,7 @@ Current-password guesses share the `password-confirm` limiter (5 a minute, 20 an
 - Preconditions: fresh seed; signed in as `test_user`.
 - Steps:
   1. New username `  Clash_Chief2  ` (spaces and capitals), password `password`, submit.
-- Expected: Accepted; the card shows `@clash_chief2` and `users.username` = `clash_chief2`.
+- Expected: Accepted with the toast "Username changed to @clash_chief2. Links to your old name lead here for 90 days."; the card shows `@clash_chief2` and `users.username` = `clash_chief2`.
 
 ### TC-P1-09-004: The old URL redirects with 301 and no-store
 - Priority: High · Type: Functional
@@ -379,7 +379,7 @@ Current-password guesses share the `password-confirm` limiter (5 a minute, 20 an
 - Steps:
   1. Submit `clash-chief` with the right password; watch the button and focus.
   2. Submit `clash_chief` with a wrong password.
-- Expected: The button shows a loading state while the request runs. Step 1: focus lands on "New username" with its error. Step 2: focus lands on "Current password", which is cleared.
+- Expected: The button shows a loading state while the request runs. Step 1: focus lands on "New username" with its error. Step 2: focus lands on "Current password", which is cleared. Neither failed attempt shows a toast; errors stay under the fields.
 
 ### TC-P1-09-041: Layout at 375 px and desktop
 - Priority: Medium · Type: UI state
@@ -389,3 +389,14 @@ Current-password guesses share the `password-confirm` limiter (5 a minute, 20 an
   1. At 375 × 812 view the Username card in the form state and in the locked state.
   2. Repeat at 1280 px.
 - Expected: No horizontal scroll; the long `@username` breaks inside the text instead of overflowing; fields and button fit the width; the locked date wraps cleanly. At 1280 px the card matches the email card's flat style.
+
+### TC-P1-09-042: Show and hide the current password
+- Priority: Medium · Type: UI state
+- Ref: UiInput password toggle (owner decision 2026-10-02); specs/18 §8
+- Preconditions: fresh seed; signed in as `test_user` on `/settings/profile`; DevTools Elements or Accessibility pane open.
+- Steps:
+  1. Type `password` in "Current password"; inspect the eye button inside the right end of the field.
+  2. Click it; then press Tab to reach it from the field and press Space.
+  3. With the password shown, enter new username `clash-chief` and click "Change username".
+  4. Enter `clash_chief`, type `password` again and submit.
+- Expected: Step 1: the field shows dots (`type="password"`); the button sits inside the field, has the name "Show password" and `aria-pressed="false"`. Step 2: the click reveals `password` as text and the button becomes "Hide password" with `aria-pressed="true"`; Space toggles it back to "Show password"; the typed value never changes and the button is reachable by keyboard with a visible focus ring. Step 3: the field error shows under "New username" and the password field is cleared. Step 4 succeeds as in TC-P1-09-002.

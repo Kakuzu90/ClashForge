@@ -60,12 +60,19 @@ P1-15, P1-16 (todo) and P0-09 (blocked) have no cases yet.
 - Expected: <observable result: page, message text, email in Mailpit, row in the DB>
 ```
 
-IDs are `TC-<task>-<nnn>`, numbered in file order. Expected text quotes the UI copy as built. A
+IDs are `TC-<task>-<nnn>` and never change; a new case takes the next free number in its file. Expected text quotes the UI copy as built. A
 file may open with a short "Notes for the tester" block (cache delays, setup snippets).
 
-## Flash messages
+## UI as of 2026-10-02
 
-Server messages after a save or redirect (`flash.success`, `flash.error`) show as toasts, bottom
-right (above the tab bar on mobile): success toasts close after 5 s, error toasts stay until
-dismissed. Cases written before this fix check the inline state, the data and Mailpit; where a
-case notes that a message "should appear", expect it as a toast.
+- Server messages after a save or redirect (`flash.success`, `flash.error`) show as toasts, bottom
+  right (above the tab bar on mobile): success toasts close after 5 s, error toasts stay until
+  dismissed. Forms no longer show an inline "Saved." or "Sent.".
+- Member layout: no sidebar. From 768 px the nav is text links in the top bar after the wordmark;
+  below 768 px the bottom tabs. Signed-in top bar: wordmark, nav … Admin (admins) or Reports
+  (moderators), bell, profile menu.
+- Moderators cannot open `/admin`; they work from `/moderation/reports`.
+- Admin layout: from 768 px the top bar and sidebar stay fixed, only the content scrolls; "Back to
+  site" sits at the bottom of the sidebar.
+- Avatar uploads go through the "Crop your photo" dialog first.
+- Every password field has a show/hide toggle.

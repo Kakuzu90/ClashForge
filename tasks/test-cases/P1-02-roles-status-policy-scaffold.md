@@ -22,23 +22,23 @@ Notes for the tester:
   2. In Adminer open table `users`, show columns `username`, `role`, `status`.
 - Expected: `test_user` = `user`, `test_moderator` = `moderator`, `test_admin` = `admin`, `test_super_admin` = `super_admin`; all four have `status` = `active`, `status_reason` and `status_expires_at` NULL.
 
-### TC-P1-02-002: Moderator sees the Admin link and opens the admin area
+### TC-P1-02-002: Moderator sees the Reports link and opens the report queue
 - Priority: High · Type: Functional
-- Ref: FR-ADMIN-1; task Scope "HTTP + UI"
-- Preconditions: signed in as `test_moderator`
+- Ref: specs/04 §3; owner decision 2026-10-02 (moderators work from `/moderation/reports`)
+- Preconditions: signed in as `test_moderator`; browser at least 768 px wide
 - Steps:
-  1. Look at the top bar, left of the avatar menu.
-  2. Click "Admin".
-- Expected: an "Admin" link is shown. It opens `/admin` (HTTP 200) on the admin layout with the heading "Dashboard". The admin nav shows only "Dashboard" (no "Users", no "Logs"). There are no sign-up, failed-jobs or media-storage panels; the page shows "Nothing to review yet".
+  1. Look at the right side of the top bar, left of the bell.
+  2. Click "Reports".
+- Expected: a "Reports" link is shown and there is no "Admin" link. It opens `/moderation/reports` (HTTP 200) in the member layout (same top bar as the rest of the site, no admin nav), tab title "Reports", heading "Reports" and the empty state "No open reports" / "Reports from members land here for review. Nothing is waiting right now.".
 
 ### TC-P1-02-003: Admin and super admin open the admin area with the full nav
 - Priority: High · Type: Functional
-- Ref: FR-ADMIN-1; specs/04 §2
+- Ref: FR-ADMIN-1; specs/04 §2; owner decision 2026-10-02 (one staff link)
 - Preconditions: none
 - Steps:
-  1. Sign in as `test_admin`, click "Admin".
-  2. Sign out, sign in as `test_super_admin`, click "Admin".
-- Expected: for both, `/admin` loads with the admin nav "Dashboard", "Users", "Logs", and the panels "New sign-ups", "Failed jobs" and "Media storage" load.
+  1. Sign in as `test_admin`, check the top bar, click "Admin".
+  2. Sign out, sign in as `test_super_admin`, check the top bar, click "Admin".
+- Expected: for both, the top bar shows "Admin" and no "Reports" link. `/admin` loads with the admin nav "Dashboard", "Users", "Logs", and the panels "New sign-ups", "Failed jobs" and "Media storage" load.
 
 ### TC-P1-02-004: Guest is sent to sign in, then back to /admin
 - Priority: High · Type: Authorization
@@ -46,12 +46,12 @@ Notes for the tester:
 - Preconditions: signed out
 - Steps:
   1. Open http://localhost:8080/admin.
-  2. Sign in as `test_moderator` / `password`.
+  2. Sign in as `test_admin` / `password`.
 - Expected: step 1 redirects to `/login`. After sign-in the browser lands on `/admin` (intended URL).
 
 ### TC-P1-02-005: `platform:assign-role` promotes a user and ends their sessions
 - Priority: High · Type: Functional
-- Ref: task Scope "RoleAssignmentService"; Decisions "Role changes"; specs/04 §4
+- Ref: task Scope "RoleAssignmentService"; Decisions "Role changes"; specs/04 §4; owner decision 2026-10-02 (moderator link)
 - Preconditions: `test_user` signed in on browser A (with "Keep me signed in" ticked) and on `/settings/profile`; a second browser B signed in as `test_admin`
 - Steps:
   1. Run `docker compose exec app php artisan platform:assign-role test_user moderator`.
@@ -59,7 +59,7 @@ Notes for the tester:
   3. In browser A, sign in again as `test_user`.
   4. In browser B open `/admin/audit`.
   5. Check the security log.
-- Expected: the command prints "Role set to moderator; the account's sessions were ended.". Step 2 lands on `/login` (session ended, remember cookie no longer signs in). After step 3 the header shows "Admin". The audit log has a "Role changed" entry for `test_user` from `user` to `moderator`, actor "Console". The security log has `auth.role_changed` with `from: user`, `to: moderator`. Adminer: `sessions` rows of `test_user` from before step 1 are gone.
+- Expected: the command prints "Role set to moderator; the account's sessions were ended.". Step 2 lands on `/login` (session ended, remember cookie no longer signs in). After step 3 the header shows "Reports" (not "Admin"). The audit log has a "Role changed" entry for `test_user` from `user` to `moderator`, actor "Console". The security log has `auth.role_changed` with `from: user`, `to: moderator`. Adminer: `sessions` rows of `test_user` from before step 1 are gone.
 
 ### TC-P1-02-006: Re-running `platform:assign-role` with the same role changes nothing
 - Priority: Medium · Type: Edge case
@@ -79,6 +79,15 @@ Notes for the tester:
   2. Sign in as `test_admin`.
   3. Run `docker compose exec app php artisan platform:assign-role test_admin admin` to restore.
 - Expected: step 1 prints "Role set to super_admin; the account's sessions were ended."; Adminer `users.role` = `super_admin`. Step 3 restores `admin`. No screen in the app offers a role picker (check `/admin/users/{ulid}` of any account and `/settings/profile`).
+
+### TC-P1-02-036: Admins can open the report queue too, without a Reports link
+- Priority: Medium · Type: Functional
+- Ref: specs/04 §3 (`view-report-queue`, moderator+); owner decision 2026-10-02
+- Preconditions: signed in as `test_admin`
+- Steps:
+  1. Type http://localhost:8080/moderation/reports in the address bar.
+  2. Repeat as `test_super_admin`.
+- Expected: for both, the page loads (HTTP 200) in the member layout with the heading "Reports" and "No open reports". The top bar still shows only "Admin", never "Reports" next to it.
 
 ## Validation
 
@@ -100,32 +109,35 @@ Notes for the tester:
 
 ## Authorization / account status
 
-### TC-P1-02-010: Regular user gets 403 on /admin and sees no Admin link
+### TC-P1-02-010: Regular user gets 403 on /admin and sees no staff link
 - Priority: High · Type: Authorization
-- Ref: FR-ADMIN-1
+- Ref: FR-ADMIN-1; owner decision 2026-10-02
 - Preconditions: signed in as `test_user`
 - Steps:
-  1. Check the header for an "Admin" link.
+  1. Check the top bar for an "Admin" or "Reports" link.
   2. Type http://localhost:8080/admin in the address bar.
-- Expected: no "Admin" link. `/admin` returns HTTP 403 with the error page "403 | This action is unauthorized.". The security log gets an `auth.permission_denied` line for `test_user`.
+- Expected: neither link is shown. `/admin` returns HTTP 403 with the error page "403 | This action is unauthorized.". The security log gets an `auth.permission_denied` line for `test_user`.
 
-### TC-P1-02-011: Moderator is denied admin-only pages
+### TC-P1-02-011: Moderator gets 403 on every /admin URL
 - Priority: High · Type: Authorization
-- Ref: specs/04 §2 matrix (view users, view audit log = admin+)
-- Preconditions: signed in as `test_moderator`
+- Ref: specs/04 §2 matrix, §3 (`access-admin` = admin+); owner decision 2026-10-02 (moderators never enter `/admin`)
+- Preconditions: signed in as `test_moderator`; `test_user`'s `ulid` copied from Adminer `users`
 - Steps:
-  1. Open http://localhost:8080/admin/users.
-  2. Open http://localhost:8080/admin/audit.
-- Expected: both return 403 "This action is unauthorized.". Each denial is logged as `auth.permission_denied`.
+  1. Check the top bar for an "Admin" link.
+  2. Open http://localhost:8080/admin.
+  3. Open http://localhost:8080/admin/users.
+  4. Open http://localhost:8080/admin/audit.
+  5. Open http://localhost:8080/admin/users/{ulid of test_user}.
+- Expected: no "Admin" link (only "Reports"). Every URL in steps 2–5 returns HTTP 403 "This action is unauthorized."; the admin layout never renders. Each denial is logged as `auth.permission_denied`.
 
 ### TC-P1-02-012: Shared props carry `can` flags, never the role
 - Priority: High · Type: Security
-- Ref: task Scope "auth.can.accessAdmin"; specs/11 "Data exposure via page props"
+- Ref: task Scope "auth.can.accessAdmin"; specs/11 "Data exposure via page props"; owner decision 2026-10-02 (`viewReportQueue`)
 - Preconditions: none
 - Steps:
   1. Signed in as `test_user`, click any in-app link and inspect the Inertia response `props.auth`.
   2. Repeat as `test_moderator`, then as `test_admin`.
-- Expected: `auth.user` holds only `username`, `avatarUrl`, `emailVerified`. `auth.can` = `{accessAdmin, viewUsers, viewAuditLog}`: user `false/false/false`, moderator `true/false/false`, admin `true/true/true`. No `role`, `status` or `status_*` key anywhere in the props.
+- Expected: `auth.user` holds only `username`, `avatarUrl`, `emailVerified`. `auth.can` = `{accessAdmin, viewReportQueue, viewUsers, viewAuditLog}`: user `false/false/false/false`, moderator `false/true/false/false`, admin `true/true/true/true`. No `role`, `status` or `status_*` key anywhere in the props.
 
 ### TC-P1-02-013: Rank rule: an admin cannot act on another admin
 - Priority: High · Type: Authorization
@@ -167,7 +179,7 @@ Notes for the tester:
 - Ref: specs/04 §1; Open question 5
 - Preconditions: `test_user` suspended and signed in (TC-P1-02-016)
 - Steps:
-  1. Open `/`, `/u/test_moderator`, `/admin`, `/email/verify`, `/confirm-password` one by one.
+  1. Open `/`, `/u/test_moderator`, `/admin`, `/moderation/reports`, `/email/verify`, `/confirm-password` one by one.
   2. Open `/settings/profile`, `/settings/privacy`, `/settings/security`, `/settings/notifications`, `/settings/danger-zone`, `/notifications`.
   3. Use the avatar menu → "Sign out".
 - Expected: every URL in step 1 redirects to `/account/suspended`. Every page in step 2 loads normally (no redirect). Sign out works and lands signed out.
@@ -252,13 +264,14 @@ Notes for the tester:
   2. Open the detail page of `test_user`.
 - Expected: "Admin" link still shown; all three pages load. The detail page shows "You can't change this account's standing." (no Suspend / Ban). Clean-up: set `status` = `active`.
 
-### TC-P1-02-027: Suspended staff are sent to the notice from /admin
+### TC-P1-02-027: Suspended staff are sent to the notice from their staff pages
 - Priority: High · Type: Authorization
-- Ref: specs/04 §1, §3
-- Preconditions: `test_moderator` signed in; in Adminer `status` = `suspended`, `status_expires_at` = now + 1 day
+- Ref: specs/04 §1, §3; owner decision 2026-10-02
+- Preconditions: `test_moderator` and `test_admin` signed in (two browsers); in Adminer both have `status` = `suspended`, `status_expires_at` = now + 1 day
 - Steps:
-  1. Open `/admin`.
-- Expected: redirect to `/account/suspended`. Clean-up: set `status` = `active`.
+  1. As `test_moderator`, open `/moderation/reports`.
+  2. As `test_admin`, open `/admin`, then `/moderation/reports`.
+- Expected: every request redirects to `/account/suspended` (no 403 page, no staff page). Clean-up: set both `status` = `active`.
 
 ### TC-P1-02-028: Pending-deletion staff can read /admin but a sanction submit is blocked
 - Priority: Medium · Type: Authorization
@@ -277,6 +290,34 @@ Notes for the tester:
 - Steps:
   1. Change the display name and save.
 - Expected: WriteBlocked page "Your account is scheduled for deletion" / "Changes are off while the deletion is pending.", no Reason/Ends card (both empty), "Back to home" button. Clean-up: set `status` = `active`.
+
+### TC-P1-02-037: Guest is sent to sign in, then back to /moderation/reports
+- Priority: High · Type: Authorization
+- Ref: routes/web/moderation.php (`auth`); owner decision 2026-10-02
+- Preconditions: signed out
+- Steps:
+  1. Open http://localhost:8080/moderation/reports.
+  2. Sign in as `test_moderator` / `password`.
+- Expected: step 1 redirects to `/login`. After sign-in the browser lands on `/moderation/reports` (intended URL) with the heading "Reports".
+
+### TC-P1-02-038: Regular user gets 403 on the report queue
+- Priority: High · Type: Authorization
+- Ref: specs/04 §3 (`view-report-queue`, moderator+); owner decision 2026-10-02
+- Preconditions: signed in as `test_user`
+- Steps:
+  1. Type http://localhost:8080/moderation/reports in the address bar.
+  2. Check the security log.
+- Expected: HTTP 403 with the error page "403 | This action is unauthorized.". The log has an `auth.permission_denied` line for `test_user` on `/moderation/reports`.
+
+### TC-P1-02-039: Restricted moderator keeps the report queue and is still kept out of /admin
+- Priority: High · Type: Authorization
+- Ref: specs/04 §3 (read abilities stay open to restricted staff); owner decision 2026-10-02
+- Preconditions: `test_moderator` signed in; in Adminer `status` = `restricted`, `status_reason` = "Test", `status_expires_at` = now + 1 day
+- Steps:
+  1. Reload; check the top bar.
+  2. Click "Reports".
+  3. Open http://localhost:8080/admin and http://localhost:8080/admin/users.
+- Expected: "Reports" is still shown (no "Admin"). `/moderation/reports` loads with "No open reports". Both `/admin` URLs return 403 "This action is unauthorized.". Clean-up: set `status` = `active`.
 
 ## Security
 
@@ -331,12 +372,24 @@ Notes for the tester:
 
 ## UI states
 
-### TC-P1-02-035: Status pages at 375 px and desktop
+### TC-P1-02-035: Status and staff pages at 375 px and desktop
 - Priority: Medium · Type: UI state
-- Ref: task States
+- Ref: task States; owner decision 2026-10-02
 - Preconditions: a suspended `test_user` (TC-P1-02-016)
 - Steps:
   1. With DevTools device toolbar at 375 px wide, view `/account/suspended` and trigger the WriteBlocked page (TC-P1-02-018).
   2. Repeat at desktop width (≥1280 px).
-  3. View `/admin` as `test_moderator` at 375 px.
-- Expected: no horizontal scroll; heading, body and Reason/Ends card readable; "Back to home" button fully visible; bottom tab bar does not cover content. Admin layout is usable at 375 px. No console errors.
+  3. View `/admin` as `test_admin` at 375 px.
+  4. View `/moderation/reports` as `test_moderator` at 375 px and at ≥1280 px.
+- Expected: no horizontal scroll; heading, body and Reason/Ends card readable; "Back to home" button fully visible; bottom tab bar does not cover content. Admin layout is usable at 375 px. The Reports page shows its heading and empty state above the bottom tab bar at 375 px, and in the member layout at desktop. No console errors.
+
+### TC-P1-02-040: Signed-in top bar order and primary nav by width
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §5; owner decision 2026-10-02 (no sidebar, nav inside the top bar from 768 px)
+- Preconditions: signed in as `test_moderator`, on `/`
+- Steps:
+  1. At ≥1280 px, read the top bar from left to right.
+  2. Narrow the window to 768 px, then to 767 px and 375 px.
+  3. As `test_admin`, repeat step 1.
+- Expected: step 1: wordmark, then the primary nav as plain text links ("Home"), then on the right "Reports", the bell, the profile menu (avatar) last. "Home" is gold with a gold bar on the header's bottom edge (current page); the other links are not. There is no sidebar and no second nav row. At 768 px the layout is the same. Below 768 px the nav links leave the top bar (wordmark shortens to "CC" below 640 px) and the bottom tab bar appears. Step 3: same order with "Admin" in place of "Reports", never both.
+

@@ -16,7 +16,7 @@ Source: tasks/phase-1/P1-14-sanctions.md (Scope, Decisions 1–20, Review fixes)
   5. Choose reason "Spam", keep 7 days, message `Posting invite spam in profiles.`, internal note `Three reports on 2 Oct, screenshots in ticket 42.`
   6. Change the length to 3, then back to 7, watching the preview and the submit button.
   7. Press "Suspend for 7 days".
-- Expected: step 4 the preview reads "Your account is suspended.", "Reason: Your message appears here.", "Ends: <now + 7 days>"; step 6 the "Ends" line and the button label ("Suspend for 3 days" / "Suspend for 7 days") follow the length live. After submit: the dialog closes, a success toast "test_user is suspended." shows; the Account section shows the "Suspended" pill, "Reason shown to them: Posting invite spam in profiles." and "Ends <date>"; the history shows a "Suspension" entry with the "Active" pill, "Spam", "Told them", "Internal note", "Issued <date> by test_admin" and "Ends <date>"; the panel now shows "Lift the suspension", "Suspend" and "Ban".
+- Expected: step 4 the preview reads "Your account is suspended.", "Reason: Your message appears here.", "Ends: <now + 7 days>"; step 6 the "Ends" line and the button label ("Suspend for 3 days" / "Suspend for 7 days") follow the length live. After submit: the dialog closes, a success toast "test_user is suspended." shows bottom right and closes by itself after about 5 seconds (hovering it pauses the timer; the same applies to the ban and lift toasts below); the Account section shows the "Suspended" pill, "Reason shown to them: Posting invite spam in profiles." and "Ends <date>"; the history shows a "Suspension" entry with the "Active" pill, "Spam", "Told them", "Internal note", "Issued <date> by test_admin" and "Ends <date>"; the panel now shows "Lift the suspension", "Suspend" and "Ban".
 
 ### TC-P1-14-002: A suspension writes the sanction, moderation action, status, audit entry and security line
 - Priority: High · Type: Functional
@@ -137,12 +137,12 @@ Source: tasks/phase-1/P1-14-sanctions.md (Scope, Decisions 1–20, Review fixes)
 
 ### TC-P1-14-013: A moderator cannot suspend, ban or lift
 - Priority: High · Type: Authorization
-- Ref: specs/04 §2; StaffAbility `suspend-user`, `ban-user`, `lift-sanction` are admin+
+- Ref: specs/04 §2–3; StaffAbility `access-admin`, `suspend-user`, `ban-user`, `lift-sanction` are admin+; owner decision 2026-10-02 (moderators never enter `/admin`)
 - Preconditions: signed in as `test_moderator`; test_user suspended by an admin (for the lift).
 - Steps:
   1. Open `/admin/users/<test_user ulid>`.
-  2. From `/admin` run `send('/admin/users/<test_user ulid>/suspension', { reason_code: 'spam', days: 3, public_reason: 'x', internal_note: 'y' })`, then the same to `/ban`, then `send('/admin/users/<test_user ulid>/sanction', { note: 'x' }, 'DELETE')`.
-- Expected: step 1 is 403 (the user detail is admin+). Each call in step 2 logs 403, checked before validation. The suspension is unchanged.
+  2. Click "Reports" in the top bar (`/moderation/reports`), define the `send` helper from TC-P1-14-010 in the console there, and run `send('/admin/users/<test_user ulid>/suspension', { reason_code: 'spam', days: 3, public_reason: 'x', internal_note: 'y' })`, then the same to `/ban`, then `send('/admin/users/<test_user ulid>/sanction', { note: 'x' }, 'DELETE')`.
+- Expected: step 1 is 403 (the whole `/admin` area is admin+). Each call in step 2 logs 403, checked before validation. The suspension is unchanged.
 
 ### TC-P1-14-014: An admin cannot sanction another admin
 - Priority: High · Type: Authorization
@@ -393,6 +393,18 @@ Source: tasks/phase-1/P1-14-sanctions.md (Scope, Decisions 1–20, Review fixes)
   1. In Adminer edit the `note` of a `moderation_actions` row and save; then try to delete the row.
   2. Try the same on an `audit_logs` row.
 - Expected: each change is rejected with "moderation_actions is append-only" / "audit_logs is append-only"; the rows are unchanged.
+
+### TC-P1-14-046: Too many writes in a minute: the wait shows as an error toast
+- Priority: Medium · Type: Security
+- Ref: specs/04 §4 (global write backstop); `platform.rate_limits.global_write_per_minute` = 120; specs/18 §4 Toast; owner decision 2026-10-02 (flash messages as toasts)
+- Preconditions: signed in as `test_admin` on test_user's detail (active account); helper from TC-P1-14-010 defined; Adminer open on `user_sanctions`.
+- Steps:
+  1. In the console run `for (let i = 0; i < 120; i++) await send('/admin/users/<test_user ulid>/sanction', { note: '' }, 'DELETE');` (each call fails validation but uses one of the 120 writes allowed per minute).
+  2. Within the same minute press "Suspend", fill a valid form and submit.
+  3. Wait 10 seconds without touching the page.
+  4. Close the toast with its "Dismiss notification" button.
+  5. Wait a full minute, then suspend test_user again from the dialog.
+- Expected: step 1 logs 422 each time. Step 2: a red error toast "Too many changes. Wait a minute and try again." appears bottom right; no "test_user is suspended." success toast; no new `user_sanctions` row; the status pill stays "Active". The security log has `auth.rate_limited` with `limiter` `global-write`. Step 3: the error toast is still there (error toasts never close by themselves). Step 4: it goes away. Step 5: the suspension goes through with the success toast "test_user is suspended.".
 
 ## Edge cases
 

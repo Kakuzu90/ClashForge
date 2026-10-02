@@ -46,7 +46,7 @@ Shared setup used by several cases below:
 - Preconditions: Fresh seed. `test_user` has signed in once; `test_moderator` never has (fresh seed). Signed in as `test_admin`.
 - Steps:
   1. Open `/admin/users` and read the `test_user` and `test_moderator` rows.
-- Expected: Username is a link to `/admin/users/<ulid>`. Email shows the full address. Role "User" / "Moderator". Status a green "Active" pill. Joined shows date and time. Last sign-in shows the time `test_user` signed in, and "Never" for an account that never signed in.
+- Expected: Each Username cell starts with a round 32 px avatar (here the initial "T", as neither account has an avatar), then the username as a link to `/admin/users/<ulid>`. Email shows the full address. Role "User" / "Moderator". Status a green "Active" pill. Joined shows date and time. Last sign-in shows the time `test_user` signed in, and "Never" for an account that never signed in.
 
 ### TC-P1-12-005: Unverified, deleted and sanctioned rows are listed and marked
 - Priority: High · Type: Functional
@@ -96,6 +96,24 @@ Shared setup used by several cases below:
 - Steps:
   1. Open the `test_moderator` detail.
 - Expected: "Audit trail" shows "Nothing has been logged about this account."
+
+### TC-P1-12-038: A ready avatar shows beside the username in the list
+- Priority: Medium · Type: Functional
+- Ref: specs/18 §6 Admin / owner decision 2026-10-02
+- Preconditions: As `test_user`, Settings → Profile, pick a JPEG or PNG avatar, press "Save photo" in the "Crop your photo" dialog and wait until the avatar shows on the settings page (the `queue-media` container makes the variants). Signed in as `test_admin`.
+- Steps:
+  1. Open `/admin/users` and look at the `test_user` row.
+  2. Right-click its avatar and open the image in a new tab.
+- Expected: Step 1: a round 32 px picture of the uploaded photo sits left of `test_user`, vertically centred with the username link; the photo is not stretched. Step 2: the image loads (the thumbnail variant from the media bucket). Other rows still show initials.
+
+### TC-P1-12-039: No avatar: the initial stands in
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §4 Avatar "initials fallback" / owner decision 2026-10-02
+- Preconditions: Fresh seed (no avatars). Signed in as `test_super_admin`.
+- Steps:
+  1. Open `/admin/users`.
+  2. As `test_user`, upload an avatar (TC-P1-12-038), then press "Remove" on Settings → Profile; reload the list.
+- Expected: Step 1: `test_admin`, `test_moderator` and `test_user` each show a round 32 px circle with the initial "T" in place of a picture; no broken-image icon. Step 2: `test_user` is back to the "T" initial.
 
 ## Filters / search
 
@@ -186,14 +204,14 @@ Shared setup used by several cases below:
 
 ## Authorization
 
-### TC-P1-12-019: Moderator gets 403 on both routes and sees no Users nav item
+### TC-P1-12-019: Moderator gets 403 on the admin area and works from Reports
 - Priority: High · Type: Authorization
-- Ref: specs/04 §2 `view-users` admin+ / Open question 2
+- Ref: specs/04 §2–3 `access-admin` and `view-users` admin+ / Open question 2 / owner decision 2026-10-02
 - Preconditions: Signed in as `test_moderator`.
 - Steps:
-  1. Open `/admin`; check the left nav.
-  2. Open `/admin/users`, `/admin/users?role=bogus` and `/admin/users/<ULID of test_user>`.
-- Expected: Nav shows "Dashboard" only. Every URL in step 2 returns "403 | This action is unauthorized." (403 even with the bad filter, not validation errors). An `auth.permission_denied` line is logged per denial.
+  1. Check the top bar, then click "Reports".
+  2. Open `/admin`, `/admin/users`, `/admin/users?role=bogus` and `/admin/users/<ULID of test_user>`.
+- Expected: Step 1: the top bar shows "Reports" (no "Admin"); it opens `/moderation/reports` in the member layout, heading "Reports", empty state "No open reports". Step 2: every URL returns "403 | This action is unauthorized." (403 even with the bad filter, not validation errors); no admin nav is ever shown. An `auth.permission_denied` line is logged per denial.
 
 ### TC-P1-12-020: Regular user and guest are refused
 - Priority: High · Type: Authorization
@@ -215,20 +233,22 @@ Shared setup used by several cases below:
 
 ### TC-P1-12-022: Restricted moderator is still refused
 - Priority: Medium · Type: Authorization
-- Ref: Review fixes "restricted moderator refused"
+- Ref: Review fixes "restricted moderator refused" / owner decision 2026-10-02
 - Preconditions: `test_moderator` `status` `restricted`. Signed in as `test_moderator`.
 - Steps:
-  1. Open `/admin/users`.
-- Expected: "403 | This action is unauthorized."
+  1. Open `/admin`, `/admin/users` and `/admin/users/<ULID of test_user>`.
+  2. Click "Reports" in the top bar.
+- Expected: Step 1: "403 | This action is unauthorized." for each. Step 2: `/moderation/reports` opens (reading stays open to restricted staff).
 
 ### TC-P1-12-023: Suspended staff are sent to the notice; banned staff are signed out
 - Priority: High · Type: Authorization
-- Ref: specs/04 §1 / Review fixes "access matrix extended"
+- Ref: specs/04 §1 / Review fixes "access matrix extended" / owner decision 2026-10-02
 - Preconditions: Signed in as `test_admin`.
 - Steps:
   1. In Adminer set `test_admin` `status` `suspended`, `status_expires_at` next week. Open `/admin/users`, then `/admin/users/<ULID of test_user>`.
   2. Set `status` `banned`. Reload `/admin/users`.
-- Expected: 1: both redirect to `/account/suspended` ("Your account is suspended"). 2: redirect to `/login` with "This account is banned, so it cannot sign in."
+  3. Sign in as `test_moderator`; in Adminer set it `suspended`, `status_expires_at` next week; open `/admin/users`.
+- Expected: 1: both redirect to `/account/suspended` ("Your account is suspended"). 2: redirect to `/login` with "This account is banned, so it cannot sign in." 3: redirect to `/account/suspended`, not the 403 (the suspension check comes first).
 
 ### TC-P1-12-024: Detail is reachable by ULID only
 - Priority: High · Type: Security
@@ -282,7 +302,7 @@ Shared setup used by several cases below:
   1. Load `/admin/users`; open the deferred request (`X-Inertia-Partial-Data: users`) and view its JSON.
   2. Load the `test_user` detail; view the `data-page` JSON of the response.
   3. Search both for `password`, `remember`, `two_factor`, `ip_hash`, `last_login_ip`, `userAgent`, `requestId`.
-- Expected: No match in either. Rows carry `ulid`, `username`, `email`, `emailVerified`, `roleLabel`, `statusLabel`, `statusTone`, `joinedAt`, `lastSignInAt`, `deleted`. The trail items carry only `id`, `actionLabel`, `actorUsername`, `actorRoleLabel`, `actorVia`, `before`, `after`, `createdAt`.
+- Expected: No match in either. Rows carry `ulid`, `username`, `avatarUrl` (a media URL or `null`), `email`, `emailVerified`, `roleLabel`, `statusLabel`, `statusTone`, `joinedAt`, `lastSignInAt`, `deleted`. The trail items carry only `id`, `actionLabel`, `actorUsername`, `actorRoleLabel`, `actorVia`, `before`, `after`, `createdAt`.
 
 ### TC-P1-12-029: Admin-search rate limit: 60 loads a minute per staff member, shared by both lists
 - Priority: High · Type: Security
@@ -352,6 +372,26 @@ Shared setup used by several cases below:
   1. Open the `test_moderator` detail.
 - Expected: The page renders with initials in the avatar and no display name line; no error.
 
+### TC-P1-12-040: Avatar still processing shows the initial until it is ready
+- Priority: Medium · Type: Edge case
+- Ref: owner decision 2026-10-02 / `AvatarUrlService` (ready avatars only)
+- Preconditions: `test_user` has no avatar. Stop the media worker: `docker compose stop queue-media`. Signed in as `test_admin`.
+- Steps:
+  1. As `test_user`, upload an avatar through "Crop your photo" → "Save photo".
+  2. In Adminer check the new `media` row's `status` (not `ready`), then reload `/admin/users`.
+  3. `docker compose start queue-media`; wait until the `media` row reads `ready`; reload the list.
+- Expected: Step 2: the `test_user` row shows the "T" initial, no broken image, and the list loads normally. Step 3: the uploaded photo replaces the initial.
+
+### TC-P1-12-041: A full page of avatars loads in one batch
+- Priority: Low · Type: Edge case
+- Ref: owner decision 2026-10-02 (avatars in one batch, list within the 25-query budget) / `UserListTest` "within the query budget"
+- Preconditions: 55 extra accounts (setup) and one ready avatar on `test_user` (TC-P1-12-038). Give many accounts the same avatar: in Adminer run `UPDATE profiles SET avatar_media_id = (SELECT avatar_media_id FROM profiles p JOIN users u ON u.id = p.user_id WHERE u.username = 'test_user');`. Signed in as `test_admin`.
+- Steps:
+  1. Open `/admin/users`, then click "Older".
+  2. Run `docker compose exec app php artisan test --filter="query budget"`.
+  3. Put the profiles back: `UPDATE profiles SET avatar_media_id = NULL WHERE user_id <> (SELECT id FROM users WHERE username = 'test_user');`
+- Expected: Step 1: every row on both pages shows the photo; the one deferred `users` request (DevTools Network) carries every row's `avatarUrl`, with no extra app request per avatar (only the image fetches from the bucket), and the rows arrive about as fast as without avatars. Step 2: both "query budget" tests pass (25 queries at most for a page, with or without avatars).
+
 ## UI states
 
 ### TC-P1-12-036: Empty, loading and error states on the list
@@ -372,3 +412,14 @@ Shared setup used by several cases below:
   1. In DevTools device mode at 375 px, open `/admin/users`, then a detail page.
   2. On desktop, use only the keyboard to search, move into the table and open a username link.
 - Expected: 1: nav folded behind "Menu"; filters stacked; the table scrolls horizontally inside its own area with no page-level horizontal scroll; long emails and the ULID wrap; the detail's definition list stacks label over value. 2: visible focus on every control; the table region is focusable and scrolls with arrow keys; Enter on a username opens the detail.
+
+### TC-P1-12-042: Status pills never wrap, "Deletion requested" included
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §6 Admin / owner decision 2026-10-02 (pills `whitespace-nowrap`, wider status column)
+- Preconditions: `qa_pending` with `status` `pending_deletion` and `qa_banned` with `status` `banned` (TC-P1-12-005). Signed in as `test_admin`.
+- Steps:
+  1. At desktop width open `/admin/users` and look at the Status column.
+  2. Narrow the window step by step down to 768 px, watching the `qa_pending` pill.
+  3. In DevTools device mode at 375 px, reload and scroll the table sideways to the Status column.
+  4. Open the `qa_pending` detail at 375 px.
+- Expected: Steps 1–3: the grey "Deletion requested" pill (shown in capitals) stays on one line at every width, its text never breaks onto a second line or spills out of the pill border; all pills in the column have the same height. The status column is wide enough that the pill does not overlap the Joined column; at 375 px the table scrolls inside its own area instead and the page has no horizontal scroll. Step 4: the Status pill in the Account panel is also on one line.

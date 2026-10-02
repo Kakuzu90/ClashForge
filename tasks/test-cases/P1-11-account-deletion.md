@@ -331,27 +331,27 @@ Notes for the tester:
 
 ### TC-P1-11-036: Submitting state
 - Priority: Medium · Type: UI state
-- Ref: Acceptance States "submitting"
+- Ref: Acceptance States "submitting"; owner decision 2026-10-02 (password toggle)
 - Preconditions: on `/settings/danger-zone`; DevTools throttling "Slow 4G"
 - Steps:
   1. Enter `password`, tick the box, submit.
-- Expected: while the request runs the button shows its loading state and the password field and checkbox are disabled; a second click does not send a second request.
+- Expected: while the request runs the button shows its loading state and the password field, its "Show password" toggle and the checkbox are disabled; a second click does not send a second request.
 
 ### TC-P1-11-037: Keyboard only
 - Priority: Medium · Type: UI state
-- Ref: specs/18 §8
+- Ref: specs/18 §8; owner decision 2026-10-02 (password toggle)
 - Preconditions: on `/settings/danger-zone`
 - Steps:
-  1. Using only Tab, Space and Enter: move to "Current password", type a wrong password, Tab to the checkbox, press Space, Tab to the button, press Enter.
-- Expected: every control has a visible focus ring in that order; Space toggles the checkbox; after the error, focus lands on "Current password".
+  1. Using only Tab, Space and Enter: move to "Current password", type a wrong password, Tab to the "Show password" toggle, Tab to the checkbox, press Space, Tab to the button, press Enter.
+- Expected: every control has a visible focus ring in that order (field, toggle, checkbox, button); Space toggles the checkbox; after the error, focus lands on "Current password".
 
 ### TC-P1-11-038: Layout at 375 px and desktop
 - Priority: Medium · Type: UI state
-- Ref: Acceptance States "phone/desktop layout"
+- Ref: Acceptance States "phone/desktop layout"; owner decision 2026-10-02 (password toggle)
 - Preconditions: on `/settings/danger-zone`
 - Steps:
   1. View at 375 px and at ≥1280 px, with and without validation errors; also view the suspended variant (TC-P1-11-024).
-- Expected: the red border wraps the whole section; text wraps, no horizontal scroll; the button and checkbox are fully tappable (not under the bottom tab bar). No console errors.
+- Expected: the red border wraps the whole section; text wraps, no horizontal scroll; the button, checkbox and the password field's eye toggle are fully tappable (not under the bottom tab bar), and the toggle stays inside the field border. No console errors.
 
 ### TC-P1-11-039: Danger zone props expose nothing extra
 - Priority: Medium · Type: Security
@@ -360,3 +360,14 @@ Notes for the tester:
 - Steps:
   1. Navigate to Danger zone from another settings page and inspect the Inertia response `props`.
 - Expected: page props are only `graceDays` (30) and `canRequestDeletion` (true), plus the shared props; no email, status, deletion dates or password data.
+
+### TC-P1-11-040: Show/hide toggle on the Danger zone password field
+- Priority: Medium · Type: UI state
+- Ref: owner decision 2026-10-02 (password show/hide toggle); UiInput
+- Preconditions: signed in as `test_user` on `/settings/danger-zone`
+- Steps:
+  1. Type `wrong-password` in "Current password".
+  2. Click the eye button inside the right end of the field; click it again.
+  3. Tab from the field to the toggle and press Space, then Enter.
+  4. Reveal the password, tick the checkbox and click "Request account deletion".
+- Expected: the field starts as dots. The toggle's accessible name is "Show password" (`aria-pressed="false"`) while hidden and "Hide password" (`aria-pressed="true"`) while shown; each click or key press switches between plain text and dots, focus stays on the toggle and the typed value never changes. The hit area is at least 44 × 44 px and toggling never submits the form or changes the checkbox. Step 4 submits the value as typed: "That is not your current password." under "Current password", the field is cleared, the account stays `active`.

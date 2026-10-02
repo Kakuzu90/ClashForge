@@ -6,13 +6,13 @@ Source: tasks/phase-1/P1-07-notifications-v1.md (Scope, Open questions 1–4, De
 
 ### TC-P1-07-001: The bell shows for signed-in accounts only, without a badge at zero
 - Priority: High · Type: UI state
-- Ref: FR-NOTIF-1; specs/16 §6; Decision 6
+- Ref: FR-NOTIF-1; specs/16 §6; Decision 6; member layout (owner decision 2026-10-02)
 - Preconditions: fresh seed; `test_user` has no notifications.
 - Steps:
   1. Signed out, open `/`.
-  2. Sign in as `test_user`; look at the header.
+  2. Sign in as `test_user`; look at the top bar at 1280 px wide.
   3. Inspect the bell link in DevTools (Elements or Accessibility pane).
-- Expected: step 1 no bell. Step 2 a bell sits before the account controls, with no count badge. Step 3 the link's accessible name is "Notifications" and it points to `/notifications`.
+- Expected: step 1 no bell. Step 2 the top bar reads, left to right: wordmark, the primary nav text links ("Home"), then on the right the bell and, last, the profile (avatar) menu; the bell sits directly before the profile menu, with no count badge. There is no sidebar. Step 3 the link's accessible name is "Notifications" and it points to `/notifications`.
 
 ### TC-P1-07-002: The badge shows the unread count and announces it
 - Priority: High · Type: Functional
@@ -123,7 +123,7 @@ Source: tasks/phase-1/P1-07-notifications-v1.md (Scope, Open questions 1–4, De
   1. Press "Mark all as read" (watch the label while it runs).
   2. Open the "Bases" and "All" tabs.
   3. In DevTools look at the Inertia response of the visit after the POST.
-- Expected: the button shows "Marking…" while the request runs, then disappears; every row on every tab is read, including the Bases one; the bell badge is gone. The response props carry `flash.success` = "All notifications marked as read." (no toast shows it in v1).
+- Expected: the button shows "Marking…" while the request runs, then disappears; every row on every tab is read, including the Bases one; the bell badge is gone. A success toast "All notifications marked as read." appears bottom right and closes by itself after about 5 s; the response props carry the same `flash.success`. Switching tabs in step 2 does not show the toast again.
 
 ## In-app notices per event
 
@@ -389,9 +389,19 @@ Source: tasks/phase-1/P1-07-notifications-v1.md (Scope, Open questions 1–4, De
 
 ### TC-P1-07-042: 375 px layout
 - Priority: Medium · Type: UI state
-- Ref: task Acceptance "375 px and desktop"; Review fixes (tab row wraps)
+- Ref: task Acceptance "375 px and desktop"; Review fixes (tab row wraps); member layout (owner decision 2026-10-02)
 - Preconditions: signed in as `test_user` with unread rows including a long reason.
 - Steps:
   1. Set the viewport to 375 px; open `/notifications`.
-  2. Check the header, the title row, the tabs, the rows and the paging buttons.
-- Expected: the bell stays in the header with its badge; "Mark all as read" wraps under the title if needed; the tabs wrap onto a new line rather than scrolling (no vertical scroll inside the tab row); long text breaks inside the row; no horizontal page scroll; each tab and row is an easy tap target.
+  2. Check the header, the title row, the tabs, the rows, the paging buttons and the bottom of the page.
+- Expected: the top bar holds the "CC" wordmark, then on the right the bell with its badge and the profile menu (no nav links in the top bar); the primary nav is the bottom tab bar, which does not cover the paging buttons or the footer; "Mark all as read" wraps under the title if needed; the tabs wrap onto a new line rather than scrolling (no vertical scroll inside the tab row); long text breaks inside the row; no horizontal page scroll; each tab and row is an easy tap target.
+
+### TC-P1-07-043: Bell position in the top bar for staff and across widths
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §5; member layout and staff links (owner decision 2026-10-02)
+- Preconditions: `test_admin` and `test_moderator` each have one unread notice (the helper with their username).
+- Steps:
+  1. Sign in as `test_admin`; at 1280 px open `/` and then `/notifications`.
+  2. Sign in as `test_moderator` and repeat.
+  3. Narrow the window from 1280 px to 375 px and back on `/notifications`.
+- Expected: Step 1: the top bar reads wordmark, "Home" (gold with a gold bar on the header's bottom edge on `/`, plain on `/notifications`), then on the right "Admin", the bell with badge "1", and the profile menu last. Step 2: the same, with "Reports" in place of "Admin" (only one staff link shows). Step 3: from 768 px up the nav links sit in the top bar; below 768 px they move to the bottom tab bar and the top bar keeps the staff link, the bell and the profile menu in that order; below 640 px the wordmark shortens to "CC". The bell is never hidden and never moves before the staff link.

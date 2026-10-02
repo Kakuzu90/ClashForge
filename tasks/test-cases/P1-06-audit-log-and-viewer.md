@@ -192,24 +192,26 @@ Shared setup used by several cases below:
   1. Open `/admin/audit`.
 - Expected: The log loads with the same entries and filters as for an admin; nav shows Dashboard · Users · Logs.
 
-### TC-P1-06-019: Moderator gets 403 and no Logs nav item
+### TC-P1-06-019: Moderator cannot open the admin area at all, restricted or not
 - Priority: High · Type: Authorization
-- Ref: specs/04 §2 / task Acceptance "Authorization"
+- Ref: specs/04 §2–3 (`access-admin` and `view-audit-log` admin+) / task Acceptance "Authorization" / owner decision 2026-10-02
 - Preconditions: Signed in as `test_moderator`.
 - Steps:
-  1. Open `/admin` and look at the left nav.
-  2. Type `/admin/audit` in the address bar.
-  3. Type `/admin/audit?action=bogus`.
-- Expected: Step 1: nav shows "Dashboard" only (no "Logs", no "Users"). Steps 2 and 3: "403 | This action is unauthorized." Step 3 shows the 403, not validation errors (Decision 11). Each denial adds an `auth.permission_denied` line to `storage/logs/security-<today>.log` (`docker compose exec app tail -n 3 storage/logs/security-$(date -u +%F).log`).
+  1. Look at the top bar.
+  2. Type `/admin` in the address bar.
+  3. Type `/admin/audit`.
+  4. Type `/admin/audit?action=bogus`.
+  5. In Adminer set `test_moderator` to restricted (see setup), reload, and repeat steps 2–4.
+- Expected: Step 1: a "Reports" link (to `/moderation/reports`) before the bell; no "Admin" link. Steps 2–4: "403 | This action is unauthorized." each time, no admin layout or nav is shown. Step 4 shows the 403, not validation errors (Decision 11). Step 5: the same 403s for the restricted moderator. Each denial adds an `auth.permission_denied` line to `storage/logs/security-<today>.log` (`docker compose exec app tail -n 3 storage/logs/security-$(date -u +%F).log`).
 
 ### TC-P1-06-020: Regular user gets 403
 - Priority: High · Type: Authorization
 - Ref: specs/04 §2
 - Preconditions: Signed in as `test_user`.
 - Steps:
-  1. Check the top bar for an "Admin" link.
+  1. Check the top bar for an "Admin" or "Reports" link.
   2. Type `/admin/audit` in the address bar.
-- Expected: No "Admin" link. `/admin/audit` returns "403 | This action is unauthorized."
+- Expected: Neither link is shown. `/admin/audit` returns "403 | This action is unauthorized."
 
 ### TC-P1-06-021: Guest is sent to sign in
 - Priority: Medium · Type: Authorization
@@ -237,12 +239,13 @@ Shared setup used by several cases below:
 
 ### TC-P1-06-024: Suspended staff are redirected to the suspension notice
 - Priority: High · Type: Authorization
-- Ref: specs/04 §1 / task Acceptance "Authorization"
+- Ref: specs/04 §1 / task Acceptance "Authorization" / owner decision 2026-10-02
 - Preconditions: `test_admin` suspended (Adminer, or as `test_super_admin` via Users → `test_admin` → "Suspend"). Signed in as `test_admin`.
 - Steps:
   1. Open `/admin/audit`.
   2. Repeat signed in as a suspended `test_super_admin` (Adminer only).
-- Expected: Both redirect to `/account/suspended`, heading "Your account is suspended". The log is never shown.
+  3. Repeat signed in as a suspended `test_moderator` (Adminer only).
+- Expected: All three redirect to `/account/suspended`, heading "Your account is suspended"; the suspended moderator gets the notice first, not the 403. The log is never shown.
 
 ### TC-P1-06-025: Banned staff are signed out
 - Priority: Medium · Type: Authorization
@@ -365,4 +368,15 @@ Shared setup used by several cases below:
   1. In DevTools device mode set width 375 px and reload `/admin/audit`.
   2. Tap "Menu", then "Logs".
   3. On desktop, use only the keyboard: Tab through the filter bar, into the table region, then to a row toggle; press Enter, then Enter again.
-- Expected: Step 1: the nav is folded behind "Menu"; filters stack in one column; the table scrolls horizontally inside its own bordered area and the page itself has no horizontal scroll. Step 2: the menu closes after the pick. Step 3: every control has a visible focus ring; the table region takes focus and scrolls with arrow keys; the header stays sticky; Enter toggles the detail and `aria-expanded` flips between `false` and `true`.
+- Expected: Step 1: the nav is folded behind "Menu"; filters stack in one column; the table scrolls horizontally inside its own bordered area and the page itself has no horizontal scroll. Step 2: the open menu lists Dashboard, Users, Logs and, last, "Back to site"; it closes after the pick. Step 3: every control has a visible focus ring; the table region takes focus and scrolls with arrow keys; the header stays sticky; Enter toggles the detail and `aria-expanded` flips between `false` and `true`.
+
+### TC-P1-06-038: Long log from 768 px: only the content column scrolls
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §6 Admin / owner decision 2026-10-02
+- Preconditions: More than one page (52 entries, see setup). Signed in as `test_admin`. Browser window at desktop width (also repeat at exactly 768 px wide in DevTools device mode).
+- Steps:
+  1. Open `/admin/audit` and wait for the 50 rows.
+  2. Scroll down with the mouse wheel over the table, all the way to the end.
+  3. Scroll with the mouse over the left sidebar.
+  4. In the console run `[document.documentElement.scrollHeight, innerHeight, scrollY]`.
+- Expected: Step 2: the rows and the "Older" button move up while the top bar ("Admin" beside the wordmark) and the left sidebar (Dashboard · Users · Logs, "Back to site" at its bottom) stay where they are. The footer ("Clash Commons" and the Supercell Fan Content Policy line) appears only at the end of the content column, after the "Older" button, never across the sidebar. Step 3: the content does not move. Step 4: the first two numbers are equal and `scrollY` is `0` (the page itself never scrolls). The scrollbar sits on the content column, not on the browser window.

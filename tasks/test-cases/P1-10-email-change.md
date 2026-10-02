@@ -5,8 +5,8 @@ Source: tasks/phase-1/P1-10-email-change.md; specs/04 §4 "Email change", "Sessi
 The "Email address" section sits between "Password" and "Where you're signed in" on
 `/settings/security`. Accepted requests and resends are limited to 3 per account and hour, so run
 `docker compose exec app php artisan cache:clear` between cases (it resets every limiter) unless
-the case tests a limit. As built, the success flash ("Check … for a link …") is sent in the page
-props but no element on the Security page renders it; the cases check the pending row instead.
+the case tests a limit. Success messages ("Check … for a link …", "Email change cancelled. …")
+show as toasts bottom right (above the bottom tabs below 768 px) and close after about 5 s.
 
 ## Happy path
 
@@ -21,12 +21,12 @@ props but no element on the Security page renders it; the cases check the pendin
 
 ### TC-P1-10-002: Request a change to a free address
 - Priority: High · Type: Functional
-- Ref: FR-AUTH-8, Decision 2
+- Ref: FR-AUTH-8, Decision 2, owner decision 2026-10-02 (flash toasts)
 - Preconditions: signed in as `test_user`; Mailpit empty; queue containers running.
 - Steps:
   1. Enter `qa-new@example.com` in "New email" and `password` in "Current password"; press "Send confirmation link".
   2. Check Adminer `users` for `test_user`.
-- Expected: the form clears and a pending row shows "Waiting for you to confirm q***@example.com." with "The link expires 60 minutes after it was sent. Until then your email stays the same. To send it again, enter your current password below.", and buttons "Send the link again" and "Cancel the change". The field label becomes "Use a different new email". Adminer: `email` is still test@example.com; `pending_email` is qa-new@example.com and `pending_email_requested_at` is now. The response's `flash.success` reads "Check q***@example.com for a link to confirm the change. It expires in 60 minutes."
+- Expected: the form clears and a pending row shows "Waiting for you to confirm q***@example.com." with "The link expires 60 minutes after it was sent. Until then your email stays the same. To send it again, enter your current password below.", and buttons "Send the link again" and "Cancel the change". The field label becomes "Use a different new email". Adminer: `email` is still test@example.com; `pending_email` is qa-new@example.com and `pending_email_requested_at` is now. A success toast reads "Check q***@example.com for a link to confirm the change. It expires in 60 minutes." and closes by itself after about 5 s.
 
 ### TC-P1-10-003: Link email to the new address
 - Priority: High · Type: Email
@@ -65,20 +65,21 @@ props but no element on the Security page renders it; the cases check the pendin
 
 ### TC-P1-10-007: Cancel a pending change
 - Priority: High · Type: Functional
-- Ref: task Scope `cancel(User)`, Decision 6
+- Ref: task Scope `cancel(User)`, Decision 6, owner decision 2026-10-02 (flash toasts)
 - Preconditions: signed in as `test_user` with a pending change to `qa-new@example.com` and its link at hand.
 - Steps:
   1. Press "Cancel the change".
   2. Open the link from Mailpit.
-- Expected: the pending row disappears and the label is back to "New email"; Adminer `pending_email` is NULL (flash "Email change cancelled. Your email has not changed."). Step 2 shows "Email not changed" with "This link has already been used or has expired. Ask for a new one in your security settings."
+- Expected: the pending row disappears and the label is back to "New email"; a success toast reads "Email change cancelled. Your email has not changed."; Adminer `pending_email` is NULL. Step 2 shows "Email not changed" with "This link has already been used or has expired. Ask for a new one in your security settings."
 
 ### TC-P1-10-008: Send the link again
 - Priority: Medium · Type: Functional
-- Ref: Decision 2, Decision 3, Review fixes
-- Preconditions: signed in as `test_user` with a pending change; Mailpit cleared.
+- Ref: Decision 2, Decision 3, Review fixes, owner decision 2026-10-02 (flash toasts)
+- Preconditions: signed in as `test_user` with a pending change to `qa-new@example.com` (one accepted request this hour); Mailpit cleared.
 - Steps:
   1. Leave "New email" empty, enter `password` in "Current password" and press "Send the link again".
-- Expected: "Sent." appears next to the buttons; the password field clears; Mailpit gets a new "Confirm your new Clash Commons email" to the pending address. Both the older and the newer link open the confirm page (same pending address).
+  2. Once the toast has closed, repeat step 1.
+- Expected: step 1 shows a success toast "Check q***@example.com for a link to confirm the change. It expires in 60 minutes."; no "Sent." text appears next to the buttons; the password field clears; Mailpit gets a new "Confirm your new Clash Commons email" to the pending address. Step 2 shows the same toast again and sends a third link. Every link opens the confirm page (same pending address).
 
 ### TC-P1-10-009: Unverified account can change and is verified by the new address
 - Priority: High · Type: Functional
@@ -128,12 +129,12 @@ props but no element on the Security page renders it; the cases check the pendin
 
 ### TC-P1-10-014: Send again without the password
 - Priority: Medium · Type: Validation
-- Ref: Decision 3, Review fixes
+- Ref: Decision 3, Review fixes, owner decision 2026-10-02 (flash toasts)
 - Preconditions: signed in with a pending change.
 - Steps:
   1. Press "Send the link again" with "Current password" empty.
   2. Repeat with a wrong password.
-- Expected: step 1 "The current password field is required."; step 2 "That is not your current password."; both under "Current password"; no email; no "Sent." text.
+- Expected: step 1 "The current password field is required."; step 2 "That is not your current password."; both under "Current password"; no email; no success toast.
 
 ## Authorization / account status
 
@@ -196,7 +197,7 @@ props but no element on the Security page renders it; the cases check the pendin
 - Steps:
   1. Request a change to `moderator@example.com` (taken) with the right password; note the redirect, props and pending row.
   2. Cancel, then request `qa-free@example.com` (free); note the same.
-- Expected: both show the pending row with a masked address ("Waiting for you to confirm m***@example.com." / "q***@example.com"), the same redirect and the same `flash.success` shape ("Check m***@example.com for a link …"). Adminer stores both as `pending_email`. `test_moderator`'s `email` is untouched.
+- Expected: both show the pending row with a masked address ("Waiting for you to confirm m***@example.com." / "q***@example.com"), the same redirect and the same success toast ("Check m***@example.com for a link to confirm the change. It expires in 60 minutes." / "Check q***@example.com …"), also in the `flash.success` prop. Adminer stores both as `pending_email`. `test_moderator`'s `email` is untouched.
 
 ### TC-P1-10-022: Emails for a taken address
 - Priority: High · Type: Email
@@ -212,7 +213,7 @@ props but no element on the Security page renders it; the cases check the pendin
 - Preconditions: TC-P1-10-022 done less than an hour ago (do not clear the cache).
 - Steps:
   1. As `test_user`, request `moderator@example.com` again with the right password.
-- Expected: the same pending row; Mailpit gets neither a second attempt notice to moderator@example.com nor a second rejection to test@example.com.
+- Expected: the same pending row and the same "Check m***@example.com for a link …" toast; Mailpit gets neither a second attempt notice to moderator@example.com nor a second rejection to test@example.com.
 
 ### TC-P1-10-024: A deleted account's address counts as taken
 - Priority: Medium · Type: Security
@@ -342,3 +343,34 @@ props but no element on the Security page renders it; the cases check the pendin
   1. Open `/settings/security`; trigger a field error.
   2. Open the confirm link and a result page.
 - Expected: no horizontal scroll; masked addresses and the username wrap inside the card; the pending row's buttons wrap onto a new line rather than overflowing; errors sit under their fields.
+
+### TC-P1-10-038: Show and hide the current password
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §8, owner decision 2026-10-02 (password toggle)
+- Preconditions: signed in as `test_user`; nothing pending; Mailpit empty.
+- Steps:
+  1. On `/settings/security`, in "Email address", enter `qa-new@example.com` in "New email" and `password` in "Current password".
+  2. Press the eye button at the right edge of "Current password"; press it again; press it a third time.
+  3. With the password showing as text, press "Send confirmation link".
+- Expected: "New email" has no toggle. Before step 2 the button reads "Show password" (`aria-pressed="false"`); each press switches between plain text with "Hide password" (`aria-pressed="true"`) and dots with "Show password". `password` is kept through every press. Step 3 works as in TC-P1-10-002: the pending row, the success toast and one link email.
+
+### TC-P1-10-039: Current-password toggle with the keyboard
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §8, owner decision 2026-10-02 (password toggle)
+- Preconditions: signed in as `test_user`; nothing pending.
+- Steps:
+  1. Click into "New email", type `qa-new@example.com`, press Tab and type `password`.
+  2. Press Tab, then Space, then Enter.
+  3. Press Tab.
+- Expected: step 2 puts focus on the toggle with a visible focus ring; Space shows `password` as text ("Hide password"), Enter masks it again ("Show password"). Neither key submits the form: nothing pending, no toast, no email, both values kept. Step 3 moves focus to "Send confirmation link".
+
+### TC-P1-10-040: Email-change toasts close, pause and repeat
+- Priority: Low · Type: UI state
+- Ref: specs/18 §8, owner decision 2026-10-02 (flash toasts)
+- Preconditions: signed in as `test_user`; nothing pending.
+- Steps:
+  1. Request a change to `qa-new@example.com`; leave the pointer away from the toast.
+  2. Press "Cancel the change" and hover the toast for 10 s, then move the pointer away.
+  3. Request `qa-new@example.com` again and press "Cancel the change" once more.
+  4. Repeat steps 1 and 2 at 375 px.
+- Expected: step 1's "Check q***@example.com …" toast closes by itself after about 5 s. Step 2's "Email change cancelled. Your email has not changed." stays while hovered and closes once the pointer leaves; "Dismiss notification" closes a toast at once. Step 3 shows both toasts again (the same message after a second identical action). At 375 px the toasts sit above the bottom tabs and wrap inside the screen width.

@@ -350,3 +350,56 @@ the case tests a limit.
 - Steps:
   1. Open `/login`, `/forgot-password` and a reset link; trigger a field error and a status alert on each.
 - Expected: no horizontal scroll; the "Keep me signed in" row and the "Forgot your password?" link are at least 44 px tall; alerts and errors wrap inside the card.
+
+### TC-P1-01-038: Show and hide the sign-in password
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §8, owner decision 2026-10-02 (password toggle)
+- Preconditions: signed out; `/login` open.
+- Steps:
+  1. Enter `test@example.com`; type `password` in Password.
+  2. Press the eye button at the right edge of the Password field.
+  3. Press it again.
+  4. Press it once more (text showing), then press "Sign in".
+- Expected: before step 2 the field shows dots and the button is named "Show password" with `aria-pressed="false"`. Step 2 shows `password` as plain text; the button is now "Hide password" with `aria-pressed="true"`. Step 3 masks it again. The value is the same after every press (no characters lost or added). Step 4 signs in as `test_user`. The Email field has no toggle.
+
+### TC-P1-01-039: Password toggle with the keyboard
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §8, owner decision 2026-10-02 (password toggle)
+- Preconditions: signed out; `/login` open.
+- Steps:
+  1. Type `test@example.com` in Email (focused on load), press Tab, type `password`.
+  2. Press Tab once.
+  3. Press Space; then press Enter.
+  4. Press Tab, then Shift+Tab twice.
+- Expected: step 2 moves focus to the toggle (visible focus ring), not to "Keep me signed in". Space shows the password as text ("Hide password"); Enter masks it again ("Show password"). Neither key submits the form: no request, no field errors, the value is kept. Step 4 goes to "Keep me signed in", then back through the toggle to the Password field.
+
+### TC-P1-01-040: Both fields on the reset page toggle on their own
+- Priority: Medium · Type: UI state
+- Ref: specs/18 §8, owner decision 2026-10-02 (password toggle)
+- Preconditions: a fresh reset link for test@example.com open.
+- Steps:
+  1. Type `Ember-Lantern-4417` in "New password" and in "Repeat the new password".
+  2. Press "Show password" in "New password" only.
+  3. Press "Show password" in "Repeat the new password", then "Hide password" in "New password".
+  4. With "Repeat the new password" still showing as text, press "Save the new password".
+- Expected: the read-only Email field has no toggle. Step 2 reveals only "New password"; "Repeat the new password" stays masked. Step 3 leaves only "Repeat the new password" revealed. Both values are unchanged. Step 4 saves as in TC-P1-01-006 (the "Your password is changed …" alert on `/login`).
+
+### TC-P1-01-041: Show and hide on the confirm-password page
+- Priority: Low · Type: UI state
+- Ref: specs/11 "CSRF" (re-confirmation), owner decision 2026-10-02 (password toggle)
+- Preconditions: signed in as `test_user`.
+- Steps:
+  1. Open `/confirm-password`; type `wrongpassword1` in Password.
+  2. Press "Show password", then Tab to the button and press Space.
+  3. Press "Show password" again and press "Confirm".
+- Expected: step 2 shows `wrongpassword1` as text, then masks it again ("Show password", `aria-pressed="false"`). Step 3 shows "That is not your password." under Password and the field is cleared; the toggle still works on what is typed next.
+
+### TC-P1-01-042: Toggle size at 375 px
+- Priority: Low · Type: UI state
+- Ref: specs/18 §8 (44 px targets), owner decision 2026-10-02 (password toggle)
+- Preconditions: DevTools device toolbar at 375 px; signed out.
+- Steps:
+  1. Open `/login`; type a 40-character password.
+  2. Tap just outside the drawn eye icon (within about 4 px of it).
+  3. Inspect the toggle button.
+- Expected: the tap in step 2 still toggles the field (the hit area is at least 44 × 44 px). The button sits inside the field's border at its right edge and never covers the typed text; a long value scrolls inside the field. The field and the page have no horizontal scroll.

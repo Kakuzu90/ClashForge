@@ -20,12 +20,12 @@ first; `H` below stands for `{'Content-Type': 'application/json', Accept: 'appli
 
 ### TC-P1-04-002: Save privacy changes
 - Priority: High · Type: Functional
-- Ref: FR-PROFILE-4
+- Ref: FR-PROFILE-4; specs/18 §6 Toast (owner decision 2026-10-02)
 - Preconditions: signed in as `test_user` on `/settings/privacy`.
 - Steps:
   1. Pick "Signed-in members", switch off "Show my clan" and "Show my profile in search results", click "Save privacy settings".
   2. Reload; in Adminer `SELECT * FROM privacy_settings WHERE user_id = (SELECT id FROM users WHERE username = 'test_user');`
-- Expected: "Saved." appears beside the button. After reload the choices persist. DB: `profile_visibility` = `members`, `show_clan` = false, `searchable` = false, the other columns unchanged (`show_activity` true, `allow_marketplace_contact` false).
+- Expected: A success toast "Privacy settings saved." appears bottom right (above the tab bar on mobile) and closes by itself after about 5 s; no "Saved." text beside the button. After reload the choices persist. DB: `profile_visibility` = `members`, `show_clan` = false, `searchable` = false, the other columns unchanged (`show_activity` true, `allow_marketplace_contact` false).
 
 ### TC-P1-04-003: New accounts get default privacy and stats rows
 - Priority: Medium · Type: Functional
@@ -277,7 +277,7 @@ first; `H` below stands for `{'Content-Type': 'application/json', Accept: 'appli
   2. `email_verified_at = NULL` (status active): change a toggle and save; then restore `email_verified_at = now()`.
   3. `status = 'suspended'`: without reloading, change a toggle and save.
   4. `status = 'pending_deletion', deletion_requested_at = now(), deletion_previous_status = 'active'`: save again.
-- Expected: Steps 1–2 save ("Saved."). Step 3: 403 page "Your account is suspended" / "Changes are off until the suspension ends."; step 4: "Your account is scheduled for deletion" / "Changes are off while the deletion is pending."; the row is unchanged in both.
+- Expected: Steps 1–2 save (toast "Privacy settings saved." each time). Step 3: 403 page "Your account is suspended" / "Changes are off until the suspension ends."; step 4: "Your account is scheduled for deletion" / "Changes are off while the deletion is pending."; the row is unchanged in both.
 
 ### TC-P1-04-031: Guests cannot open privacy settings
 - Priority: Medium · Type: Authorization
@@ -291,12 +291,12 @@ first; `H` below stands for `{'Content-Type': 'application/json', Accept: 'appli
 
 ### TC-P1-04-032: Privacy form saving and error focus
 - Priority: Medium · Type: UI state
-- Ref: task Acceptance "States"
+- Ref: task Acceptance "States"; specs/18 §6 Toast (owner decision 2026-10-02)
 - Preconditions: signed in as `test_user`; Network throttling "Slow 3G".
 - Steps:
-  1. Change the visibility and save; watch the button.
+  1. Change the visibility and save; watch the button and the bottom-right corner.
   2. Use the radio group and toggles with the keyboard only (Tab, arrows, Space).
-- Expected: Step 1: the button shows a loading state, then "Saved." Step 2: arrow keys move between the radio options, Space flips each toggle, focus is visible throughout.
+- Expected: Step 1: the button shows a loading state and cannot be pressed twice, then the success toast "Privacy settings saved." (`role="status"`) appears and closes after about 5 s; nothing appears beside the button. Step 2: arrow keys move between the radio options, Space flips each toggle, focus is visible throughout.
 
 ### TC-P1-04-033: Profile loading skeleton
 - Priority: Low · Type: UI state
@@ -316,9 +316,20 @@ first; `H` below stands for `{'Content-Type': 'application/json', Accept: 'appli
 
 ### TC-P1-04-035: Layout at 375 px and desktop
 - Priority: Medium · Type: UI state
-- Ref: task Acceptance "States"; Decisions 11
+- Ref: task Acceptance "States"; Decisions 11; member layout (owner decision 2026-10-02)
 - Preconditions: `test_user` with every field filled and a 300-character bio.
 - Steps:
   1. At 375 × 812 open `/u/test_user` (as owner) and `/settings/privacy`.
   2. Repeat at 1280 px.
-- Expected: At 375 px: no horizontal scroll; the cover band stacks avatar above the name; a long display name wraps; the three stats stay in one row; social links are at least 44 px tall; the privacy radio rows and toggles fit the width. At 1280 px: avatar and name sit side by side with the owner buttons on the right; the privacy form sits beside the settings sub-nav.
+- Expected: At 375 px: the primary nav is the bottom tab bar and the top bar holds only the "CC" wordmark, the bell and the avatar menu; the tab bar does not cover the end of the page; no horizontal scroll; the cover band stacks avatar above the name; a long display name wraps; the three stats stay in one row; social links are at least 44 px tall; the privacy radio rows and toggles fit the width. At 1280 px: no sidebar and no bottom tab bar; the top bar reads wordmark, the primary nav as plain text links ("Home"), then the bell and the avatar menu on the right; the profile content uses the full content width; avatar and name sit side by side with the owner buttons on the right; the privacy form sits beside the settings sub-nav.
+
+### TC-P1-04-036: Save toasts repeat, and the rate-limit error stays
+- Priority: Low · Type: UI state
+- Ref: specs/18 §6 Toast (`useFlashToasts`); specs/04 §4 `global-write`; owner decision 2026-10-02
+- Preconditions: signed in as `test_user` on `/settings/privacy`, CSRF token `t` and `H` set.
+- Steps:
+  1. Click "Save privacy settings" twice, a second apart, without changing anything.
+  2. Run `for (let i = 0; i < 120; i++) await fetch('/settings/privacy', {method: 'PATCH', headers: {...H, Accept: 'text/html'}, redirect: 'manual', body: JSON.stringify({profile_visibility: 'public', show_coc_accounts: true, show_clan: true, allow_recruitment_contact: true, searchable: true})});`
+  3. Within the same minute, switch a toggle in the page and click "Save privacy settings"; wait 10 seconds.
+  4. Press the toast's "Dismiss notification" button; reload the page.
+- Expected: Step 1: each save shows its own "Privacy settings saved." toast (the second is not swallowed). Step 3: the toggle change is not stored and a danger toast "Too many changes. Wait a minute and try again." (`role="alert"`) appears and is still there after 10 seconds. Step 4: the toast closes, and the reload does not bring it back. After a minute saving works again.

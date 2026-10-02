@@ -15,6 +15,9 @@ Notes for the tester:
   the confirm page, the username, email-change and danger-zone forms. Absolute session cap 30 days;
   idle limit `session.lifetime` (`docker compose exec app php artisan config:show session.lifetime`).
 - Reset every limiter between cases with `docker compose exec app php artisan cache:clear`.
+- Saves and sign-outs confirm with a toast, bottom right (above the bottom tab bar below 768 px):
+  success toasts close by themselves after about 5 s, error toasts stay until "Dismiss notification".
+  There is no inline "Saved." text on this page.
 
 ## Happy path
 
@@ -28,12 +31,12 @@ Notes for the tester:
 
 ### TC-P1-05-002: Change password successfully
 - Priority: High · Type: Functional
-- Ref: FR-AUTH-2; PasswordChangeService
+- Ref: FR-AUTH-2; PasswordChangeService; owner decision 2026-10-02 (flash messages as toasts)
 - Preconditions: signed in as `test_user` in browser A
 - Steps:
   1. Current password `password`; New password and Repeat `Harbour-Lantern-42`; click "Change password".
   2. Sign out, sign in with `password`, then with `Harbour-Lantern-42`.
-- Expected: the button shows a loading state, then "Saved." appears next to it and all three fields are cleared. Browser A stays signed in. The old password is refused with "That email and password do not match. Check both and try again."; the new one signs in. Security log: `auth.password_changed`.
+- Expected: the button shows a loading state, then the success toast "Password changed. Every other device was signed out." appears and closes by itself after about 5 s; no "Saved." text appears next to the button. All three fields are cleared. Browser A stays signed in. The old password is refused with "That email and password do not match. Check both and try again."; the new one signs in. Security log: `auth.password_changed`.
 
 ### TC-P1-05-003: "Password changed" email
 - Priority: High · Type: Email
@@ -57,13 +60,13 @@ Notes for the tester:
 
 ### TC-P1-05-005: Sign out one other device
 - Priority: High · Type: Functional
-- Ref: FR-AUTH-7; SessionService::revoke
+- Ref: FR-AUTH-7; SessionService::revoke; owner decision 2026-10-02 (flash messages as toasts)
 - Preconditions: `test_user` signed in on A and B
 - Steps:
   1. In A, on `/settings/security`, click "Sign out" on B's row.
   2. Read the dialog, click "Sign out".
   3. In B, reload `/settings/profile`.
-- Expected: dialog title "Sign out <B's device label>?", text "That device will need your password to sign in again.", buttons "Cancel" and "Sign out". After confirming, B's row disappears and "You are only signed in on this device." shows. B lands on `/login`. Security log: `auth.session_revoked` with `count: 1`.
+- Expected: dialog title "Sign out <B's device label>?", text "That device will need your password to sign in again.", buttons "Cancel" and "Sign out". After confirming, the success toast "That device was signed out." appears, B's row disappears and "You are only signed in on this device." shows. B lands on `/login`. Security log: `auth.session_revoked` with `count: 1`.
 
 ### TC-P1-05-006: Cancel the sign-out dialog
 - Priority: Medium · Type: UI state
@@ -76,13 +79,13 @@ Notes for the tester:
 
 ### TC-P1-05-007: Sign out every other device
 - Priority: High · Type: Functional
-- Ref: FR-AUTH-7; SessionService::revokeOthers
+- Ref: FR-AUTH-7; SessionService::revokeOthers; owner decision 2026-10-02 (flash messages as toasts)
 - Preconditions: `test_user` signed in on A, B and a third browser C
 - Steps:
   1. In A, click "Sign out every other device".
   2. Read the dialog, click "Sign out".
   3. Reload B and C.
-- Expected: dialog title "Sign out every other device?", text "All 2 other devices will need your password to sign in again. This one stays signed in.". After confirming only "This device" remains. B and C land on `/login`. A stays signed in. Security log `auth.session_revoked` with `count: 2`.
+- Expected: dialog title "Sign out every other device?", text "All 2 other devices will need your password to sign in again. This one stays signed in.". After confirming, the success toast "Every other device was signed out." appears and only "This device" remains. B and C land on `/login`. A stays signed in. Security log `auth.session_revoked` with `count: 2`.
 
 ### TC-P1-05-008: Dialog copy with exactly one other device
 - Priority: Low · Type: UI state
@@ -146,6 +149,18 @@ Notes for the tester:
   4. Open it and choose "Sign out".
 - Expected: the menu lists "Your profile" (→ `/u/test_user`), "Settings" (→ `/settings/profile`), "Sign out". Enter opens with focus on the first item; arrows move, Home/End jump to first/last; Escape closes and returns focus to the avatar. ArrowUp opens on the last item; Tab closes the menu. "Sign out" shows "Signing out…" briefly and signs out.
 
+### TC-P1-05-039: Show/hide toggle on every password field of the password form
+- Priority: High · Type: Functional
+- Ref: owner decision 2026-10-02 (password show/hide toggle); UiInput
+- Preconditions: signed in as `test_user` on `/settings/security`
+- Steps:
+  1. Type `password` in "Current password", `Harbour-Lantern-42` in "New password" and `Harbour-Lantern-43` in "Repeat new password".
+  2. Click the eye button inside the right end of "Current password".
+  3. Click it again.
+  4. Repeat steps 2–3 on "New password" and on "Repeat new password".
+  5. Inspect one toggle in DevTools (Elements, then hover the button's `::after`).
+- Expected: before step 2 every field shows dots. Each click reveals only its own field as plain text, then hides it again; the other fields are not affected. The button's accessible name is "Show password" with `aria-pressed="false"` while hidden and "Hide password" with `aria-pressed="true"` while shown, and its icon switches between an eye and a struck-through eye. The typed values stay exactly as entered through every toggle. The button sits inside the field border and its hit area is at least 44 × 44 px. Clicking the toggle never submits the form (no request in the Network tab).
+
 ## Validation
 
 ### TC-P1-05-015: Wrong current password
@@ -163,7 +178,7 @@ Notes for the tester:
 - Steps:
   1. Current `password`, new `Short-123` (9 chars) twice, submit.
   2. Repeat with exactly 10 characters, e.g. `Short-1234` (if it is reported as breached, use `Qx7-vLm2pZ`).
-- Expected: step 1: "The new password field must be at least 10 characters." under "New password". Step 2 is accepted ("Saved.").
+- Expected: step 1: "The new password field must be at least 10 characters." under "New password". Step 2 is accepted (toast "Password changed. Every other device was signed out.").
 
 ### TC-P1-05-017: New password found in a breach
 - Priority: High · Type: Validation
@@ -355,6 +370,16 @@ Notes for the tester:
   3. Submit `password`.
 - Expected: heading "Confirm your password", text "This is a sensitive change, so enter your password first. You will not be asked again for 15 minutes.". Step 2: "That is not your password." under "Password", field cleared; security log `auth.password_confirm_failed`. Step 3 redirects to `/`. Signed out, the URL redirects to `/login`.
 
+### TC-P1-05-040: "Sign out every other device" when the others already signed out
+- Priority: Low · Type: Edge case
+- Ref: SecurityController::destroyOtherSessions; owner decision 2026-10-02 (flash messages as toasts)
+- Preconditions: `test_user` signed in on A and B
+- Steps:
+  1. In A open `/settings/security` and confirm B's row is listed.
+  2. In B use the avatar menu → "Sign out".
+  3. In A, without reloading, click "Sign out every other device", then "Sign out" in the dialog.
+- Expected: the success toast "No other devices were signed in." appears and closes after about 5 s. The list now shows only "This device" and "You are only signed in on this device.". A stays signed in.
+
 ## UI states
 
 ### TC-P1-05-037: Session list skeleton while loading
@@ -368,8 +393,20 @@ Notes for the tester:
 
 ### TC-P1-05-038: Layout at 375 px and desktop
 - Priority: Medium · Type: UI state
-- Ref: task States "375 px and desktop"
+- Ref: task States "375 px and desktop"; owner decision 2026-10-02 (password toggle, toasts)
 - Preconditions: `test_user` signed in on A and B
 - Steps:
   1. View `/settings/security` at 375 px, then at ≥1280 px; open the sign-out dialog at both widths; open the account menu at 375 px.
-- Expected: at 375 px the settings nav scrolls horizontally inside itself (no page scroll), the new-password fields stack, session rows stack with the "Sign out" button below the text, the dialog fits the screen. At desktop the two new-password fields sit side by side. No console errors.
+- Expected: at 375 px the settings nav scrolls horizontally inside itself (no page scroll), the new-password fields stack, session rows stack with the "Sign out" button below the text, the dialog fits the screen, and each password field keeps its eye toggle inside the field without the text running under it. Toasts sit above the bottom tab bar at 375 px. At desktop the two new-password fields sit side by side. No console errors.
+
+### TC-P1-05-041: Password toggle by keyboard, value kept through submit
+- Priority: Medium · Type: UI state
+- Ref: owner decision 2026-10-02 (password show/hide toggle); specs/18 §8
+- Preconditions: signed in as `test_user` on `/settings/security`; a screen reader (VoiceOver or NVDA) optional
+- Steps:
+  1. Click into "Current password" and type `password`.
+  2. Press Tab.
+  3. Press Space; then press Enter.
+  4. Press Tab, type `Harbour-Lantern-42` in "New password", Tab to its toggle and press Enter.
+  5. Fill "Repeat new password" with `Harbour-Lantern-42` (leave it hidden) and click "Change password".
+- Expected: step 2 moves focus from the field to its toggle, with a visible focus ring; a screen reader announces a toggle button named "Show password", not pressed. Space reveals the value ("Hide password", pressed), Enter hides it again; focus stays on the toggle and the value is unchanged. In step 4 the next Tab after the toggle lands on "New password", and Enter on its toggle shows the new password. Step 5 submits the values as typed, whether shown or hidden: the toast "Password changed. Every other device was signed out." appears and the fields are cleared. Clean-up: reseed (`migrate:fresh --seed`) to restore `password`.
