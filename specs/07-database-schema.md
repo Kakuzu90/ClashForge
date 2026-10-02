@@ -167,7 +167,7 @@ A CoC player tag attached to a website user. The central trust object of the pla
 | attack_wins / defense_wins | int | |
 | donations / donations_received | int | |
 | clan_tag | varchar(15) null | denormalised for filtering |
-| clan_id | bigint null FK → clans | `ON DELETE SET NULL`; added with the clans stub (P2-13) |
+| clan_id | bigint null FK → clans | `ON DELETE SET NULL`; set in the same write as `clan_tag` (attach, sync), null outside a clan (P2-13) |
 | clan_role | varchar(20) null | `member`\|`admin`\|`coLeader`\|`leader` |
 | league_id / league_name / league_icon_url | int null / varchar(50) null / text null | `league_id` resolves to our self-hosted emblem in the `game/` pack; the API URL is kept as a fallback. Never copied into `media` ([18 §2.3](18-design-system.md)) |
 | troops / heroes / spells / hero_equipment | jsonb default '[]' | raw-ish API shape, normalised keys |
@@ -267,32 +267,36 @@ per account per day, then one per week after a year (compaction job). Partition 
 ~5M rows.
 
 ### `clans` [P2, read-only stub in M]
-Clans referenced by accounts or recruitment posts.
+Clans referenced by accounts or recruitment posts. Written from API data only. Until the clan sync
+(P4-01) a row is a stub made from a member's player payload: tag, name, badge and level, through
+Clans' `ClanDirectory::ensure()` in the same write that sets `coc_accounts.clan_tag` (P2-13). The
+columns only `/clans/{tag}` returns are null until then. Once `api_synced_at` is set, members'
+payloads no longer change the row.
 
 | Column | Type | Notes |
 |---|---|---|
 | id | bigserial PK | |
-| tag / tag_normalized | varchar(15) / varchar(14) | **unique** on `tag_normalized` |
+| tag / tag_normalized | varchar(15) / varchar(14) | **unique** on `tag_normalized`; a disbanded and recreated clan has a new tag and is a new row ([23 §6](23-edge-cases.md)) |
 | name | varchar(30) | |
 | description | text null | |
-| badge_urls | jsonb | small/medium/large from the API. Referenced, not mirrored (one per clan, mutable); rendered unmodified, never ingested into the media pipeline ([18 §2.3](18-design-system.md)) |
-| level | smallint | |
-| points / builder_points / capital_points | int | |
-| war_frequency / war_win_streak / war_wins / war_losses / war_ties | varchar(20) / int | |
-| is_war_log_public | bool | |
+| badge_urls | jsonb default '{}' | small/medium/large from the API, stored verbatim (`[]` when the API sends none). Referenced, not mirrored (one per clan, mutable); rendered unmodified through the resolver's allowlist, never ingested into the media pipeline ([18 §2.3](18-design-system.md)) |
+| level | smallint null | from the player payload; a payload without it keeps the known level |
+| points / builder_points / capital_points | int null | null until the clan sync |
+| war_frequency / war_win_streak / war_wins / war_losses / war_ties | varchar(20) null / int null | null until the clan sync |
+| is_war_log_public | bool null | null until the clan sync |
 | war_league_id / war_league_name | int null / varchar(50) null | |
 | capital_hall_level | smallint null | |
-| members_count | smallint | drives auto-pause of recruitment posts |
-| required_th_level / required_trophies | smallint / int | |
-| type | varchar(20) | `open`\|`inviteOnly`\|`closed` |
+| members_count | smallint null | drives auto-pause of recruitment posts; null until the clan sync |
+| required_th_level / required_trophies | smallint null / int null | null until the clan sync |
+| type | varchar(20) null | `open`\|`inviteOnly`\|`closed` (CHECK, Postgres); null until the clan sync |
 | location_id / location_name / country_code | int null / varchar(50) null / char(2) null | |
-| languages | varchar(5)[] null | platform-supplied, not from the API |
-| api_synced_at / api_sync_failures | timestamptz / smallint | |
-| tracked_reason | varchar(20) | `member`\|`recruitment`\|`manual` — why we sync it |
+| languages | varchar(5)[] null | platform-supplied, not from the API; added with recruitment (P4-02), its only writer |
+| api_synced_at / api_sync_failures | timestamptz null / smallint default 0 | last `/clans/{tag}` fetch; null on a stub |
+| tracked_reason | varchar(20) null | `member`\|`recruitment`\|`manual` (CHECK, Postgres) — why we sync it; set by the clan sync (P4-01), null on a stub |
 | created_at / updated_at | timestamptz | |
 
 **Indexes:** `(tag_normalized)` unique; `(members_count)`; `(war_league_id)`; `(country_code)`;
-`(api_synced_at)`; GIN on `to_tsvector(name)`.
+`(api_synced_at)`; GIN on `to_tsvector('simple', name)` (Postgres).
 
 ### `clan_memberships` [P2]
 Historical record of which verified account was in which clan — needed to authorise clan

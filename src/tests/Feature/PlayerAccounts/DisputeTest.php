@@ -2,6 +2,7 @@
 
 use App\Domain\Audit\Enums\AuditAction;
 use App\Domain\Audit\Models\AuditLog;
+use App\Domain\Clans\Models\Clan;
 use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Models\Media;
@@ -224,6 +225,15 @@ it('transfers on an admin decision, the holder keeping an unverified row (specs/
         ->and(CocAccount::query()->where('tag_normalized', '2PQ8GRJC')->whereIn('status', ['verified', 'disputed'])->count())->toBe(1)
         ->and($this->claimant->refresh()->verified_accounts_count)->toBe(1)
         ->and($this->holder->refresh()->verified_accounts_count)->toBe(0);
+});
+
+it('carries the clan link to the claimant on a transfer (P2-13)', function () {
+    $clan = Clan::factory()->create();
+    $this->held->forceFill(['clan_id' => $clan->id, 'clan_tag' => $clan->tag])->save();
+
+    ($this->disputes)()->decide($this->admin, ($this->withAdmins)(), DisputeDecision::Transfer, 'Receipt matches the Supercell ID.');
+
+    expect(CocAccount::query()->where('user_id', $this->claimant->id)->sole())->clan_id->toBe($clan->id)->clan_tag->toBe($clan->tag);
 });
 
 it('sends no token-takeover notice for an admin transfer; the decision notice is P2-18', function () {

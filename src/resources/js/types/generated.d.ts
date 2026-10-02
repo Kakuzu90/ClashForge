@@ -72,6 +72,16 @@ export type StaffAbility = 'access-admin' | 'view-users' | 'view-platform-stats'
 export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pending_deletion';
 }
 }
+namespace Clans {
+namespace Data {
+export type ClanSummaryData = {
+tag: string,
+name: string,
+level: number | null,
+badgeUrls: Record<string, string>,
+};
+}
+}
 namespace CocIntegration {
 namespace Data {
 export type CocApiHealthData = {

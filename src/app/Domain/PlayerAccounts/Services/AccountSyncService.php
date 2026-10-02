@@ -3,6 +3,7 @@
 namespace App\Domain\PlayerAccounts\Services;
 
 use App\Domain\Auth\Services\UserActivityReader;
+use App\Domain\Clans\Services\ClanDirectory;
 use App\Domain\CocIntegration\Data\PlayerData;
 use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\CocIntegration\Enums\CocFailureReason;
@@ -45,6 +46,7 @@ class AccountSyncService
         private readonly SyncSchedule $schedule,
         private readonly UserActivityReader $activity,
         private readonly Notifier $notifier,
+        private readonly ClanDirectory $clans,
     ) {}
 
     public function sync(int $accountId): SyncOutcome
@@ -113,7 +115,7 @@ class AccountSyncService
             $next = AccountGameData::attributes($player);
             $changed = AccountProgression::changed($account, $next) || ! $account->snapshots()->exists();
 
-            $account->fill($next)->forceFill(['api_sync_failures' => 0])->save();
+            $account->fill([...$next, 'clan_id' => $player->clan === null ? null : $this->clans->ensure($player->clan)])->forceFill(['api_sync_failures' => 0])->save();
 
             if ($changed) {
                 AccountProgression::snapshot($account, SnapshotSource::Scheduled);

@@ -56,7 +56,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P2-09 | Tiered sync and snapshots (specs/09 §6, FR-COC-10): `sync_states`, `coc:sync-accounts`, `SyncCocAccountJob`, snapshot-on-change, 404 / failure rules with the "account not found" notice (board gap: listed in specs/25 §4, from P2-01) (+ the sync success rate on the dashboard's Clash of Clans API panel, from P2-10, and on System Health, from P2-06) (manual refresh split to P2-20; data-age UI is P2-04's) | done | P2-02, P2-07 | tasks/phase-2/P2-09-tiered-sync-and-snapshots.md |
 | P2-11 | Attach flow UI (`/accounts/attach`: tag → confirmation card → token → success, error states for not found / conflict (with the token path through `VerifyOwnershipService::verifyTag`, specs/13 §4 A) / invalid token / API unavailable; the own profile's Accounts empty-state CTA, from P1-04; the takeover notice's link, from P2-12; the email button label moved to P2-04) (split from P2-02) | done | P2-02, P2-12 | tasks/phase-2/P2-11-attach-flow-ui.md |
 | P2-12 | Ownership notifications: CoC account verified (I + E), your verified account was claimed by someone else (I + E*), listening to `CocAccountVerified` / `CocAccountOwnershipTransferred` (specs/13 §8, specs/16) (split from P2-02) | done | P2-02 | tasks/phase-2/P2-12-ownership-notifications.md |
-| P2-13 | Clans stub: `clans` table (specs/07, read-only stub in M), ensure-clan listener on `CocAccountVerified`, `coc_accounts.clan_id` (split from P2-02) | todo | P2-02 | |
+| P2-13 | Clans stub: `clans` table (specs/07, read-only stub in M), `coc_accounts.clan_id` set on attach and sync through `ClanDirectory::ensure()`, `ClanReadModel` for P2-04 (split from P2-02) (the ensure-clan consumer of `CocAccountVerified` moved to P4-01) | done | P2-02 | tasks/phase-2/P2-13-clans-stub.md |
 | P2-14 | Detach, release and featured account (FR-COC-12/13, specs/13 §6): password re-confirmation, `released`, reuse on re-attach, featured switch; release a deleted account's tags at the end of the deletion window, and a banned owner's after 30 days (from P2-02 security review) (split from P2-02) (+ the "set as featured" prompt on the attach success screen, from P2-11) (+ hold an account deletion while a dispute involves the user, specs/23 §1, from P2-03) | todo | P2-02 | |
 | P2-16 | Dispute screens for both parties: open a dispute from the attach flow's conflict card (reason, up to 3 private evidence images), the dispute page with its status, the holder's response (counter-statement and evidence, release, verify with a token) (split from P2-03) (+ password re-confirmation on release, an ownership transfer per specs/11, and named rate limiters for open / respond / release, from the P2-03 security review) | todo | P2-03, P2-18 | |
 | P2-17 | Admin dispute queue and review page (side-by-side evidence, both users' history, claim history, decision form; evidence access audited) + the dashboard's pending disputes panel (from P1-13) (split from P2-03) | todo | P2-03 | |
@@ -81,8 +81,8 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
-| P4-01 | Clans + clan sync | todo | P2-01 | |
-| P4-02 | Recruitment posts + applications | todo | P4-01 | |
+| P4-01 | Clans + clan sync (+ `SyncClanJob` on `CocAccountVerified` for a new clan, and `tracked_reason`, from P2-13) | todo | P2-01 | |
+| P4-02 | Recruitment posts + applications (+ `clans.languages`, from P2-13) | todo | P4-01 | |
 | P5-01 | Follows, activity, fan-out | todo | P3-* | |
 | P5-02 | Notifications v2, appeals, anomaly detection (+ the bell dropdown with the 10 latest, specs/16 §6, from P1-07) | todo | P5-01 | |
 | P6-01 | Marketplace (conditional — see specs/15) | blocked | P3–P5 + legal preconditions | |

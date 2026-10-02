@@ -2,6 +2,7 @@
 
 namespace App\Domain\PlayerAccounts\Support;
 
+use App\Domain\Clans\Services\ClanDirectory;
 use App\Domain\CocIntegration\Data\PlayerData;
 use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\PlayerAccounts\Enums\ClaimStatus;
@@ -15,7 +16,10 @@ use App\Models\User;
  */
 final class AccountRows
 {
-    public function __construct(private readonly ClaimRecorder $claims) {}
+    public function __construct(
+        private readonly ClaimRecorder $claims,
+        private readonly ClanDirectory $clans,
+    ) {}
 
     /**
      * @phpstan-impure A concurrent attach may create the row between two calls.
@@ -39,7 +43,8 @@ final class AccountRows
             ->lockForUpdate()
             ->first() ?? new CocAccount;
 
-        $account->fill(AccountGameData::attributes($player));
+        // `clan_id` in the same write as `clan_tag`, so the two always match (P2-13).
+        $account->fill([...AccountGameData::attributes($player), 'clan_id' => $player->clan === null ? null : $this->clans->ensure($player->clan)]);
         $account->forceFill([
             'tag' => $tag->value,
             'tag_normalized' => $tag->bare(),

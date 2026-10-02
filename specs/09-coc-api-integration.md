@@ -147,7 +147,7 @@ tier.
   `WithoutOverlapping`, so a slow run never doubles up.
 - On success: update `coc_accounts`, write a `coc_account_snapshots` row **only if a tracked value
   changed** (progression only: TH / BH level, XP level, best trophies, war stars, unit levels,
-  clan tag, league id; [07](07-database-schema.md)), reset `api_sync_failures`, compute the next
+  clan tag, league id; [07](07-database-schema.md)), link `clan_id` to the clan's row (P2-13), reset `api_sync_failures`, compute the next
   tier and `next_due_at`. Verification writes the first snapshot and starts the schedule (a
   listener on `CocAccountVerified`, which an admin dispute transfer dispatches too).
 - On `notFound` (404): increment failures; after 3 consecutive, set the account to a `stale` display
@@ -234,7 +234,7 @@ clan badges stay referenced, never mirrored, because there is one per clan and t
 self-hosted copy in the `game/` pack and falls back to the API URL when a league id is missing from
 the manifest. Either way nothing is downloaded into the media pipeline or re-encoded — that would
 be a modification the fan-content policy does not permit. See [18 §2.3](18-design-system.md) and
-[10 §11](10-media-storage.md).
+[10 §11](10-media-storage.md). A player's clan block (`PlayerClanData`) is also the source of the clan stub: `ClanDirectory::ensure` stores its tag, name, level and badges in `clans` and returns the id for `coc_accounts.clan_id` (P2-13).
 
 **Game-update resilience:** new troops, heroes, equipment and TH levels appear without warning.
 Rules: (1) unit lists are stored as `jsonb`, never as columns; (2) unknown unit names are stored

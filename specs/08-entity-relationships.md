@@ -158,7 +158,7 @@ Every denormalised value has one authoritative writer and one repair job.
 | `user_stats.*` | bases, likes, comments | event listeners | nightly recompute |
 | `base_tags.usage_count` | pivot | tag sync in publish/unpublish | nightly reconcile |
 | `clans.members_count` | CoC API | clan sync job | next sync |
-| `coc_accounts.clan_tag` | CoC API | account sync | next sync |
+| `coc_accounts.clan_tag` / `clan_id` | CoC API (the player's clan block; `clan_id` through `ClanDirectory::ensure`) | attach and account sync, in one write | next sync |
 | `report_cases.reports_count` | `reports` | report intake | on case open |
 | `seller_profiles.rating_avg` | `marketplace_reviews` | review create/hide | nightly reconcile |
 | `profiles.search_vector`, `base_layouts.search_vector` | source text | generated column or trigger | reindex command |

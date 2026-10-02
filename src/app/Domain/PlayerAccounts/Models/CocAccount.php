@@ -40,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $donations
  * @property int|null $donations_received
  * @property string|null $clan_tag
+ * @property int|null $clan_id
  * @property string|null $clan_role
  * @property int|null $league_id
  * @property string|null $league_name
@@ -85,6 +86,7 @@ class CocAccount extends Model
         'donations',
         'donations_received',
         'clan_tag',
+        'clan_id',
         'clan_role',
         'league_id',
         'league_name',
