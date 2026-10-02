@@ -60,4 +60,12 @@ P1-15, P1-16 (todo) and P0-09 (blocked) have no cases yet.
 - Expected: <observable result: page, message text, email in Mailpit, row in the DB>
 ```
 
-IDs are `TC-<task>-<nnn>`, numbered in file order. Expected text quotes the UI copy as built.
+IDs are `TC-<task>-<nnn>`, numbered in file order. Expected text quotes the UI copy as built. A
+file may open with a short "Notes for the tester" block (cache delays, setup snippets).
+
+## Flash messages
+
+Server messages after a save or redirect (`flash.success`, `flash.error`) show as toasts, bottom
+right (above the tab bar on mobile): success toasts close after 5 s, error toasts stay until
+dismissed. Cases written before this fix check the inline state, the data and Mailpit; where a
+case notes that a message "should appear", expect it as a toast.
