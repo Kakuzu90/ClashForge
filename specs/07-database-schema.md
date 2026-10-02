@@ -227,16 +227,20 @@ A contested tag, routed to admins.
 | claimant_id | bigint FK → users | the challenger |
 | current_holder_id | bigint null FK → users | |
 | reason | text | claimant's statement (≤1000) |
-| evidence | jsonb default '[]' | media ids + notes |
-| status | varchar(20) | `open`\|`awaiting_claimant`\|`awaiting_holder`\|`resolved_transfer`\|`resolved_denied`\|`withdrawn`\|`auto_resolved` |
+| evidence | jsonb default '[]' | append-only, one entry per submission: `{party, note, media: [ulid], at}`; the opening statement is `reason` (P2-03) |
+| status | varchar(20) | `open`\|`awaiting_admin`\|`awaiting_claimant`\|`awaiting_holder`\|`resolved_transfer`\|`resolved_denied`\|`resolved_suspended`\|`withdrawn`\|`auto_resolved` (`awaiting_admin`, `resolved_suspended`: owner decision 2026-10-02, P2-03) |
 | assigned_admin_id | bigint null FK → users | |
 | decision_note | text null | internal |
-| decided_by / decided_at | bigint null FK → users / timestamptz null | |
+| decided_by / decided_at | bigint null FK → users / timestamptz null | `decided_at` is set on every close; `decided_by` only for an admin decision |
+| closed_by | varchar(20) null | `claimant`\|`holder`\|`admin`\|`token`\|`sweep`; a `sweep` withdrawal counts toward the claimant's bar like a denial |
+| awaiting_since | timestamptz | when the current wait began (the holder's 7 days, or the 30 days a party asked for more has) |
+| escalated_at | timestamptz null | set when an unanswered dispute goes to the admins |
 | created_at / updated_at | timestamptz | |
 
-**Unique:** `(tag_normalized, claimant_id) WHERE status IN ('open','awaiting_claimant','awaiting_holder')`
-— one open dispute per challenger per tag.
-**Indexes:** `(status, created_at)`; `(assigned_admin_id)`; `(coc_account_id)`.
+**Unique:** `(tag_normalized, claimant_id) WHERE status IN ('open','awaiting_admin','awaiting_claimant','awaiting_holder')`
+— one open dispute per challenger per tag; and `(coc_account_id)` with the same condition — a
+disputed account takes no new disputes ([13 §2](13-claiming-workflow.md)). Every user FK restricts.
+**Indexes:** `(status, created_at)`; `(assigned_admin_id)`; `(coc_account_id)`; `(claimant_id, status)`.
 
 ### `coc_account_snapshots` [M]
 Point-in-time progression, and the fallback when the API is down.
@@ -643,6 +647,10 @@ as for `audit_logs`. `case_id` gets its FK with `report_cases` (P3-06).
   suspension, later a restriction) and `unban` target the sanction (`user_sanction`, its id), so
   the history finds the lift note. A sanction replaced by a new one gets a `lift` noted "Replaced
   by a new …", and the new action's `metadata.replaced_sanction_id`. Expiry writes no action.
+- Ownership disputes (P2-03): an admin's transfer, deny and suspend write `transfer_ownership`,
+  `dismiss` and `suspend` with `target_type = coc_account_dispute` and reason `false_ownership`,
+  through Moderation's `ModerationActionLog`. Asking a party for more, a holder's release, a token
+  and a withdrawal are audit-only.
 **Indexes:** `(target_type, target_id, created_at DESC)`; `(actor_id, created_at DESC)`;
 `(target_user_id, created_at DESC)`; `(case_id)`.
 

@@ -71,6 +71,7 @@ describe('attach messages', () => {
         expect(verifyMessage({ outcome: 'unavailable', accountUlid: null, superseded: false, featured: false, retryAfter: 120 })?.body).toBe(
             'Nothing was saved. Try again in about 2 minutes.',
         );
+        expect(verifyMessage({ outcome: 'tag_suspended', accountUlid: null, superseded: false, featured: false, retryAfter: null })?.title).toBe('This account is suspended');
         expect(verifyMessage({ outcome: 'verified', accountUlid: 'x', superseded: false, featured: true, retryAfter: null })).toBeNull();
     });
 

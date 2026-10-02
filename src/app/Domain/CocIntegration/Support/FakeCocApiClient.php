@@ -14,6 +14,7 @@ use App\Domain\CocIntegration\Enums\CocPriority;
 use App\Domain\CocIntegration\Enums\TokenVerificationStatus;
 use App\Domain\CocIntegration\Exceptions\CocApiFailure;
 use App\Domain\CocIntegration\Exceptions\TagNotFound;
+use Closure;
 use Illuminate\Support\Facades\Date;
 use InvalidArgumentException;
 use SensitiveParameter;
@@ -26,6 +27,8 @@ use SensitiveParameter;
  */
 final class FakeCocApiClient implements CocApiClient
 {
+    private ?Closure $onVerify = null;
+
     /** @var array<string, array<string, mixed>> */
     private array $players = [];
 
@@ -63,6 +66,16 @@ final class FakeCocApiClient implements CocApiClient
     public function withClan(array $payload): self
     {
         $this->clans[$this->bareTag($payload)] = $payload;
+
+        return $this;
+    }
+
+    /**
+     * Runs during the next token checks, for tests of what changes while the API answers.
+     */
+    public function onVerify(Closure $callback): self
+    {
+        $this->onVerify = $callback;
 
         return $this;
     }
@@ -119,6 +132,10 @@ final class FakeCocApiClient implements CocApiClient
     {
         $this->record('players.verifytoken', $tag);
         $this->find('players', $this->players, $tag);
+
+        if ($this->onVerify !== null) {
+            ($this->onVerify)();
+        }
 
         $accepted = in_array($token, $this->tokens[$tag->bare()] ?? [], true)
             || ($this->acceptedToken !== null && $this->acceptedToken !== '' && hash_equals($this->acceptedToken, $token));

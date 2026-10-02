@@ -63,6 +63,10 @@ class AttachAccountService
     {
         Gate::forUser($user)->authorize('attach', CocAccount::class);
 
+        if (VerifyOwnershipService::suspended($tag)) {
+            return new AttachResultData(AttachOutcome::TagSuspended, $tag->value);
+        }
+
         if (($own = $this->rows->own($user, $tag)) !== null) {
             return new AttachResultData(AttachOutcome::AlreadyAttached, $tag->value, accountUlid: $own->ulid);
         }
@@ -96,6 +100,10 @@ class AttachAccountService
     public function attach(User $user, PlayerTag $tag): AttachResultData
     {
         Gate::forUser($user)->authorize('attach', CocAccount::class);
+
+        if (VerifyOwnershipService::suspended($tag)) {
+            return $this->refuse($user, $tag, AttachOutcome::TagSuspended, ClaimFailureReason::AlreadyClaimed);
+        }
 
         if (($own = $this->rows->own($user, $tag)) !== null) {
             return new AttachResultData(AttachOutcome::AlreadyAttached, $tag->value, accountUlid: $own->ulid);

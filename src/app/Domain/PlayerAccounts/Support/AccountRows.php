@@ -54,4 +54,22 @@ final class AccountRows
 
         return $account;
     }
+
+    /**
+     * The claimant's row for a tag they win in a dispute, inside the caller's transaction with the
+     * tag's rows locked: their own row, else the latest released row (continuous history, specs/13
+     * §6), else a new row carrying the holder's game data. It comes back `unverified`; the caller
+     * promotes it.
+     */
+    public function grant(User $user, CocAccount $source): CocAccount
+    {
+        $account = CocAccount::query()->where('user_id', $user->id)->where('tag_normalized', $source->tag_normalized)->first()
+            ?? CocAccount::query()->where('tag_normalized', $source->tag_normalized)->where('status', CocAccountStatus::Released)
+                ->whereNull('user_id')->orderByDesc('id')->first()
+            ?? (new CocAccount)->fill($source->only($source->getFillable()));
+
+        $account->forceFill(['tag' => $source->tag, 'tag_normalized' => $source->tag_normalized, 'user_id' => $user->id, 'status' => CocAccountStatus::Unverified])->save();
+
+        return $account;
+    }
 }

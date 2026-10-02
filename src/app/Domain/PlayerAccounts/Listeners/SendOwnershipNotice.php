@@ -6,6 +6,7 @@ use App\Domain\Notifications\Data\InAppMessageData;
 use App\Domain\Notifications\Enums\NotificationType;
 use App\Domain\Notifications\Services\EmailDeliveryService;
 use App\Domain\Notifications\Services\Notifier;
+use App\Domain\PlayerAccounts\Enums\VerificationMethod;
 use App\Domain\PlayerAccounts\Events\CocAccountOwnershipTransferred;
 use App\Domain\PlayerAccounts\Events\CocAccountVerified;
 use App\Domain\PlayerAccounts\Models\CocAccount;
@@ -46,6 +47,11 @@ class SendOwnershipNotice implements ShouldQueue
 
     public function handleTransferred(CocAccountOwnershipTransferred $event): void
     {
+        // A dispute decision is announced to both parties by the dispute's own notice (P2-18).
+        if ($event->method === VerificationMethod::Admin) {
+            return;
+        }
+
         $account = CocAccount::query()->find($event->accountId);
         $previous = User::query()->find($event->fromUserId);
 

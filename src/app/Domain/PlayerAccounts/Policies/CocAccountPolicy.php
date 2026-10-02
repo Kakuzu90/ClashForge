@@ -19,10 +19,14 @@ class CocAccountPolicy
         return $user->hasVerifiedEmail() && $user->allowsAccountWrites();
     }
 
+    /**
+     * The user's own unverified row, or their own `disputed` row: a holder's token ends a dispute
+     * (specs/13 §5 3a, owner decision 2026-10-02, P2-03).
+     */
     public function verify(User $user, CocAccount $account): bool
     {
         return $this->attach($user)
             && $account->user_id === $user->id
-            && $account->status === CocAccountStatus::Unverified;
+            && in_array($account->status, [CocAccountStatus::Unverified, CocAccountStatus::Disputed], true);
     }
 }

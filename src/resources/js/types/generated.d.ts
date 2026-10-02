@@ -2,8 +2,8 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified';
-export type AuditSubject = 'user' | 'coc_account';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed';
+export type AuditSubject = 'user' | 'coc_account' | 'coc_account_dispute';
 }
 }
 namespace Auth {
@@ -266,6 +266,11 @@ leagueName: string | null,
 stale: boolean,
 fetchedAt: string | null,
 };
+export type DisputeResultData = {
+disputeUlid: string | null,
+status: App.Domain.PlayerAccounts.Enums.DisputeStatus | null,
+refusal: App.Domain.PlayerAccounts.Enums.DisputeRefusal | null,
+};
 export type OwnCocAccountData = {
 ulid: string,
 tag: string,
@@ -285,13 +290,17 @@ retryAfter: number | null,
 }
 namespace Enums {
 export type AttachBlock = 'email_unverified' | 'account_blocked';
-export type AttachOutcome = 'ready' | 'attached' | 'already_attached' | 'not_found' | 'verified_elsewhere' | 'unavailable' | 'rate_limited';
+export type AttachOutcome = 'ready' | 'attached' | 'already_attached' | 'not_found' | 'verified_elsewhere' | 'unavailable' | 'rate_limited' | 'tag_suspended';
 export type ClaimFailureReason = 'invalid_token' | 'already_claimed' | 'api_error' | 'rate_limited' | 'not_found';
 export type ClaimMethod = 'api_token' | 'dispute' | 'admin';
 export type ClaimStatus = 'pending' | 'succeeded' | 'failed' | 'rejected' | 'superseded';
 export type CocAccountStatus = 'unverified' | 'verified' | 'disputed' | 'suspended' | 'released';
+export type DisputeDecision = 'transfer' | 'deny' | 'suspend' | 'ask_claimant' | 'ask_holder';
+export type DisputeParty = 'claimant' | 'holder';
+export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
+export type DisputeStatus = 'open' | 'awaiting_admin' | 'awaiting_claimant' | 'awaiting_holder' | 'resolved_transfer' | 'resolved_denied' | 'resolved_suspended' | 'withdrawn' | 'auto_resolved';
 export type VerificationMethod = 'api_token' | 'admin';
-export type VerifyOutcome = 'verified' | 'invalid_token' | 'not_found' | 'unavailable' | 'rate_limited';
+export type VerifyOutcome = 'verified' | 'invalid_token' | 'not_found' | 'unavailable' | 'rate_limited' | 'tag_suspended';
 }
 }
 namespace Users {

@@ -82,7 +82,10 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
 
 ### Policies as the only source of truth
 
-- One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `PrivacySettingsPolicy`, `CocAccountPolicy`,
+- One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `PrivacySettingsPolicy`, `CocAccountPolicy`
+  (`verify`: the user's own `unverified` or `disputed` row, P2-03), `CocAccountDisputePolicy` (open as attach;
+  respond / release / withdraw: the party, with account writes; decide: `resolve-disputes` and not a party;
+  without the ability a dispute is a 404),
   `BaseLayoutPolicy`, `BaseCommentPolicy`, `RecruitmentPostPolicy`, `ApplicationPolicy`,
   `ListingPolicy`, `OrderPolicy`, `ReportPolicy`, `MediaPolicy`, `NotificationPolicy` (a notification is
   its recipient's alone; staff have no reach into it).

@@ -28,6 +28,12 @@ export function verifyMessage(result: VerifyResult | null): { kind: 'warning' | 
                 title: 'Clash of Clans cannot be reached right now',
                 body: `Nothing was saved. Try again ${waitText(result.retryAfter)}.`,
             };
+        case 'tag_suspended':
+            return {
+                kind: 'warning',
+                title: 'This account is suspended',
+                body: 'Staff suspended it after an ownership dispute, so it cannot be verified for now.',
+            };
         case 'rate_limited':
             return {
                 kind: 'warning',

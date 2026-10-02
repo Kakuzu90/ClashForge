@@ -20,6 +20,11 @@ enum AuditAction: string implements HasLabelAndColor
     case UserAnonymised = 'user.anonymised';
     case UsernameChanged = 'user.username_changed';
     case CocAccountVerified = 'coc_account.verified';
+    case CocDisputeOpened = 'coc_dispute.opened';
+    case CocDisputeResponded = 'coc_dispute.responded';
+    case CocDisputeInfoRequested = 'coc_dispute.info_requested';
+    case CocDisputeEscalated = 'coc_dispute.escalated';
+    case CocDisputeClosed = 'coc_dispute.closed';
 
     public function label(): string
     {
@@ -31,6 +36,11 @@ enum AuditAction: string implements HasLabelAndColor
             self::UserAnonymised => 'Account anonymised',
             self::UsernameChanged => 'Username changed',
             self::CocAccountVerified => 'CoC account verified',
+            self::CocDisputeOpened => 'Ownership dispute opened',
+            self::CocDisputeResponded => 'Ownership dispute answered',
+            self::CocDisputeInfoRequested => 'More asked in a dispute',
+            self::CocDisputeEscalated => 'Dispute sent to admins',
+            self::CocDisputeClosed => 'Ownership dispute closed',
         };
     }
 
@@ -42,6 +52,9 @@ enum AuditAction: string implements HasLabelAndColor
             self::SanctionLifted, self::SanctionExpired => 'state-success',
             self::UsernameChanged => 'state-info',
             self::CocAccountVerified => 'state-success',
+            self::CocDisputeOpened, self::CocDisputeEscalated => 'state-warning',
+            self::CocDisputeResponded, self::CocDisputeInfoRequested => 'state-info',
+            self::CocDisputeClosed => 'text-muted',
         };
     }
 }

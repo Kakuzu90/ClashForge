@@ -50,6 +50,9 @@ The most important workflow on the platform. Every other trust signal derives fr
 | `suspended` | no | no | no | no |
 | `released` | n/a | n/a | no | yes |
 
+A `suspended` row takes the whole tag out of play: preview, attach and token verification refuse
+it (`tag_suspended`) until staff release it (P2-03; the release action comes with the admin pages).
+
 ## 3. Happy path: attach and verify
 
 ```
@@ -93,7 +96,9 @@ attempt counts). On `ok`:
 6. Write `audit_logs` (`coc_account.verified`, `verified_user_ids` before and after).
 7. Commit, then dispatch `CocAccountVerified` (with the `succeeded` claim id) → full profile sync,
    clan tracking, the verifier's notice ("#TAG (name) is now verified", §8), search indexing.
-8. Auto-resolve any open dispute where this user is the claimant (`auto_resolved`).
+8. Close the tag's running disputes in the same transaction: the holder's own token (they may verify
+   their `disputed` row) gives `resolved_denied`, anyone else's `auto_resolved` (P2-03). A tag with a
+   `suspended` row takes no token: refused before the API call and again under the lock.
 
 **Why token verification silently supersedes an existing verified holder:** possession of a current
 in-game token is proof of present control of the account. Any other outcome would let a former owner
@@ -158,6 +163,27 @@ previous owner attached the tag and left the platform).
      - suspend: tag set to 'suspended' when both parties look fraudulent; neither gets it
 6. moderation_actions + audit_logs rows written. Immutable.
 ```
+
+As built (P2-03, owner decisions 2026-10-02):
+- **Statuses:** `open` is the holder's window. `awaiting_admin` follows the holder's answer, or the
+  end of the window (`coc:process-disputes`, hourly). `awaiting_claimant` / `awaiting_holder` mean
+  an admin asked that party for more. The outcomes are `resolved_transfer`, `resolved_denied`,
+  `resolved_suspended`, `withdrawn` and `auto_resolved`. A disputed account takes no second dispute.
+- **Transfer and suspend only from `awaiting_admin`;** deny and asking can come at any time.
+  - The claimant must still be in good standing (not banned, suspended or pending deletion).
+  - A banned holder cannot be given a deny.
+- **Release (3c)** releases the holder's row and verifies it for the claimant by `admin` at once,
+  recorded as a voluntary release.
+- **The holder's token (3a)** works on their own `disputed` row.
+- **Withdrawals:**
+  - The claimant may withdraw only while the dispute is `open`, before the holder answers, and may
+    not dispute the same tag again for `reopen_cooldown_days` (30).
+  - The sweep withdraws a dispute that has waited on the claimant for 30 days. Such a withdrawal
+    counts toward the 2-denials bar.
+- **Each party** may attach at most 3 evidence images over the whole dispute.
+- **A third denial** logs `coc.dispute_false_claim` for review; the report reason joins with P3-06.
+- **Moderation rows** are written for admin decisions only ([07](07-database-schema.md)
+  `moderation_actions`).
 
 ### Evidence the admin weighs
 

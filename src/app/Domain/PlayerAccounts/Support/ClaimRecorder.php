@@ -21,16 +21,17 @@ final class ClaimRecorder
 {
     public function __construct(private readonly Request $request) {}
 
-    public function record(User $user, PlayerTag $tag, ?int $accountId, ClaimStatus $status, ?ClaimFailureReason $reason = null): CocAccountClaim
+    public function record(User $user, PlayerTag $tag, ?int $accountId, ClaimStatus $status, ?ClaimFailureReason $reason = null, ClaimMethod $method = ClaimMethod::ApiToken, bool $fromRequest = true): CocAccountClaim
     {
-        $http = $this->request->route() !== null;
+        // `fromRequest: false` when someone else's request writes this user's row (a dispute decision).
+        $http = $fromRequest && $this->request->route() !== null;
         $userAgent = $http ? $this->request->userAgent() : null;
 
         return CocAccountClaim::query()->forceCreate([
             'coc_account_id' => $accountId,
             'tag_normalized' => $tag->bare(),
             'user_id' => $user->id,
-            'method' => ClaimMethod::ApiToken,
+            'method' => $method,
             'status' => $status,
             'failure_reason' => $reason,
             'ip_hash' => $http ? IpHash::of($this->request->ip()) : null,
@@ -41,13 +42,13 @@ final class ClaimRecorder
     /**
      * @param  array<string, mixed>  $context
      */
-    public function securityEvent(string $event, User $user, PlayerTag $tag, array $context = []): void
+    public function securityEvent(string $event, User $user, PlayerTag $tag, array $context = [], bool $fromRequest = true): void
     {
         Log::channel('security')->warning($event, [
             'user' => $user->ulid,
             'tag' => $tag->value,
             ...$context,
-            'ip_hash' => $this->request->route() !== null ? IpHash::of($this->request->ip()) : null,
+            'ip_hash' => $fromRequest && $this->request->route() !== null ? IpHash::of($this->request->ip()) : null,
         ]);
     }
 }

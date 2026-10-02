@@ -21,11 +21,13 @@ use App\Domain\PlayerAccounts\Enums\VerificationMethod;
 use App\Domain\PlayerAccounts\Enums\VerifyOutcome;
 use App\Domain\PlayerAccounts\Events\CocAccountOwnershipTransferred;
 use App\Domain\PlayerAccounts\Events\CocAccountVerified;
+use App\Domain\PlayerAccounts\Exceptions\TagSuspended;
 use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Models\CocAccountClaim;
 use App\Domain\PlayerAccounts\Support\AccountRows;
 use App\Domain\PlayerAccounts\Support\ClaimLimits;
 use App\Domain\PlayerAccounts\Support\ClaimRecorder;
+use App\Domain\PlayerAccounts\Support\DisputeLedger;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -44,7 +46,9 @@ use SensitiveParameter;
  * - this row becomes `verified` by `api_token`, and the user's featured account if they have none;
  * - claim rows, both users' verified counts and one `audit_logs` entry are written with it.
  *
- * Any other answer writes a failed claim row and changes nothing else.
+ * Any other answer writes a failed claim row and changes nothing else. A token also ends the tag's
+ * running disputes (specs/13 §3.1 step 8, §5 3a): the holder's own denies the claim, anyone else's
+ * resolves it. A suspended tag takes no token (specs/13 §2).
  */
 class VerifyOwnershipService
 {
@@ -56,7 +60,16 @@ class VerifyOwnershipService
         private readonly AuditLogger $audit,
         private readonly PlayerLookup $players,
         private readonly AccountRows $rows,
+        private readonly DisputeLedger $disputes,
     ) {}
+
+    /**
+     * A tag staff suspended in a dispute takes no verification until they release it (specs/13 §2).
+     */
+    public static function suspended(PlayerTag $tag): bool
+    {
+        return CocAccount::query()->where('tag_normalized', $tag->bare())->where('status', CocAccountStatus::Suspended)->exists();
+    }
 
     /**
      * Token verification of a tag the user may not have attached, the conflict card's first path
@@ -71,6 +84,10 @@ class VerifyOwnershipService
 
         if (($own = $this->rows->own($user, $tag)) !== null) {
             return $this->verify($user, $own->ulid, $token);
+        }
+
+        if (self::suspended($tag)) {
+            return $this->fail($user, $tag, null, VerifyOutcome::TagSuspended, ClaimFailureReason::AlreadyClaimed);
         }
 
         if (($wait = $this->limits->verify($user)) !== null) {
@@ -93,12 +110,16 @@ class VerifyOwnershipService
         }
 
         try {
-            return DB::transaction(fn (): VerifyResultData => $this->promote($user, $tag, $this->rows->createOrReuse($user, $tag, $player)));
-        } catch (UniqueConstraintViolationException) {
-            // A parallel attach of the same tag by this user created the row first.
-            $own = $this->rows->own($user, $tag) ?? throw (new ModelNotFoundException)->setModel(CocAccount::class);
+            try {
+                return DB::transaction(fn (): VerifyResultData => $this->promote($user, $tag, $this->rows->createOrReuse($user, $tag, $player)));
+            } catch (UniqueConstraintViolationException) {
+                // A parallel attach of the same tag by this user created the row first.
+                $own = $this->rows->own($user, $tag) ?? throw (new ModelNotFoundException)->setModel(CocAccount::class);
 
-            return $this->promote($user, $tag, $own);
+                return $this->promote($user, $tag, $own);
+            }
+        } catch (TagSuspended) {
+            return $this->fail($user, $tag, null, VerifyOutcome::TagSuspended, ClaimFailureReason::AlreadyClaimed);
         }
     }
 
@@ -108,15 +129,25 @@ class VerifyOwnershipService
         Gate::forUser($user)->authorize('verify', $account);
         $tag = PlayerTag::from($account->tag);
 
+        if (self::suspended($tag)) {
+            return $this->fail($user, $tag, $account, VerifyOutcome::TagSuspended, ClaimFailureReason::AlreadyClaimed);
+        }
+
         if (($wait = $this->limits->verify($user)) !== null) {
             return $this->fail($user, $tag, $account, VerifyOutcome::RateLimited, ClaimFailureReason::RateLimited, $wait);
         }
 
         $answer = $this->tokens->verify($tag, $token);
 
-        return $answer->status === TokenVerificationStatus::Ok
-            ? $this->promote($user, $tag, $account)
-            : $this->failFor($user, $tag, $account, $answer->status, $answer->retryAfter);
+        if ($answer->status !== TokenVerificationStatus::Ok) {
+            return $this->failFor($user, $tag, $account, $answer->status, $answer->retryAfter);
+        }
+
+        try {
+            return $this->promote($user, $tag, $account);
+        } catch (TagSuspended) {
+            return $this->fail($user, $tag, $account, VerifyOutcome::TagSuspended, ClaimFailureReason::AlreadyClaimed);
+        }
     }
 
     private function failFor(User $user, PlayerTag $tag, ?CocAccount $account, TokenVerificationStatus $status, ?int $retryAfter): VerifyResultData
@@ -135,6 +166,11 @@ class VerifyOwnershipService
             // Every row of the tag, in id order so concurrent verifications lock in the same order.
             $rows = CocAccount::query()->where('tag_normalized', $tag->bare())->orderBy('id')->lockForUpdate()->get();
             $mine = $rows->firstWhere('id', $account->id);
+
+            // Authoritative: an admin may have suspended the tag since the pre-check.
+            if ($rows->contains(fn (CocAccount $row): bool => $row->status === CocAccountStatus::Suspended)) {
+                throw new TagSuspended;
+            }
 
             // Again on the locked row: it may have changed since the check. A double submit finds it
             // verified already and answers the same; anything else is refused.
@@ -165,7 +201,9 @@ class VerifyOwnershipService
                 $superseded[] = $row;
             }
 
-            $hasFeatured = CocAccount::query()->where('user_id', $user->id)->where('is_featured', true)->exists();
+            // Another row of this user's: a holder re-verifying a featured row keeps it featured.
+            $hasFeatured = CocAccount::query()->where('user_id', $user->id)->where('is_featured', true)->whereKeyNot($mine->id)->exists();
+            $statusBefore = $mine->status;
             $mine->forceFill([
                 'status' => CocAccountStatus::Verified,
                 'verified_at' => Date::now(),
@@ -176,6 +214,7 @@ class VerifyOwnershipService
             CocAccountClaim::query()->where('coc_account_id', $mine->id)->where('user_id', $user->id)
                 ->where('status', ClaimStatus::Pending)->update(['status' => ClaimStatus::Succeeded]);
             $claim = $this->claims->record($user, $tag, $mine->id, ClaimStatus::Succeeded);
+            $this->disputes->closeOnVerification($tag, $user);
 
             $this->recount($user->id);
             foreach ($superseded as $row) {
@@ -190,7 +229,7 @@ class VerifyOwnershipService
                 action: AuditAction::CocAccountVerified,
                 subject: AuditSubject::CocAccount,
                 subjectId: $mine->id,
-                before: ['status' => CocAccountStatus::Unverified->value, 'verified_user_ids' => $previous],
+                before: ['status' => $statusBefore->value, 'verified_user_ids' => $previous],
                 after: ['status' => CocAccountStatus::Verified->value, 'verified_user_ids' => [$user->id]],
                 context: ['tag' => $tag->value, 'method' => VerificationMethod::ApiToken->value],
             ));

@@ -41,6 +41,14 @@ Schedule::command('moderation:expire-sanctions')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'moderation:expire-sanctions']));
 
+// Hourly, offset to :25 (specs/13 §5): unanswered disputes go to the admins, abandoned ones close.
+Schedule::command('coc:process-disputes')
+    ->hourlyAt(25)
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'coc:process-disputes']));
+
 Schedule::command('media:sweep-orphans')
     ->hourlyAt(20)
     ->withoutOverlapping()

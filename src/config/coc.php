@@ -98,6 +98,25 @@ return [
         'anomaly_reflag_hours' => 24,
     ],
 
+    // Ownership disputes (specs/13 §5 guardrails).
+    'disputes' => [
+        // Disputes a user may have running at once.
+        'max_open_per_user' => 2,
+        // Denied disputes after which a user may not open another for `bar_days`.
+        'bar_after_denials' => 2,
+        'bar_days' => 90,
+        // Days the holder has to answer before the dispute goes to the admins anyway.
+        'holder_response_days' => 7,
+        // Days a dispute waits on the claimant before it is withdrawn.
+        'claimant_inactive_days' => 30,
+        // Days before a claimant may dispute the same tag again after withdrawing.
+        'reopen_cooldown_days' => 30,
+        // Evidence images per submission (specs/10: 3 per item).
+        'evidence_max' => 3,
+        // Longest statement or note, in characters (specs/07: reason ≤ 1000).
+        'text_max' => 1000,
+    ],
+
     'fake' => [
         // Recorded responses, one file per tag (specs/19 §6).
         'fixtures_path' => base_path('tests/Fixtures/coc'),

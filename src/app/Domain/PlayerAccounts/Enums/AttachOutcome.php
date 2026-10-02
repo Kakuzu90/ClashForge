@@ -19,6 +19,7 @@ enum AttachOutcome: string implements HasLabelAndColor
     case VerifiedElsewhere = 'verified_elsewhere';
     case Unavailable = 'unavailable';
     case RateLimited = 'rate_limited';
+    case TagSuspended = 'tag_suspended';
 
     public function label(): string
     {
@@ -30,6 +31,7 @@ enum AttachOutcome: string implements HasLabelAndColor
             self::VerifiedElsewhere => 'Verified by another user',
             self::Unavailable => 'The game API is unavailable',
             self::RateLimited => 'Too many attempts',
+            self::TagSuspended => 'Suspended while staff review it',
         };
     }
 
@@ -43,6 +45,7 @@ enum AttachOutcome: string implements HasLabelAndColor
             self::VerifiedElsewhere => 'state-warning',
             self::Unavailable => 'state-danger',
             self::RateLimited => 'state-warning',
+            self::TagSuspended => 'state-danger',
         };
     }
 }

@@ -151,7 +151,8 @@ named `media` in `config/filesystems.php`; `media.disk` is the disk name, not th
 Attachment happens when the parent form is submitted (publish base, save account images), inside the
 parent's transaction:
 - assert every media id belongs to the user, is in the right collection, and is `ready` or
-  `processing`;
+  `processing`, and is not already attached to another parent (moving it would change that
+  record, e.g. the evidence of a decided dispute; P2-03);
 - assert the parent's quota (≤2 screenshots, ≤1 video, ≤5 account images, 1 avatar);
 - set `attachable_type/id`, clear `expires_at`, set `position`.
 

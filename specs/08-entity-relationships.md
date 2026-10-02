@@ -98,6 +98,9 @@
 - Rows are **per user** (`UNIQUE (user_id, tag_normalized)`). A transfer promotes the new owner's
   own row and drops the previous holder's row to `unverified`, which keeps its `user_id` so they
   can verify again (owner decision 2026-10-02, P2-02). Snapshot history is read by tag across rows.
+  A dispute transfer (P2-03) does the same: the claimant's own row, else the latest released row,
+  else a new row with the holder's game data, is verified by `admin`. A holder's voluntary release
+  releases their row (`user_id` null), and the claimant then reuses it.
   A released row is reused by the next user who attaches the tag, so its history continues.
 - One featured account per user is `coc_accounts.is_featured` (partial unique); `users` holds no
   pointer to it.

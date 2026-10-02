@@ -113,6 +113,10 @@ function submitClaim() {
                     Nothing was saved. Try again {{ waitText(preview.retryAfter) }}.
                 </UiAlert>
 
+                <UiAlert v-else-if="outcome === 'tag_suspended'" kind="warning" :title="`${preview.tag} is suspended`">
+                    Staff suspended this account after an ownership dispute, so nobody can attach or verify it for now.
+                </UiAlert>
+
                 <UiAlert v-else-if="outcome === 'rate_limited'" kind="warning" title="Too many new tags this hour">
                     You can look up a new tag again {{ waitText(preview.retryAfter) }}. Tags you already looked up still work.
                 </UiAlert>

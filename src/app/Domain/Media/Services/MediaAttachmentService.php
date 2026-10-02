@@ -38,6 +38,12 @@ class MediaAttachmentService
             throw ValidationException::withMessages([$field => 'This upload is not ready to use. Upload the file again.']);
         }
 
+        // Media already belonging to another parent stays there: moving it would change that
+        // record (evidence of a decided dispute, specs/13 §5).
+        if ($media->attachable_id !== null && ($media->attachable_type !== $attachable->getMorphClass() || $media->attachable_id !== $attachable->getKey())) {
+            throw ValidationException::withMessages([$field => 'This upload is already in use. Upload the file again.']);
+        }
+
         $media->forceFill([
             'attachable_type' => $attachable->getMorphClass(),
             'attachable_id' => $attachable->getKey(),

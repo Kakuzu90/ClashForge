@@ -17,6 +17,7 @@ enum VerifyOutcome: string implements HasLabelAndColor
     case NotFound = 'not_found';
     case Unavailable = 'unavailable';
     case RateLimited = 'rate_limited';
+    case TagSuspended = 'tag_suspended';
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum VerifyOutcome: string implements HasLabelAndColor
             self::NotFound => 'No player with that tag',
             self::Unavailable => 'The game API is unavailable',
             self::RateLimited => 'Too many attempts',
+            self::TagSuspended => 'Suspended while staff review it',
         };
     }
 
@@ -37,6 +39,7 @@ enum VerifyOutcome: string implements HasLabelAndColor
             self::NotFound => 'state-warning',
             self::Unavailable => 'state-danger',
             self::RateLimited => 'state-warning',
+            self::TagSuspended => 'state-danger',
         };
     }
 }
