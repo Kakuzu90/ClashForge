@@ -45,4 +45,199 @@ return [
     // Clan badge sizes as named by the API's badgeUrls (specs/09 §8).
     'badge_sizes' => ['small', 'medium', 'large'],
 
+    // Current available data in the API
+    // Heroes equipment in order
+    'heroes_equipments' => [
+        'barbarian_king' => [
+            'barbarian-puppet',
+            'rage-vial',
+            'earthquake-boots',
+            'vampstache',
+            'giant-gauntlet',
+            'spiky-ball',
+            'snake-bracelet',
+            'stick-horse',
+        ],
+        'archer-queen' => [
+            'archer-puppet',
+            'invisibility-vial',
+            'giant-arrow',
+            'healer-puppet',
+            'frozen-arrow',
+            'magic-mirror',
+            'action-figure',
+            'monolith-arrow',
+        ],
+        'minion-prince' => [
+            'henchmen-puppet',
+            'dark-orb',
+            'metal-pants',
+            'noble-iron',
+            'meteor-staff',
+            'dark-crown',
+        ],
+        'grand-warden' => [
+            'eternal tome',
+            'life-gem',
+            'rage-gem',
+            'healing-tome',
+            'heroic torch',
+            'fireball',
+            'lavaloon-puppet',
+        ],
+        'royal-champion' => [
+            'seeking-shield',
+            'royal-gem',
+            'hog-rider-puppet',
+            'haste-vial',
+            'rocket-spear',
+            'electro-boots',
+            'frost-flake',
+        ],
+        'dragon-duke' => [
+            'fire-heart',
+            'flame-blower',
+            'stun-blaster',
+            'electro-fangs',
+            'rocket-backpack',
+            'revenge-deck',
+        ],
+    ],
+
+    // Heroes in order
+    'heroes' => [
+        'barbarian_king',
+        'archer-queen',
+        'minion-prince',
+        'grand-warden',
+        'royal-champion',
+        'dragon-duke',
+    ],
+
+    // Units in order
+    'units' => [
+        'elixir' => [
+            'barbarian',
+            'archer',
+            'giant',
+            'goblin',
+            'wall-breaker',
+            'balloon',
+            'wizard',
+            'healer',
+            'dragon',
+            'pekka',
+            'baby-dragon',
+            'miner',
+            'electro-dragon',
+            'yeti',
+            'dragon-rider',
+            'electro-titan',
+            'root-rider',
+            'thrower',
+            'meteor-golem',
+        ],
+        'dark-elixir' => [
+            'minion',
+            'hog-rider',
+            'valkyrie',
+            'golem',
+            'witch',
+            'lava-hound',
+            'bowler',
+            'ice-golem',
+            'headhunter',
+            'apprentice-warden',
+            'druid',
+            'furnace',
+            'ruin-witch',
+        ],
+    ],
+
+    // Spells in order
+    'spells' => [
+        'elixir' => [
+            'lightning',
+            'healing',
+            'rage',
+            'jump',
+            'freeze',
+            'clone',
+            'invisibility',
+            'recall',
+            'revive',
+            'totem',
+        ],
+        'dark-elixir' => [
+            'poison',
+            'earthquake',
+            'haste',
+            'skeleton',
+            'bat',
+            'overgrowth',
+            'ice-block',
+            'angry',
+        ],
+    ],
+
+    // Pets in order
+    'pets' => [
+        'lassi',
+        'electro-owl',
+        'mighty-yak',
+        'unicorn',
+        'frosty',
+        'diggy',
+        'poison-lizard',
+        'phoenix',
+        'spirit-fox',
+        'angry-jelly',
+        'sneezy',
+        'greedy-raven',
+    ],
+
+    // Siege machines in order
+    'siege-machines' => [
+        'wall-wrecker',
+        'battle-blimp',
+        'stone-slammer',
+        'siege-barracks',
+        'log-launcher',
+        'flame-flinger',
+        'battle-drill',
+        'troop-launcher',
+        'sky-wagon',
+    ],
+
+    // Guardians in order
+    // Note: excluded from the unit list display due to no API data.
+    'guardians' => [
+        'longshot',
+        'smasher',
+        'logger',
+    ],
+
+    // Excluded units: these should not be display in the unit list.
+    'excluded_units' => [
+        'super-barbarian',
+        'super-archer',
+        'sneaky-goblin',
+        'super-wall-breaker',
+        'super-giant',
+        'rocket-balloon',
+        'super-wizard',
+        'super-dragon',
+        'inferno-dragon',
+        'super-minion',
+        'super-valkyrie',
+        'super-witch',
+        'ice-hound',
+        'super-bowler',
+        'super-miner',
+        'super-yeti',
+        'super-hog-rider',
+        'longshot',
+        'smasher',
+        'logger'
+    ],
 ];
