@@ -16,6 +16,7 @@ depends_on: [P2-09, P2-04]
 
 ## Scope
 - **Domain**: refresh through P2-09's sync service with `fresh: true` and `CocPriority::Interactive`, 3 s budget; on timeout dispatch `SyncCocAccountJob` and report "refreshing in the background"; snapshot `source: manual`. Unverified accounts may refresh (09 §6: only by hand).
+- **Sync tier input** (from P2-04): viewing the account page records `coc_accounts.last_viewed_at`, at most one write per account per hour (cache-throttled). An account viewed in the last 24 h syncs on the hot tier (specs/09 §6). This needs a migration and a `SyncTierRules` input.
 - **Policy + Form Request**: `CocAccountPolicy::refresh` (owner only); named limiter per account (`coc-refresh`, 10 min).
 - **UI**: a Refresh button with the last-updated age on the account detail page (P2-04); disabled with the API-unavailable message while the circuit is open; result flash (updated / unchanged / background / not found).
 - Config: `coc.sync.manual_timeout`, `coc.sync.manual_cooldown`.

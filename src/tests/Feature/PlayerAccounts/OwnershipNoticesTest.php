@@ -54,10 +54,15 @@ it('tells the verifier in-app and by email, keyed by the succeeded claim', funct
     $claim = CocAccountClaim::query()->where('user_id', $this->user->id)->where('status', ClaimStatus::Succeeded)->latest('id')->first();
     $notice = ($this->notices)($this->user, NotificationType::CocAccountVerified)->sole();
 
-    expect($notice->data)->toBe(['params' => ['tag' => '#2PQ8GRJC', 'name' => $account->ign]])
+    expect($notice->data)->toBe(['params' => ['tag' => '#2PQ8GRJC', 'name' => $account->ign, 'account' => $account->ulid]])
         ->and(EmailDelivery::query()->where('user_id', $this->user->id)->sole()->event_key)->toBe((string) $claim->id);
-    Mail::assertSent(NonSecurityEmail::class, fn (NonSecurityEmail $mail) => $mail->hasTo($this->user->email)
-        && $mail->notice->title === 'Your Clash of Clans account is verified');
+    Mail::assertSent(NonSecurityEmail::class, function (NonSecurityEmail $mail) use ($account): bool {
+        $mail->assertSeeInHtml('View your account');
+
+        return $mail->hasTo($this->user->email)
+            && $mail->notice->title === 'Your Clash of Clans account is verified'
+            && $mail->notice->url === "/accounts/{$account->ulid}";
+    });
 });
 
 it('queues the verified email on low through the preference-checked job', function () {
@@ -66,7 +71,7 @@ it('queues the verified email on low through the preference-checked job', functi
     ($this->verifyAs)($this->user, 'user-token');
 
     Queue::assertPushedOn('low', SendEmailNotificationJob::class, fn (SendEmailNotificationJob $job) => $job->userId === $this->user->id
-        && $job->type === NotificationType::CocAccountVerified && $job->params === ['tag' => '#2PQ8GRJC', 'name' => CocAccount::query()->sole()->ign]);
+        && $job->type === NotificationType::CocAccountVerified && $job->params === ['tag' => '#2PQ8GRJC', 'name' => CocAccount::query()->sole()->ign, 'account' => CocAccount::query()->sole()->ulid]);
 });
 
 it('sends the previous holder the takeover notice on mail and in-app', function () {
@@ -183,4 +188,12 @@ it('sends no second notice for a refused second verify', function () {
 
     expect(fn () => app(VerifyOwnershipService::class)->verify($this->user, $ulid, 'user-token'))->toThrow(AuthorizationException::class)
         ->and(Notification::query()->count())->toBe(1);
+});
+
+it('links the verified notice to the account page, and keeps older notices without a link', function () {
+    $ulid = CocAccount::factory()->create()->ulid;
+
+    expect(NotificationType::CocAccountVerified->render(['tag' => '#2PQ8GRJC', 'name' => 'Chief', 'account' => $ulid])->url)->toBe("/accounts/{$ulid}")
+        ->and(NotificationType::CocAccountVerified->render(['tag' => '#2PQ8GRJC', 'name' => 'Chief'])->url)->toBeNull()
+        ->and(NotificationType::CocAccountVerified->render(['account' => '../admin'])->url)->toBeNull();
 });

@@ -65,13 +65,13 @@ class SendOwnershipNotice implements ShouldQueue
     }
 
     /**
-     * The tag and in-game name only: never who verified it (specs/16 §4).
+     * The tag, in-game name and the account page's ulid only: never who verified it (specs/16 §4).
      *
-     * @return array{tag: string, name: string}
+     * @return array{tag: string, name: string, account: string}
      */
     private function params(CocAccount $account): array
     {
-        return ['tag' => $account->tag, 'name' => $account->ign];
+        return ['tag' => $account->tag, 'name' => $account->ign, 'account' => $account->ulid];
     }
 
     /**

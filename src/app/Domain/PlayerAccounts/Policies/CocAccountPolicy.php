@@ -2,8 +2,10 @@
 
 namespace App\Domain\PlayerAccounts\Policies;
 
+use App\Domain\Auth\Enums\UserStatus;
 use App\Domain\PlayerAccounts\Enums\CocAccountStatus;
 use App\Domain\PlayerAccounts\Models\CocAccount;
+use App\Domain\Users\Services\PrivacyPolicyResolver;
 use App\Models\User;
 
 /**
@@ -14,6 +16,32 @@ use App\Models\User;
  */
 class CocAccountPolicy
 {
+    public function __construct(private readonly PrivacyPolicyResolver $privacy) {}
+
+    /**
+     * The account page (P2-04). The owner sees their own rows in any status but `released`. Anyone
+     * else, staff included, sees a verified or disputed row only where they may see the owner's
+     * profile with "show accounts" on; a banned or pending-deletion owner hides it (specs/23 §2).
+     * Unverified rows are nobody's business but the owner's (specs/17 §2).
+     */
+    public function view(?User $viewer, CocAccount $account): bool
+    {
+        $owner = $account->user;
+
+        if ($owner === null || $account->status === CocAccountStatus::Released) {
+            return false;
+        }
+
+        if ($viewer !== null && $viewer->id === $owner->id) {
+            return true;
+        }
+
+        return in_array($account->status, [CocAccountStatus::Verified, CocAccountStatus::Disputed], true)
+            && ! in_array($owner->status, [UserStatus::Banned, UserStatus::PendingDeletion], true)
+            && $this->privacy->canView($viewer, $owner)
+            && $this->privacy->settingsFor($owner->id)->showCocAccounts;
+    }
+
     public function attach(User $user): bool
     {
         return $user->hasVerifiedEmail() && $user->allowsAccountWrites();

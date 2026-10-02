@@ -5,7 +5,7 @@
 
 @if ($notice->url !== null)
 <x-mail::button :url="url($notice->url)">
-View upload settings
+{{ $notice->actionLabel ?? 'Open Clash Commons' }}
 </x-mail::button>
 @endif
 

@@ -4,6 +4,7 @@ use App\Domain\Auth\Notifications\PasswordChangedNotification;
 use App\Domain\Auth\Services\AccountDeletionService;
 use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Events\MediaRetriesExhausted;
+use App\Domain\Notifications\Data\RenderedNotificationData;
 use App\Domain\Notifications\Enums\NotificationType;
 use App\Domain\Notifications\Jobs\SendEmailNotificationJob;
 use App\Domain\Notifications\Models\EmailDelivery;
@@ -152,4 +153,11 @@ it('uses the documented queue retry policy with a timeout below retry_after', fu
         ->and($job->afterCommit)->toBeTrue()
         ->and(config('platform.notifications.email_per_day'))->toBe(10)
         ->and(config('platform.notifications.email_counter_ttl'))->toBeGreaterThanOrEqual(86400);
+});
+
+it('labels the email button per notice, with a plain default', function () {
+    $mail = fn (?string $label) => new NonSecurityEmail(new RenderedNotificationData('Title', 'Body', '/somewhere', $label), 'https://example.test/unsubscribe');
+
+    $mail('View your account')->assertSeeInHtml('View your account');
+    $mail(null)->assertSeeInHtml('Open Clash Commons');
 });

@@ -131,7 +131,7 @@ tag, [13 §2](13-claiming-workflow.md)); suspended and released ones stop.
 
 Since P2-09 (owner decisions, 2026-10-02): "owner active" is the later of the last password
 sign-in and the newest session's last request (`UserActivityReader`); "viewed in the last 24 h"
-joins once the account page records views (P2-04). Intervals are `coc.sync.tiers`. Frozen
+joins with P2-20, a throttled `last_viewed_at` write on the account page (P2-04 kept the page read-only). Intervals are `coc.sync.tiers`. Frozen
 retries every 7 days and, after `coc.sync.frozen_max_attempts` (4) failed retries, stops
 (`next_due_at` null); System Health counts it as "stopped syncing" and a later success revives
 it. `sync_states` belongs to CocIntegration behind `SyncSchedule`; the account module picks the
@@ -158,6 +158,12 @@ tier.
   (circuit open, throttled, no healthy key) postpones the account by the API's wait without
   counting a failure, and `coc:sync-accounts` queues nothing while the circuit is open.
 - Clan sync (`coc:sync-clans`) runs hourly for clans with `tracked_reason` set, same pattern.
+
+### Display
+The account page (P2-04) renders from stored data only. It shows an account as stale after
+`coc.sync.not_found_stale` 404s in a row, when `api_synced_at` is older than
+`coc.display.stale_hours` (168), or when it has never synced. Stat deltas compare with the newest
+snapshot at least `coc.display.delta_days` (7) old.
 
 ### Manual refresh
 Rate-limited to 1 per 10 minutes per account (FR-COC-9), executed **synchronously** with a 3-second
@@ -288,7 +294,7 @@ log{malformed_body_bytes}, fake{fixtures_path,valid_token}, request_log{retentio
 cache{player_ttl,player_sync_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
 rate{global_per_second,global_per_minute,per_key_per_second,interactive_share},
 circuit{consecutive_failures,error_rate,window,min_samples,bucket_seconds,probe_interval,max_open_seconds},
-sync{tiers{hot,warm,cold,frozen}, hot_active_days, warm_active_days, batch_size, queue, claim_seconds, backoff_base, not_found_stale, frozen_after, frozen_max_attempts, success_window_minutes, success_alert}, key_rotation{enabled, portal_email, portal_password}
+sync{tiers{hot,warm,cold,frozen}, hot_active_days, warm_active_days, batch_size, queue, claim_seconds, backoff_base, not_found_stale, frozen_after, frozen_max_attempts, success_window_minutes, success_alert}, display{stale_hours, delta_days}, key_rotation{enabled, portal_email, portal_password}
 ```
 
 Every value is environment-overridable. No magic numbers anywhere else in the codebase.

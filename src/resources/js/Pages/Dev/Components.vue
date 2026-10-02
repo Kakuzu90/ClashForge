@@ -9,6 +9,11 @@ import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue'
 import NotificationItem from '@/Components/notifications/NotificationItem.vue';
 import SettingsAvatarCropper from '@/Components/settings/SettingsAvatarCropper.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
+import GameClanChip from '@/Components/game/GameClanChip.vue';
+import GamePlayerCard, { type PlayerCardVariant } from '@/Components/game/GamePlayerCard.vue';
+import GameProgressionGrid from '@/Components/game/GameProgressionGrid.vue';
+import GameThBadge, { type ThBadgeSize } from '@/Components/game/GameThBadge.vue';
+import GameVerifiedBadge from '@/Components/game/GameVerifiedBadge.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiBadge from '@/Components/ui/UiBadge.vue';
@@ -60,6 +65,48 @@ const fallbackAssets: GameAssetData[] = [
     { kind: 'clan_badge', url: null, alt: 'Night Owls clan badge', short: 'NO', width: null, height: null },
 ];
 const brokenAsset: GameAssetData = { kind: 'unit', url: 'data:image/png;base64,broken', alt: 'Barbarian', short: 'B', width: 64, height: 64 };
+type PlayerCard = App.Domain.PlayerAccounts.Data.PlayerCardData;
+const thLevels = [3, 6, 9, 12, 14, 16, 17, 18];
+const thSizes: ThBadgeSize[] = ['sm', 'md', 'lg'];
+const cardVariants: PlayerCardVariant[] = ['hero', 'standard', 'compact'];
+const sampleClan: App.Domain.PlayerAccounts.Data.AccountClanData = { tag: '#2Q8URJ9L', name: 'Night Owls', level: 22, roleLabel: 'Co-leader', badge: fallbackAssets[3] };
+const sampleCard: PlayerCard = {
+    ulid: '01J0000000000000000000SAMP',
+    tag: '#2PQ8GRJC',
+    name: 'Sample Chief',
+    status: 'verified',
+    statusLabel: 'Verified',
+    townHallLevel: 16,
+    townHall: fallbackAssets[1],
+    builderHallLevel: 10,
+    xpLevel: 231,
+    trophies: 5124,
+    warStars: 1480,
+    leagueName: 'Legend League',
+    league: fallbackAssets[2],
+    clan: sampleClan,
+    clanHidden: false,
+    featured: true,
+    stale: false,
+    syncedAt: '2026-10-03T10:00:00+00:00',
+    syncedAgeSeconds: 720,
+};
+const cardStates: { label: string; card: PlayerCard }[] = [
+    { label: 'Verified', card: sampleCard },
+    { label: 'Unverified', card: { ...sampleCard, ulid: '01J0000000000000000000UNVF', status: 'unverified', statusLabel: 'Unverified', featured: false } },
+    { label: 'Disputed', card: { ...sampleCard, ulid: '01J0000000000000000000DISP', status: 'disputed', statusLabel: 'Under review', featured: false } },
+    { label: 'Stale, clan hidden', card: { ...sampleCard, ulid: '01J0000000000000000000STAL', stale: true, syncedAgeSeconds: 259200, clan: null, clanHidden: true } },
+    { label: 'No clan, fields not available', card: { ...sampleCard, ulid: '01J0000000000000000000NULL', clan: null, trophies: null, xpLevel: null, league: null, leagueName: null } },
+];
+const sampleGroup: App.Domain.PlayerAccounts.Data.ProgressionGroupData = {
+    key: 'sample',
+    label: 'Heroes',
+    units: [
+        { name: 'Archer Queen', asset: fallbackAssets[0], level: 95, maxLevel: 95, maxed: true },
+        { name: 'Sample unit', asset: loadedAsset, level: 12, maxLevel: 14, maxed: false },
+        { name: 'Barbarian', asset: brokenAsset, level: 7, maxLevel: null, maxed: false },
+    ],
+};
 const townHalls: SelectOption[] = Array.from({ length: 17 }, (_, i) => ({ value: `th${17 - i}`, label: `Town Hall ${17 - i}` }));
 const categories: SelectOption[] = [
     { value: 'war', label: 'War', hint: 'Built to stop three-star attacks' },
@@ -195,6 +242,9 @@ const sections = [
     'Progress',
     'Steps',
     'Game assets',
+    'Town Hall badges',
+    'Player cards',
+    'Progression grid',
     'Empty state',
     'Notifications',
     'Admin',
@@ -397,6 +447,9 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiStatBlock :value="0" label="Zero" />
                     <UiStatBlock :value="3400" label="Thousands" />
                     <UiStatBlock :value="1250000" label="Millions" />
+                    <UiStatBlock :value="5124" :delta="142" delta-label="Change over the last 7 days" label="Rising" />
+                    <UiStatBlock :value="1480" :delta="-30" delta-label="Change over the last 7 days" label="Falling" />
+                    <UiStatBlock :value="null" label="Not available" />
                 </dl>
             </section>
 
@@ -568,6 +621,53 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                             >{{ asset.alt }} ({{ asset.url === null ? 'fallback' : asset.alt === 'Barbarian' ? 'missing image' : 'loaded' }})</span
                         >
                     </div>
+                </div>
+            </section>
+
+            <section :id="anchor('Town Hall badges')" aria-labelledby="h-th-badges">
+                <h2 id="h-th-badges" class="font-display text-h1">Town Hall badges</h2>
+                <p class="mt-2 max-w-prose text-body text-fg-secondary">
+                    One tier colour per range, the numeral always visible; 17 and above get the gold ring. The large size shows the Town Hall image
+                    when one is resolved. Also: the verified badge and the clan chip.
+                </p>
+                <div class="mt-4 flex flex-col gap-4">
+                    <div v-for="size in thSizes" :key="size" class="flex flex-wrap items-center gap-3">
+                        <GameThBadge v-for="level in thLevels" :key="level" :level="level" :size="size" />
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <GameThBadge :level="16" size="lg" :asset="loadedAsset" />
+                        <GameThBadge :level="10" size="md" builder />
+                        <GameVerifiedBadge :size="16" />
+                        <GameVerifiedBadge :size="24" />
+                        <GameClanChip :clan="sampleClan" />
+                        <GameClanChip :clan="{ ...sampleClan, roleLabel: null, level: null }" />
+                    </div>
+                </div>
+            </section>
+
+            <section :id="anchor('Player cards')" aria-labelledby="h-player-cards">
+                <h2 id="h-player-cards" class="font-display text-h1">Player cards</h2>
+                <div class="mt-4 flex flex-col gap-6">
+                    <div v-for="variant in cardVariants" :key="variant" class="flex flex-col gap-3">
+                        <h3 class="text-h3 text-fg">{{ variant }}</h3>
+                        <div class="grid gap-4" :class="variant === 'hero' ? '' : 'sm:grid-cols-2'">
+                            <div v-for="state in cardStates" :key="state.label" class="flex flex-col gap-1">
+                                <span class="text-xs text-fg-muted uppercase">{{ state.label }}</span>
+                                <GamePlayerCard :card="state.card" :variant="variant" />
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-xs text-fg-muted uppercase">Loading</span>
+                                <GamePlayerCard :card="null" :variant="variant" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section :id="anchor('Progression grid')" aria-labelledby="h-progression">
+                <h2 id="h-progression" class="font-display text-h1">Progression grid</h2>
+                <div class="mt-4">
+                    <GameProgressionGrid :group="sampleGroup" />
                 </div>
             </section>
 

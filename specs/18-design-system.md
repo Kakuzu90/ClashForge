@@ -247,7 +247,8 @@ the asset is unavailable or the category is switched off.
 | 15–16 | `--th-tier-6` | `#F5B800` gold | Endgame |
 | 17+ | `--th-tier-7` | `#FF4D4D` + gold ring | Current max |
 
-Implemented as one component reading a tier map, so a new TH level is a config line.
+Implemented as one component reading a tier map, so a new TH level is a config line: the map is
+`useThTier.ts`, one line per tier, and a level above the top joins the top tier (P2-04).
 
 ## 4. Component inventory
 
@@ -287,7 +288,11 @@ Anatomy: TH badge (corner, tier-coloured), avatar/IGN, player tag in mono, leagu
 trophy/war-star/XP stat blocks, clan chip with role, verified badge, featured star, last-synced
 timestamp.
 States: verified · unverified (desaturated, "unverified" label) · disputed ("under review" ribbon) ·
-stale (dimmed with "data from 3 days ago") · loading skeleton.
+stale (dimmed with "data from 3 days ago") · suspended (owner only, danger pill) · loading skeleton.
+Desaturating and dimming apply to our frame and text only; game assets on the card are never
+filtered or faded (§2.1). The clan row reads "No clan" outside a clan and "Clan not shared" when the
+owner hides it (P2-04). `hero`, `standard` and `compact` shipped with P2-04; `mini` comes with base
+cards (P3-01) and the avatar with profiles (P2-22).
 
 **BaseCard** — screenshot-led.
 Anatomy: 16:9 screenshot with a subtle top-to-bottom scrim, TH badge (top-left), category pill
@@ -301,8 +306,9 @@ sizes sm/md/lg. Optional unmodified Town Hall image slot resolved through `GameA
 falls back to numeral-only.
 
 **StatBlock** — large `--text-stat` number with `tabular-nums`, icon above or left, label below,
-optional delta chip (`+142` green / `-30` red) comparing to the previous snapshot.
-Counts up on first view (respecting reduced-motion).
+optional delta chip (`+142` green / `-30` red) comparing to the previous snapshot (on the account
+page: the newest snapshot at least `coc.display.delta_days` old; no chip for no change; P2-04). A
+missing value reads "Not available". Counts up on first view (respecting reduced-motion; P3-04).
 
 **ResourceCounter** — small icon + number pill used for likes, copies, views, comments. Uses
 **our** icon set: these count platform actions, not game entities, so no game asset belongs here.
@@ -413,7 +419,16 @@ account → sync status footer ("updated 12 minutes ago" + manual refresh button
 *Empty (no images):* owner sees an upload dropzone; others see nothing.
 *Loading:* progression grid skeleton.
 *Error (API stale):* amber banner "Game data is temporarily unavailable — showing data from
-{time}", content still fully rendered.
+{time}", content still fully rendered. It shows beside the site banner, because it carries this
+account's data age; an account that is stale while the API is up gets "This data is out of date"
+instead. Status banners: unverified (owner, with the verify action), under review (the owner gets
+the verify action, which ends the review), suspended (owner), not found in game (P2-04).
+*Grids (P2-04):* a deferred prop. Groups in order: heroes, hero equipment, pets, troops (elixir,
+dark, then any the catalogue does not list, alphabetically), active super troops, siege machines,
+spells, Builder Base (the API's order). Catalogue order is `config/assets.php`, matched by
+`GameAssetCatalogue` (API name → slug, `assets.aliases`); super troops and guardians are in
+`assets.excluded_units`. A new pet or siege machine missing from the catalogue sorts with the troops
+until it is added.
 
 ### Attach account flow (`/accounts/attach`)
 Three steps with a progress indicator: (1) enter tag → confirmation card; (2) in-game token

@@ -41,7 +41,7 @@ beforeEach(function () {
 function inAppRows(User $user): array
 {
     return Notification::query()->where('notifiable_id', $user->id)->orderBy('created_at')->orderBy('id')->get()
-        ->map(fn (Notification $n) => ['type' => $n->type, ...NotificationReadModel::render($n)->toArray()])
+        ->map(fn (Notification $n) => ['type' => $n->type, ...NotificationReadModel::render($n)->only('title', 'body', 'url')->toArray()])
         ->all();
 }
 

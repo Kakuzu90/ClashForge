@@ -81,6 +81,9 @@ level: number | null,
 badgeUrls: Record<string, string>,
 };
 }
+namespace Enums {
+export type ClanRole = 'member' | 'admin' | 'coLeader' | 'leader';
+}
 }
 namespace CocIntegration {
 namespace Data {
@@ -262,6 +265,7 @@ export type RenderedNotificationData = {
 title: string,
 body: string,
 url: string | null,
+actionLabel: string | null,
 };
 }
 namespace Enums {
@@ -324,6 +328,28 @@ export type SchedulerState = 'running' | 'stopped' | 'unknown';
 }
 namespace PlayerAccounts {
 namespace Data {
+export type AccountClanData = {
+tag: string,
+name: string,
+level: number | null,
+roleLabel: string | null,
+badge: App.Domain.GameAssets.Data.GameAssetData,
+};
+export type AccountDetailData = {
+card: App.Domain.PlayerAccounts.Data.PlayerCardData,
+stats: App.Domain.PlayerAccounts.Data.AccountStatData[],
+deltaDays: number,
+notFound: boolean,
+isOwn: boolean,
+canVerify: boolean,
+indexable: boolean,
+};
+export type AccountStatData = {
+key: string,
+label: string,
+value: number | null,
+delta: number | null,
+};
 export type AttachResultData = {
 outcome: App.Domain.PlayerAccounts.Enums.AttachOutcome,
 tag: string,
@@ -356,6 +382,39 @@ status: App.Domain.PlayerAccounts.Enums.CocAccountStatus,
 statusLabel: string,
 townHallLevel: number | null,
 featured: boolean,
+};
+export type PlayerCardData = {
+ulid: string,
+tag: string,
+name: string,
+status: App.Domain.PlayerAccounts.Enums.CocAccountStatus,
+statusLabel: string,
+townHallLevel: number | null,
+townHall: App.Domain.GameAssets.Data.GameAssetData | null,
+builderHallLevel: number | null,
+xpLevel: number | null,
+trophies: number | null,
+warStars: number | null,
+leagueName: string | null,
+league: App.Domain.GameAssets.Data.GameAssetData | null,
+clan: App.Domain.PlayerAccounts.Data.AccountClanData | null,
+clanHidden: boolean,
+featured: boolean,
+stale: boolean,
+syncedAt: string | null,
+syncedAgeSeconds: number | null,
+};
+export type ProgressionGroupData = {
+key: string,
+label: string,
+units: App.Domain.PlayerAccounts.Data.ProgressionUnitData[],
+};
+export type ProgressionUnitData = {
+name: string,
+asset: App.Domain.GameAssets.Data.GameAssetData,
+level: number,
+maxLevel: number | null,
+maxed: boolean,
 };
 export type VerifyResultData = {
 outcome: App.Domain.PlayerAccounts.Enums.VerifyOutcome,

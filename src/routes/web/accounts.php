@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Accounts\AccountController;
 use App\Http\Controllers\Accounts\AttachController;
 use App\Http\Controllers\Accounts\VerificationController;
 use Illuminate\Support\Facades\Route;
@@ -19,3 +20,6 @@ Route::middleware(['auth', 'account.active'])->prefix('accounts')->name('account
         Route::post('/{ulid}/verify', [VerificationController::class, 'verify'])->where('ulid', '[0-9A-Za-z]{26}')->name('verify.store');
     });
 });
+
+// The account page (specs/18 §6): public, the policy decides who sees which account (P2-04).
+Route::get('/accounts/{ulid}', [AccountController::class, 'show'])->where('ulid', '[0-9A-Za-z]{26}')->name('accounts.show');

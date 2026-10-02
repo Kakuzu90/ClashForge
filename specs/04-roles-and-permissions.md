@@ -83,7 +83,9 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
 ### Policies as the only source of truth
 
 - One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `PrivacySettingsPolicy`, `CocAccountPolicy`
-  (`verify`: the user's own `unverified` or `disputed` row, P2-03), `CocAccountDisputePolicy` (open as attach;
+  (`verify`: the user's own `unverified` or `disputed` row, P2-03; `view`: the account page, P2-04: the owner sees
+  their own rows except `released`, anyone else only a `verified` or `disputed` row whose owner's profile they may
+  see with `show_coc_accounts` on and who is not banned or pending deletion; every other case is the unknown-ulid 404), `CocAccountDisputePolicy` (open as attach;
   respond / release / withdraw: the party, with account writes; decide: `resolve-disputes` and not a party;
   without the ability a dispute is a 404),
   `BaseLayoutPolicy`, `BaseCommentPolicy`, `RecruitmentPostPolicy`, `ApplicationPolicy`,
@@ -101,7 +103,8 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
   props; components use them only to show or hide UI. The server re-checks on action. Hiding a
   button is not authorization.
 - Profile visibility has no staff bypass: `/u/{username}` applies the same rules to staff, who see
-  hidden accounts through the admin user detail instead.
+  hidden accounts through the admin user detail instead. The CoC account page `/accounts/{ulid}`
+  follows the same rule (P2-04).
 - The admin user list and detail never show the viewer's own account or any super admin (the
   detail 404s), so staff cannot look up themselves or the platform owners there.
 - Staff abilities live in Gates, one per staff row of §2 (`App\Domain\Auth\Enums\StaffAbility`,

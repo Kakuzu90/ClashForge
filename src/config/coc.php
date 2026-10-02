@@ -147,6 +147,13 @@ return [
         'success_alert' => 0.9,
     ],
 
+    // The account page (P2-04). Data older than `stale_hours` shows as stale; stat deltas compare
+    // with the newest snapshot at least `delta_days` old.
+    'display' => [
+        'stale_hours' => 168,
+        'delta_days' => 7,
+    ],
+
     'fake' => [
         // Recorded responses, one file per tag (specs/19 §6).
         'fixtures_path' => base_path('tests/Fixtures/coc'),

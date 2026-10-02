@@ -102,11 +102,14 @@ enum NotificationType: string implements HasLabelAndColor
                 title: 'An upload could not be processed',
                 body: 'Your '.self::upload($params).' failed to process after several tries. Upload it again.',
                 url: ($params['collection'] ?? null) === 'avatar' ? route('settings.profile.edit', absolute: false) : null,
+                actionLabel: 'View upload settings',
             ),
             self::CocAccountVerified => new RenderedNotificationData(
                 title: 'Your Clash of Clans account is verified',
                 body: ucfirst(self::cocAccount($params, 'your account')).' is now verified on your Clash Commons account.',
-                url: null,
+                // Notices written before the account page (P2-04) carry no `account` and keep no link.
+                url: self::accountUrl($params),
+                actionLabel: 'View your account',
             ),
             // `method` is stored for the dispute decision's wording (P2-03); a token is the only path now.
             self::CocAccountTakenOver => new RenderedNotificationData(
@@ -177,6 +180,18 @@ enum NotificationType: string implements HasLabelAndColor
             $name === null => $tag,
             default => "{$tag} ({$name})",
         };
+    }
+
+    /**
+     * The account page for the `account` ulid param, only for a well-formed ulid.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    private static function accountUrl(array $params): ?string
+    {
+        $ulid = $params['account'] ?? null;
+
+        return is_string($ulid) && preg_match('/^[0-9A-Za-z]{26}$/D', $ulid) === 1 ? route('accounts.show', ['ulid' => $ulid], absolute: false) : null;
     }
 
     /**

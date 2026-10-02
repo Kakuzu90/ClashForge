@@ -49,6 +49,9 @@ return [
     // Clan badge sizes as named by the API's badgeUrls (specs/09 §8).
     'badge_sizes' => ['small', 'medium', 'large'],
 
+    // API name → catalogue slug, for names GameAssetCatalogue::slug() would get wrong (P2-04).
+    'aliases' => [],
+
     // Display order of the catalogue, by pack file name without the extension (`{folder}/{slug}`).
     // Read by the progression grids (P2-04); a test keeps pack 1 in step with these lists.
     // Heroes equipment in order
