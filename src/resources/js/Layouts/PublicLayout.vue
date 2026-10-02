@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import PageTitle from '@/Components/shell/PageTitle.vue';
 import SiteFooter from '@/Components/shell/SiteFooter.vue';
+import CocApiBanner from '@/Components/shell/CocApiBanner.vue';
 import SiteHeader from '@/Components/shell/SiteHeader.vue';
 import SkipLink from '@/Components/shell/SkipLink.vue';
 import UiToaster from '@/Components/ui/UiToaster.vue';
@@ -14,6 +15,7 @@ import UiToaster from '@/Components/ui/UiToaster.vue';
             <template #actions><slot name="header-actions" /></template>
         </SiteHeader>
         <main id="main" tabindex="-1" class="gutter-x mx-auto w-full max-w-[1200px] flex-1 scroll-mt-16 pt-6 md:pt-8">
+            <CocApiBanner class="mb-6" />
             <slot />
         </main>
         <SiteFooter />

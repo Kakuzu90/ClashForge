@@ -232,7 +232,7 @@ restore them), with an audit entry.
 | Claimant verifies while their own dispute is open | Dispute auto-resolves as `auto_resolved`; transfer happens through the normal verification path |
 | Holder is banned mid-dispute | Dispute continues; a banned holder cannot win — transfer proceeds if the claimant's evidence is adequate, otherwise the tag is suspended |
 | Tag verified by a user who is later banned for fraud | Tag `released` after 30 days; any prior disputants are notified that it is claimable |
-| CoC API is down when a user wants to verify | Verification is disabled with an explicit message; nothing is half-written; attach can still create an `unverified` row from cached data if we have it |
+| CoC API is down when a user wants to verify | Verification is disabled with an explicit message ("Verification is paused", on the token step and the conflict card, while the shared `cocApi` prop is set; P2-10); nothing is half-written; attach can still create an `unverified` row from cached data if we have it |
 | Same person, two website accounts, one tag | The second verification supersedes the first; allowed, logged, and visible to admins as a duplicate-account signal |
 | Verified account's user deletes their website account | Tag `released` at the end of the deletion window |
 | Dispute evidence contains a real-world ID document | Moderator policy: do not accept, delete the media, instruct the claimant to use a token or an in-game screenshot. We do not want to hold identity documents |

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CocApiBanner from '@/Components/shell/CocApiBanner.vue';
 import AdminNav from '@/Components/admin/AdminNav.vue';
 import PageTitle from '@/Components/shell/PageTitle.vue';
 import SiteFooter from '@/Components/shell/SiteFooter.vue';
@@ -65,6 +66,7 @@ watch(url, () => (menuOpen.value = false));
             </nav>
             <div class="flex min-w-0 flex-1 flex-col md:overflow-y-auto">
                 <main id="main" tabindex="-1" class="gutter-x min-w-0 flex-1 py-4">
+                    <CocApiBanner class="mb-4" />
                     <slot />
                 </main>
                 <SiteFooter />

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export type StateKind = 'info' | 'success' | 'warning' | 'danger' | 'reward';
+export type StateKind = 'info' | 'success' | 'warning' | 'danger' | 'reward' | 'maintenance';
 
 defineProps<{ kind: StateKind }>();
 
@@ -9,6 +9,7 @@ const colour: Record<StateKind, string> = {
     warning: 'text-warning',
     danger: 'text-danger',
     reward: 'text-brand',
+    maintenance: 'text-warning',
 };
 </script>
 
@@ -30,6 +31,15 @@ const colour: Record<StateKind, string> = {
         <template v-else-if="kind === 'danger'">
             <path d="M10 2.5l8 14.5H2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
             <path d="M10 8v4M10 14.4v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </template>
+        <template v-else-if="kind === 'maintenance'">
+            <path
+                d="M12.6 2.4a4 4 0 0 0-4.9 5.3l-5.4 5.4a1.6 1.6 0 0 0 2.3 2.3l5.4-5.4a4 4 0 0 0 5.3-4.9l-2.4 2.4-2.1-.6-.6-2.1z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+            />
         </template>
         <path v-else d="M10 2l2.4 5.1 5.6.6-4.2 3.8 1.2 5.5L10 14.2 5 17l1.2-5.5L2 7.7l5.6-.6z" fill="currentColor" />
     </svg>

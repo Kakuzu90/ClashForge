@@ -34,7 +34,23 @@ type Props = App.Http.Data.Admin.AdminDashboardPageData & {
     signups?: App.Domain.Auth.Data.SignupStatsData;
     failedJobs?: App.Support.Health.FailedJobsSummaryData;
     storage?: App.Domain.Media.Data.MediaStorageData;
+    cocApiHealth?: App.Domain.CocIntegration.Data.CocApiHealthData;
 };
+
+const cocApiHealth = (overrides: Partial<App.Domain.CocIntegration.Data.CocApiHealthData> = {}): App.Domain.CocIntegration.Data.CocApiHealthData => ({
+    state: 'closed',
+    reason: null,
+    openUntil: null,
+    keysHealthy: 2,
+    keysTotal: 3,
+    windowHours: 24,
+    calls: 1200,
+    cacheHits: 3400,
+    failures: 30,
+    failureRate: 0.025,
+    topError: 'timeout',
+    ...overrides,
+});
 
 const signups: App.Domain.Auth.Data.SignupStatsData = {
     last24Hours: { total: 3, verified: 2 },
@@ -78,7 +94,7 @@ describe('Admin/Dashboard', () => {
     it('shows a skeleton per panel while they load', () => {
         const wrapper = render({ platformStats: true });
 
-        expect(wrapper.findAll('[role="status"]').map((node) => node.text())).toEqual(['Loading sign-ups', 'Loading failed jobs', 'Loading media storage']);
+        expect(wrapper.findAll('[role="status"]').map((node) => node.text())).toEqual(['Loading sign-ups', 'Loading failed jobs', 'Loading the API panel', 'Loading media storage']);
     });
 
     it('shows the counts, sizes and verified share once loaded', () => {
@@ -111,6 +127,29 @@ describe('Admin/Dashboard', () => {
         expect(text).not.toContain('No failed jobs');
     });
 
+    it('shows the API state, keys and the last day of calls', () => {
+        const text = render({ platformStats: true, cocApiHealth: cocApiHealth() }, ['cocApiHealth']).text();
+
+        expect(text).toContain('Available');
+        expect(text).toContain('2 of 3 keys healthy');
+        expect(text).toContain('1,200');
+        expect(text).toContain('3,400 from cache');
+        expect(text).toContain('2.5% of calls');
+        expect(text).toContain('timeout');
+    });
+
+    it('says when the API is down and when it tries again, and when there were no calls', () => {
+        const open = render(
+            { platformStats: true, cocApiHealth: cocApiHealth({ state: 'open', reason: 'maintenance', openUntil: '2026-10-02T12:10:00+00:00', calls: 0, cacheHits: 0, failures: 0, failureRate: null, topError: null }) },
+            ['cocApiHealth'],
+        ).text();
+
+        expect(open).toContain('Unavailable');
+        expect(open).toContain('Maintenance');
+        expect(open).toContain('next try');
+        expect(open).toContain('No calls in the last 24 hours.');
+    });
+
     it('does not flag a rate at or under the line', () => {
         expect(render({ platformStats: true, failedJobs: failedJobs({ lastHour: 20 }) }, ['failedJobs']).text()).not.toContain('an hour');
     });
@@ -122,10 +161,11 @@ describe('Admin/Dashboard', () => {
         await nextTick();
 
         const alerts = wrapper.findAll('[role="alert"]').map((node) => node.text());
-        expect(alerts).toHaveLength(2);
+        expect(alerts).toHaveLength(3);
         expect(alerts[0]).toContain("Failed jobs didn't load");
-        expect(alerts[1]).toContain("Media storage didn't load");
-        expect(alerts[1]).toContain('req-dash-1');
+        expect(alerts[1]).toContain("The API panel didn't load");
+        expect(alerts[2]).toContain("Media storage didn't load");
+        expect(alerts[2]).toContain('req-dash-1');
         expect(wrapper.text()).toContain('1,204');
     });
 
@@ -136,6 +176,6 @@ describe('Admin/Dashboard', () => {
         await nextTick();
         await wrapper.findAll('button').find((button) => button.text() === 'Try again')!.trigger('click');
 
-        expect(router.reload).toHaveBeenCalledWith({ only: ['failedJobs', 'storage'] });
+        expect(router.reload).toHaveBeenCalledWith({ only: ['failedJobs', 'storage', 'cocApiHealth'] });
     });
 });

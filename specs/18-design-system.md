@@ -271,7 +271,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 | **Steps** | numbered steps of a short fixed flow (`UiSteps`, the attach flow; P2-11) | done, current (`aria-current="step"`), upcoming |
 | **Skeleton** | text-line, card, avatar, stat, media | shimmer (disabled under reduced-motion) |
 | **Empty state** | with illustration slot, title, body, primary action | — |
-| **Alert / Banner** | info, warning, danger, maintenance | dismissible |
+| **Alert / Banner** | info, warning, danger, maintenance (a wrench outline, so the kind reads from the shape as well as the colour) | dismissible (`dismissible` adds a close button; the parent decides what dismissing means). The site's Clash of Clans API banner sits at the top of every layout's main area and stays dismissed for the rest of the tab's session while that outage lasts (P2-10) |
 | **Icon** | 16/20/24, from one original outline+solid set — platform iconography only | — |
 | **GameAsset** | unit / th / clan-badge / league; sizes 24/32/48/64 | loaded, fallback (our placeholder shape per kind + short text: initials or the TH numeral), missing (image error → fallback). Renders assets unmodified via `GameAssetResolver` (§2.3): scaled only, never rounded, bordered or filtered; accessible name required |
 
@@ -514,7 +514,7 @@ network failure becomes an inline alert with the `X-Request-Id` instead of Inert
 a 429 from `admin-search` becomes a "wait a moment" warning).
 *Dashboard (`/admin`):* one panel per FR-ADMIN-5 surface, each its own deferred prop in its own
 group, with its own skeleton, empty state ("No failed jobs in the last 24 hours") and inline error;
-a failed panel's "Try again" reloads every panel still missing. Panels sit behind
+a failed panel's "Try again" reloads every panel still missing. The Clash of Clans API panel (P2-10) is one of them. Panels sit behind
 `view-platform-stats` (admin+) and are left out of the response for anyone else; moderators see an
 empty state until the report queue lands (P3-06). Sizes in decimal units (1 GB = 1000 MB), as
 the bucket bills. Nothing on it is cached or polled.

@@ -73,6 +73,21 @@ export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pen
 }
 }
 namespace CocIntegration {
+namespace Data {
+export type CocApiHealthData = {
+state: App.Domain.CocIntegration.Enums.CocCircuitState,
+reason: App.Domain.CocIntegration.Enums.CocCircuitReason | null,
+openUntil: string | null,
+keysHealthy: number,
+keysTotal: number,
+windowHours: number,
+calls: number,
+cacheHits: number,
+failures: number,
+failureRate: number | null,
+topError: string | null,
+};
+}
 namespace Enums {
 export type CocCircuitReason = 'failures' | 'maintenance';
 export type CocCircuitState = 'closed' | 'open' | 'half_open';
@@ -360,6 +375,9 @@ username: string,
 avatarUrl: string | null,
 emailVerified: boolean,
 };
+export type CocApiNoticeData = {
+reason: App.Domain.CocIntegration.Enums.CocCircuitReason,
+};
 export type SharedPropsData = {
 auth: App.Http.Data.AuthData,
 flash: {
@@ -368,6 +386,7 @@ error: string | null,
 },
 unreadCount: number | null,
 features: Record<string, boolean>,
+cocApi: App.Http.Data.CocApiNoticeData | null,
 };
 namespace Account {
 export type AccountStatusPageData = {

@@ -7,6 +7,7 @@ import UiCard from '@/Components/ui/UiCard.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiSteps from '@/Components/ui/UiSteps.vue';
 import { focusFirstError } from '@/Composables/useFirstErrorFocus';
+import { usePageProps } from '@/Composables/usePageProps';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { store } from '@/routes/accounts/verify';
 import { useForm } from '@inertiajs/vue3';
@@ -20,8 +21,11 @@ const props = defineProps<{ account: Props['account']; result: Props['result'] }
 const form = useForm({ api_token: '' });
 const formEl = ref<HTMLFormElement | null>(null);
 const message = computed(() => verifyMessage(props.result));
+// specs/13 §9: verification is paused while the API is unavailable; the field keeps its value.
+const { cocApi } = usePageProps();
 
 function submit() {
+    if (cocApi.value) return;
     // The token is good once and expires in minutes: never keep it in the field after a submit.
     form.post(store(props.account.ulid).url, {
         preserveScroll: true,
@@ -44,7 +48,10 @@ function submit() {
 
         <UiCard class="flex flex-col gap-5 p-4 sm:p-6">
             <TokenSteps />
-            <UiAlert v-if="message" :kind="message.kind" :title="message.title">{{ message.body }}</UiAlert>
+            <UiAlert v-if="cocApi" kind="maintenance" title="Verification is paused">
+                Clash of Clans is unavailable right now. Nothing you entered is lost; try again once it is back.
+            </UiAlert>
+            <UiAlert v-else-if="message" :kind="message.kind" :title="message.title">{{ message.body }}</UiAlert>
             <form ref="formEl" class="flex flex-col gap-4" novalidate @submit.prevent="submit">
                 <UiInput
                     v-model="form.api_token"
@@ -55,9 +62,10 @@ function submit() {
                     :maxlength="64"
                     required
                     autofocus
+                    :disabled="!!cocApi"
                     :error="form.errors.api_token"
                 />
-                <UiButton type="submit" block :loading="form.processing">Verify</UiButton>
+                <UiButton type="submit" block :loading="form.processing" :disabled="!!cocApi">Verify</UiButton>
             </form>
         </UiCard>
     </div>

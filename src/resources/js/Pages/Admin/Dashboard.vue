@@ -25,9 +25,20 @@ const props = defineProps<{
     signups?: App.Domain.Auth.Data.SignupStatsData;
     failedJobs?: App.Support.Health.FailedJobsSummaryData;
     storage?: App.Domain.Media.Data.MediaStorageData;
+    cocApiHealth?: App.Domain.CocIntegration.Data.CocApiHealthData;
 }>();
 
-const PANELS = ['signups', 'failedJobs', 'storage'] as const;
+const PANELS = ['signups', 'failedJobs', 'storage', 'cocApiHealth'] as const;
+
+const API_STATE: Record<App.Domain.CocIntegration.Enums.CocCircuitState, { label: string; tone: 'success' | 'warning' | 'danger' }> = {
+    closed: { label: 'Available', tone: 'success' },
+    half_open: { label: 'Recovering', tone: 'warning' },
+    open: { label: 'Unavailable', tone: 'danger' },
+};
+
+function percent(rate: number): string {
+    return new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 }).format(rate);
+}
 
 const visitError = useVisitError();
 
@@ -138,6 +149,52 @@ const storageColumns: AdminColumn[] = [
                                 <time :datetime="row.lastFailedAt">{{ formatDateTime(row.lastFailedAt) }}</time>
                             </template>
                         </AdminTable>
+                    </div>
+                </Deferred>
+            </AdminPanel>
+
+            <AdminPanel title="Clash of Clans API" description="Our calls to the game API. The sync success rate joins once syncing starts.">
+                <Deferred data="cocApiHealth">
+                    <template #fallback>
+                        <UiAlert v-if="visitError" kind="danger" title="The API panel didn't load">
+                            <p v-if="visitError.requestId">
+                                If it keeps failing, quote request id <span class="font-semibold">{{ visitError.requestId }}</span>.
+                            </p>
+                            <UiButton class="mt-3" variant="secondary" size="sm" @click="retry()">Try again</UiButton>
+                        </UiAlert>
+                        <UiSkeleton v-else label="Loading the API panel" :lines="3" />
+                    </template>
+
+                    <div v-if="cocApiHealth" class="flex flex-col gap-3">
+                        <div class="flex flex-wrap items-center gap-2 text-sm">
+                            <UiPill :tone="API_STATE[cocApiHealth.state].tone" :label="API_STATE[cocApiHealth.state].label" />
+                            <span v-if="cocApiHealth.reason" class="text-fg-secondary">
+                                {{ cocApiHealth.reason === 'maintenance' ? 'Maintenance' : 'Too many failures' }}
+                            </span>
+                            <span v-if="cocApiHealth.state === 'open' && cocApiHealth.openUntil" class="text-fg-secondary">
+                                next try <time :datetime="cocApiHealth.openUntil">{{ formatDateTime(cocApiHealth.openUntil) }}</time>
+                            </span>
+                            <span class="text-fg-secondary">· {{ cocApiHealth.keysHealthy }} of {{ cocApiHealth.keysTotal }} keys healthy</span>
+                        </div>
+                        <p v-if="cocApiHealth.calls === 0 && cocApiHealth.cacheHits === 0" class="text-sm text-fg-secondary">
+                            No calls in the last {{ cocApiHealth.windowHours }} hours.
+                        </p>
+                        <dl v-else class="grid grid-cols-3 gap-3">
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-sm text-fg-secondary">Calls, {{ cocApiHealth.windowHours }} h</dt>
+                                <dd class="text-h3 text-fg tabular-nums">{{ formatCount(cocApiHealth.calls) }}</dd>
+                                <dd class="text-sm text-fg-secondary">{{ formatCount(cocApiHealth.cacheHits) }} from cache</dd>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-sm text-fg-secondary">Failures</dt>
+                                <dd class="text-h3 text-fg tabular-nums">{{ formatCount(cocApiHealth.failures) }}</dd>
+                                <dd v-if="cocApiHealth.failureRate !== null" class="text-sm text-fg-secondary">{{ percent(cocApiHealth.failureRate) }} of calls</dd>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-sm text-fg-secondary">Most common error</dt>
+                                <dd class="text-body break-all text-fg">{{ cocApiHealth.topError ?? 'None' }}</dd>
+                            </div>
+                        </dl>
                     </div>
                 </Deferred>
             </AdminPanel>

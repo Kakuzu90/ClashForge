@@ -6,11 +6,13 @@ import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const posted: { url: string; data: Record<string, unknown> }[] = [];
+const shared: { cocApi: { reason: string } | null } = { cocApi: null };
 
 vi.mock('@inertiajs/vue3', async () => {
     const { reactive } = await import('vue');
     return {
         Link: { props: ['href'], template: '<a :href="href"><slot /></a>' },
+        usePage: () => ({ url: '/accounts/attach', props: shared }),
         useForm: (initial: Record<string, unknown>) => {
             const form = reactive({
                 ...initial,
@@ -29,6 +31,7 @@ vi.mock('@inertiajs/vue3', async () => {
 
 afterEach(() => {
     posted.length = 0;
+    shared.cocApi = null;
 });
 
 type Page = App.Http.Data.Accounts.AttachPageData;
@@ -113,6 +116,19 @@ describe('Accounts/Attach', () => {
             props: page({ preview: { outcome: 'ready', tag: '#2PQ8GRJC', player: { ...player, stale: true }, accountUlid: null, holderUsername: null, retryAfter: null } }),
         });
         expect(wrapper.text()).toContain('The game is not answering, so this is saved data from');
+    });
+
+    it('pauses the conflict card while the API is down, and keeps the lookup open', async () => {
+        shared.cocApi = { reason: 'failures' };
+        const wrapper = mount(Attach, {
+            props: page({ preview: { outcome: 'verified_elsewhere', tag: '#2PQ8GRJC', player: null, accountUlid: null, holderUsername: null, retryAfter: null } }),
+        });
+
+        expect(wrapper.text()).toContain('Verification is paused');
+        expect(wrapper.findAll('input').at(-1)!.attributes('disabled')).toBeDefined();
+        expect(wrapper.findAll('input')[0]!.attributes('disabled')).toBeUndefined();
+        await wrapper.findAll('form').at(-1)!.trigger('submit');
+        expect(posted).toEqual([]);
     });
 
     it('names a visible holder', () => {

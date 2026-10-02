@@ -77,6 +77,11 @@ return [
         'stale_ttl' => 86400,
     ],
 
+    // The admin dashboard's API panel (FR-ADMIN-5): hours of `coc_api_requests` it sums.
+    'health' => [
+        'window_hours' => 24,
+    ],
+
     'request_log' => [
         // `coc_api_requests` rows older than this are pruned (specs/07).
         'retention_days' => 7,

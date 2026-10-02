@@ -518,6 +518,9 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiAlert kind="success" title="Success alert">With a title and supporting text.</UiAlert>
                     <UiAlert kind="warning" title="Warning alert">Something needs attention soon.</UiAlert>
                     <UiAlert kind="danger" title="Danger alert">Something went wrong and needs action.</UiAlert>
+                    <UiAlert kind="maintenance" title="Maintenance alert" dismissible @dismiss="push('Dismissed', { kind: 'info' })">
+                        A service we depend on is down. Dismissible.
+                    </UiAlert>
                 </div>
             </section>
 

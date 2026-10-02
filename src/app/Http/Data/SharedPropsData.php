@@ -20,5 +20,6 @@ class SharedPropsData extends Data
         public array $flash,
         public ?int $unreadCount,
         public array $features,
+        public ?CocApiNoticeData $cocApi = null,
     ) {}
 }

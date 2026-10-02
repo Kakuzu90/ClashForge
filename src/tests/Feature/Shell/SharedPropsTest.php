@@ -22,7 +22,7 @@ it('shares flash messages from the session', function () {
 it('never exposes private keys in shared props', function () {
     $props = $this->get('/')->viewData('page')['props'];
 
-    expect(array_keys($props))->toEqualCanonicalizing(['errors', 'auth', 'flash', 'unreadCount', 'features', 'meta'])
+    expect(array_keys($props))->toEqualCanonicalizing(['errors', 'auth', 'flash', 'unreadCount', 'features', 'cocApi', 'meta'])
         ->and(json_encode($props))->not->toContain('email', 'password', 'ip', 'role', 'token');
 });
 

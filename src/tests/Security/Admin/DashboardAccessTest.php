@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\CocIntegration\Support\CocApiKey;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -10,7 +11,7 @@ use Illuminate\Testing\TestResponse;
 // admins), specs/11 "Data exposure via page props": aggregates only, never a job payload,
 // exception text or an email.
 
-const DASHBOARD_PANELS = ['signups', 'failedJobs', 'storage'];
+const DASHBOARD_PANELS = ['signups', 'failedJobs', 'storage', 'cocApiHealth'];
 
 function partialDashboard(User $viewer, string $prop): TestResponse
 {
@@ -59,7 +60,8 @@ it('sends suspended staff to the notice and signs banned staff out', function (s
     $this->assertGuest();
 })->with(DASHBOARD_PANELS);
 
-it('never puts job payloads, exception text or emails in the panels', function () {
+it('never puts job payloads, exception text, emails or API keys in the panels', function () {
+    config(['coc.tokens' => ['sk_coc_secret_token']]);
     User::factory()->create(['email' => 'newcomer@example.com']);
     DB::table((string) config('queue.failed.table'))->insert([
         'uuid' => (string) Str::uuid(),
@@ -79,5 +81,8 @@ it('never puts job payloads, exception text or emails in the panels', function (
         ->and($props)->not->toContain('sk_live_private_token')
         ->and($props)->not->toContain('RuntimeException')
         ->and($props)->not->toContain('payload')
-        ->and($props)->not->toContain('uuid');
+        ->and($props)->not->toContain('uuid')
+        ->and($props)->toContain('keysTotal')
+        ->and($props)->not->toContain('sk_coc_secret_token')
+        ->and($props)->not->toContain(CocApiKey::fromToken('sk_coc_secret_token')->id);
 });

@@ -74,17 +74,18 @@ it('renders the dashboard for staff', function (string $role) {
         );
 })->with(['admin', 'superAdmin']);
 
-it('gives admins the three panels as separate deferred props', function () {
+it('gives admins the four panels as separate deferred props', function () {
     $this->actingAs($this->admin)->get('/admin')
         ->assertInertia(fn (Assert $page) => $page
             ->where('platformStats', true)
             ->missing('signups')
             ->missing('failedJobs')
-            ->missing('storage'));
+            ->missing('storage')
+            ->missing('cocApiHealth'));
 
     $deferred = $this->actingAs($this->admin)->get('/admin')->viewData('page')['deferredProps'];
 
-    expect($deferred)->toBe(['signups' => ['signups'], 'failedJobs' => ['failedJobs'], 'storage' => ['storage']]);
+    expect($deferred)->toBe(['signups' => ['signups'], 'failedJobs' => ['failedJobs'], 'storage' => ['storage'], 'cocApiHealth' => ['cocApiHealth']]);
 });
 
 it('counts sign-ups per window at the edges, deleted and unverified ones included', function () {
@@ -210,7 +211,7 @@ it('keeps each panel within the query budget', function (string $prop) {
     loadPanel($this->admin, $prop)->assertOk();
 
     expect(count(DB::getQueryLog()))->toBeLessThanOrEqual(15);
-})->with(['signups', 'failedJobs', 'storage']);
+})->with(['signups', 'failedJobs', 'storage', 'cocApiHealth']);
 
 it('reads its limits from config', function () {
     expect(config('platform.admin.failed_jobs_alert_per_hour'))->toBe(20)

@@ -216,4 +216,8 @@ can tell the difference between "the user is lying" and "sync has been broken si
 (P2-06, with the failed-job list and its retry / delete). Until then the admin dashboard's
 failed-jobs panel (P1-13) shows failures in the last hour and 24 h, flags the hour above the
 alert line (`platform.admin.failed_jobs_alert_per_hour`) and lists the most failed job classes by
-the payload's `displayName`; payloads and exception text never reach the page.
+the payload's `displayName`; payloads and exception text never reach the page. Its Clash of Clans
+API panel (P2-10) shows the breaker state (and the next try while open), healthy keys of the
+total, and the last `coc.health.window_hours` (24) of `coc_api_requests`: calls, cache hits,
+failures as the breaker counts them (timeout or 5xx; 403, 429 and 404 are not) and the most
+common error code. The CoC sync success rate joins that panel with P2-09.

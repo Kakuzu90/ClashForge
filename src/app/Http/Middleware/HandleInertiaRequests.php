@@ -3,10 +3,13 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Auth\Enums\StaffAbility;
+use App\Domain\CocIntegration\Enums\CocCircuitState;
+use App\Domain\CocIntegration\Services\CocApiStatus;
 use App\Domain\Notifications\Queries\NotificationReadModel;
 use App\Domain\Users\Queries\ProfileReadModel;
 use App\Http\Data\AuthData;
 use App\Http\Data\AuthUserData;
+use App\Http\Data\CocApiNoticeData;
 use App\Http\Data\SharedPropsData;
 use Closure;
 use Illuminate\Http\Request;
@@ -78,11 +81,23 @@ class HandleInertiaRequests extends Middleware
             ],
             unreadCount: $user === null ? null : app(NotificationReadModel::class)->unreadCount($user),
             features: [],
+            cocApi: $this->cocApiNotice(),
         );
 
         return [
             ...parent::share($request),
             ...$shared->toArray(),
         ];
+    }
+
+    /**
+     * Null while the API is available; half-open counts, since the next call is the probe
+     * (specs/09 §7). One cache read, never an API call.
+     */
+    private function cocApiNotice(): ?CocApiNoticeData
+    {
+        $state = app(CocApiStatus::class)->state();
+
+        return $state->state === CocCircuitState::Open && $state->reason !== null ? new CocApiNoticeData($state->reason) : null;
     }
 }

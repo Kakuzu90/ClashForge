@@ -8,6 +8,7 @@ import UiCard from '@/Components/ui/UiCard.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiSteps from '@/Components/ui/UiSteps.vue';
 import { focusFirstError } from '@/Composables/useFirstErrorFocus';
+import { usePageProps } from '@/Composables/usePageProps';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { verify } from '@/routes/accounts';
 import { preview as previewRoute, store, verifyTag } from '@/routes/accounts/attach';
@@ -29,6 +30,8 @@ const claimEl = ref<HTMLFormElement | null>(null);
 
 const outcome = computed(() => props.preview?.outcome ?? null);
 const claimMessage = computed(() => verifyMessage(props.verifyResult));
+// specs/13 §9: token verification is paused while the API is unavailable; lookup and attach are not.
+const { cocApi } = usePageProps();
 
 function submitLookup() {
     lookup.post(previewRoute().url, { preserveScroll: true, onError: () => focusFirstError(lookupEl.value) });
@@ -40,6 +43,7 @@ function submitAttach() {
 }
 
 function submitClaim() {
+    if (cocApi.value) return;
     claim.tag = props.preview?.tag ?? '';
     // The token is good once and expires in minutes: never keep it in the field after a submit.
     claim.post(verifyTag().url, {
@@ -124,7 +128,10 @@ function submitClaim() {
                             If this is your account, verify it with your in-game API token. That moves it to you straight away.
                         </p>
                         <TokenSteps />
-                        <UiAlert v-if="claimMessage" :kind="claimMessage.kind" :title="claimMessage.title">{{ claimMessage.body }}</UiAlert>
+                        <UiAlert v-if="cocApi" kind="maintenance" title="Verification is paused">
+                            Clash of Clans is unavailable right now. Nothing you entered is lost; try again once it is back.
+                        </UiAlert>
+                        <UiAlert v-else-if="claimMessage" :kind="claimMessage.kind" :title="claimMessage.title">{{ claimMessage.body }}</UiAlert>
                         <form ref="claimEl" class="flex flex-col gap-4" novalidate @submit.prevent="submitClaim">
                             <UiInput
                                 v-model="claim.api_token"
@@ -134,9 +141,10 @@ function submitClaim() {
                                 spellcheck="false"
                                 :maxlength="64"
                                 required
+                                :disabled="!!cocApi"
                                 :error="claim.errors.api_token ?? claim.errors.tag"
                             />
-                            <UiButton type="submit" block :loading="claim.processing">Verify with token</UiButton>
+                            <UiButton type="submit" block :loading="claim.processing" :disabled="!!cocApi">Verify with token</UiButton>
                         </form>
                     </UiCard>
                 </template>

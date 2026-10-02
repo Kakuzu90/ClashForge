@@ -173,6 +173,12 @@ timeout so the user sees the result; on timeout it falls back to dispatching a j
   answers from calls admitted earlier are ignored.
 - `CocApiStatus` exposes the state (closed / open / half_open, reason, `openUntil`) to other modules;
   half-open counts as available.
+- The site banner (P2-10) is the shared Inertia prop `cocApi`: `{ reason }` while open, else null,
+  for every visitor, one cache read per request and never an API call. It names the reason only:
+  `openUntil` is the next probe unless Supercell announced an end, and the two look the same, so
+  the banner shows no time; admins see it on the dashboard's API panel. While it is set, token
+  verification is paused in the UI (the server refuses it anyway, as `unavailable`); lookup and
+  attach stay on.
 - During maintenance windows the breaker is opened explicitly for the announced duration —
   Supercell's maintenance is frequent and scheduled; the platform must be boring about it.
 
@@ -262,7 +268,7 @@ Full state machine, conflict and dispute handling: [13-claiming-workflow.md](13-
 
 ```
 driver (fake|http), base_url, tokens[], timeouts{connect,total}, key_pool{unhealthy_ttl,cursor_ttl,id_length},
-log{malformed_body_bytes}, fake{fixtures_path,valid_token}, request_log{retention_days},
+log{malformed_body_bytes}, fake{fixtures_path,valid_token}, request_log{retention_days}, health{window_hours},
 cache{player_ttl,player_sync_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
 rate{global_per_second,global_per_minute,per_key_per_second,interactive_share},
 circuit{consecutive_failures,error_rate,window,min_samples,bucket_seconds,probe_interval,max_open_seconds},

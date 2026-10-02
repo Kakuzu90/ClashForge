@@ -10,6 +10,7 @@ export function usePageProps() {
         can: computed(() => page.props.auth?.can ?? {}),
         flash: computed(() => page.props.flash),
         unreadCount: computed(() => page.props.unreadCount),
+        cocApi: computed(() => page.props.cocApi ?? null),
         url: computed(() => page.url),
     };
 }
