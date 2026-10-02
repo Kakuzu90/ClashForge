@@ -1,5 +1,10 @@
 <?php
 
+use App\Domain\Media\Enums\MediaCollection;
+use App\Domain\Media\Enums\VariantName;
+use App\Domain\Media\Models\Media;
+use App\Domain\Media\Models\MediaVariant;
+use App\Domain\Users\Models\Profile;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +66,7 @@ it('lists every account newest first, with labels and no private fields', functi
         ->and($rows[0])->toBe([
             'ulid' => $chief->ulid,
             'username' => 'chief',
+            'avatarUrl' => null,
             'email' => 'chief@example.com',
             'emailVerified' => true,
             'roleLabel' => 'User',
@@ -203,8 +209,23 @@ it('keeps the list within the query budget', function () {
     expect(count(DB::getQueryLog()))->toBeLessThanOrEqual(25);
 });
 
+it('shows each account\'s ready avatar, within the query budget', function () {
+    $withAvatar = User::factory()->create(['username' => 'pictured']);
+    $media = Media::factory()->collection(MediaCollection::Avatar)->ready()->create(['user_id' => $withAvatar->id]);
+    MediaVariant::factory()->create(['media_id' => $media->id, 'variant' => VariantName::Thumb->value, 'path' => "public/avatar/{$media->ulid}/thumb.webp", 'width' => 48, 'height' => 48]);
+    Profile::query()->whereKey($withAvatar->id)->update(['avatar_media_id' => $media->id]);
+    User::factory()->count(20)->create();
+
+    DB::enableQueryLog();
+    $rows = collect(loadUsers($this->admin)->json('props.users.entries'))->keyBy('username');
+
+    expect($rows['pictured']['avatarUrl'])->toEndWith("public/avatar/{$media->ulid}/thumb.webp")
+        ->and($rows->except('pictured')->pluck('avatarUrl')->filter()->all())->toBe([])
+        ->and(count(DB::getQueryLog()))->toBeLessThanOrEqual(25);
+});
+
 it('shows the Users nav item to admins only', function (string $role, bool $expected) {
-    $this->actingAs(User::factory()->{$role}()->create())->get('/admin')
+    $this->actingAs(User::factory()->{$role}()->create())->get('/')
         ->assertInertia(fn (Assert $page) => $page->where('auth.can.viewUsers', $expected));
 })->with([
     'moderator' => ['moderator', false],

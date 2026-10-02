@@ -1,3 +1,4 @@
+import SettingsAvatarCropper from '@/Components/settings/SettingsAvatarCropper.vue';
 import SettingsAvatarField from '@/Components/settings/SettingsAvatarField.vue';
 import { settingsNav } from '@/navigation';
 import { enableAutoUnmount, mount } from '@vue/test-utils';
@@ -41,7 +42,13 @@ const rules = {
 const noAvatar = { status: null, url512: null, url128: null, url48: null };
 
 function mountField(avatar = noAvatar) {
-    return mount(SettingsAvatarField, { props: { name: 'Chief', avatar, rules } as never });
+    return mount(SettingsAvatarField, { props: { name: 'Chief', avatar, rules } as never, global: { stubs: { SettingsAvatarCropper: true } } });
+}
+
+function pick(wrapper: ReturnType<typeof mountField>, file: File) {
+    const input = wrapper.find('input[type="file"]');
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true });
+    return input.trigger('change');
 }
 
 describe('SettingsAvatarField', () => {
@@ -50,6 +57,38 @@ describe('SettingsAvatarField', () => {
         result.value = null;
         put.mockClear();
         del.mockClear();
+        upload.mockClear();
+    });
+
+    it('opens the crop dialog for a picked file and uploads only the cropped result', async () => {
+        const wrapper = mountField();
+        const picked = new File(['x'], 'me.png', { type: 'image/png' });
+        await pick(wrapper, picked);
+
+        const cropper = wrapper.findComponent(SettingsAvatarCropper);
+        expect(cropper.props('file')).toBe(picked);
+        expect(cropper.props('maxBytes')).toBe(rules.maxBytes);
+        expect(cropper.props('accept')).toBe(rules.accept);
+        expect(upload).not.toHaveBeenCalled();
+
+        const cropped = new File(['y'], 'me.webp', { type: 'image/webp' });
+        cropper.vm.$emit('save', cropped);
+        await nextTick();
+
+        expect(upload).toHaveBeenCalledWith(cropped, 'avatar');
+        expect(cropper.props('file')).toBeNull();
+    });
+
+    it('uploads nothing when the crop is cancelled', async () => {
+        const wrapper = mountField();
+        await pick(wrapper, new File(['x'], 'me.png', { type: 'image/png' }));
+
+        const cropper = wrapper.findComponent(SettingsAvatarCropper);
+        cropper.vm.$emit('cancel');
+        await nextTick();
+
+        expect(upload).not.toHaveBeenCalled();
+        expect(cropper.props('file')).toBeNull();
     });
 
     it('states the upload rules from the server', () => {

@@ -15,6 +15,8 @@ class AdminUserRowData extends Data
     public function __construct(
         public string $ulid,
         public string $username,
+        /** The 48 px avatar, null without a ready one. */
+        public ?string $avatarUrl,
         public string $email,
         public bool $emailVerified,
         public string $roleLabel,

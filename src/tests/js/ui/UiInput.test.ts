@@ -49,4 +49,25 @@ describe('UiInput attributes and affixes', () => {
         expect(wrapper.get('input').attributes('aria-describedby')).toBe('w-suffix');
         expect(wrapper.get('#w-suffix').text()).toBe('px');
     });
+
+    it('lets a password field be shown and hidden again', async () => {
+        const wrapper = mount(UiInput, { props: { label: 'Password', type: 'password', modelValue: 'secret' } });
+        const toggle = wrapper.get('button[aria-label="Show password"]');
+
+        expect(wrapper.get('input').attributes('type')).toBe('password');
+        expect(toggle.attributes('aria-pressed')).toBe('false');
+        expect(toggle.attributes('aria-controls')).toBe(wrapper.get('input').attributes('id'));
+
+        await toggle.trigger('click');
+        expect(wrapper.get('input').attributes('type')).toBe('text');
+        expect(wrapper.get('button').attributes('aria-label')).toBe('Hide password');
+        expect(wrapper.get('button').attributes('aria-pressed')).toBe('true');
+
+        await wrapper.get('button').trigger('click');
+        expect(wrapper.get('input').attributes('type')).toBe('password');
+    });
+
+    it('gives other fields no toggle', () => {
+        expect(mount(UiInput, { props: { label: 'Email', type: 'email' } }).find('button').exists()).toBe(false);
+    });
 });

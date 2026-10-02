@@ -60,7 +60,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P3-03 | Feed, trending, landing pages | todo | P3-01 | |
 | P3-04 | Likes, bookmarks, comments, counters (+ `user_stats` listeners and nightly recompute calling `CacheInvalidator::profile()`, StatBlock count-up, from P1-04) | todo | P3-01 | |
 | P3-05 | Search v1 | todo | P3-01 | |
-| P3-06 | Moderation v1 (incl. 30-day quarantine purge with `audit_logs` entry, specs/10 §9; from P0-08) (+ the dashboard's open reports panel, the moderators' view of it replacing their empty state, from P1-13) | todo | P3-01, P1-06 | |
+| P3-06 | Moderation v1 (incl. 30-day quarantine purge with `audit_logs` entry, specs/10 §9; from P0-08) (+ the dashboard's open reports panel, from P1-13; the queue fills `/moderation/reports`, the moderators' page outside /admin, owner decision 2026-10-02) | todo | P3-01, P1-06 | |
 | P3-07 | SEO surfaces | todo | P3-03 | |
 
 ## Phases 4–6

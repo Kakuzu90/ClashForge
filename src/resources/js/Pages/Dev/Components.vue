@@ -7,6 +7,7 @@ import AdminPanel from '@/Components/admin/AdminPanel.vue';
 import AdminSanctionHistory from '@/Components/admin/AdminSanctionHistory.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
 import NotificationItem from '@/Components/notifications/NotificationItem.vue';
+import SettingsAvatarCropper from '@/Components/settings/SettingsAvatarCropper.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
@@ -185,6 +186,7 @@ const sections = [
     'Pills',
     'Badges',
     'Avatars',
+    'Avatar cropper',
     'Modal',
     'Toasts',
     'Alerts',
@@ -215,6 +217,41 @@ const notificationSamples: App.Domain.Notifications.Data.NotificationItemData[] 
         createdAt: '2026-09-30T08:00:00+00:00',
     },
 ];
+// Avatar cropper: crops a picked photo, or a generated sample so the gallery needs no file.
+const cropFile = ref<File | null>(null);
+const cropPicker = ref<HTMLInputElement | null>(null);
+const cropResult = ref<{ url: string; label: string } | null>(null);
+
+function pickCropPhoto(event: Event) {
+    const input = event.target as HTMLInputElement;
+    cropFile.value = input.files?.[0] ?? null;
+    input.value = '';
+}
+
+function openCropSample() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 800;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    const token = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    context.fillStyle = token('--bg-surface-raised');
+    context.fillRect(0, 0, 1200, 800);
+    ['--brand-primary', '--accent', '--state-info'].forEach((name, i) => {
+        context.fillStyle = token(name);
+        context.beginPath();
+        context.arc(300 + i * 300, 400, 160, 0, Math.PI * 2);
+        context.fill();
+    });
+    canvas.toBlob((blob) => blob && (cropFile.value = new File([blob], 'sample.png', { type: 'image/png' })), 'image/png');
+}
+
+function onCropSaved(file: File) {
+    cropFile.value = null;
+    if (cropResult.value) URL.revokeObjectURL(cropResult.value.url);
+    cropResult.value = { url: URL.createObjectURL(file), label: `${file.type}, ${Math.round(file.size / 1024)} KB` };
+}
+
 const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 </script>
 
@@ -413,6 +450,31 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiAvatar name="Broken Image" src="/missing-avatar.png" :size="64" />
                     <UiAvatar name="Loading" loading loading-label="Loading avatar" :size="64" />
                 </div>
+            </section>
+
+            <section :id="anchor('Avatar cropper')" aria-labelledby="h-avatar-cropper">
+                <h2 id="h-avatar-cropper" class="font-display text-h1">Avatar cropper</h2>
+                <p class="mt-2 text-sm text-fg-secondary">
+                    Opens on a picked file. Drag, pinch, scroll or use arrow keys and +/- to frame; Save emits the cropped square.
+                </p>
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <input ref="cropPicker" type="file" class="sr-only" tabindex="-1" aria-hidden="true" accept="image/jpeg,image/png,image/webp" @change="pickCropPhoto" />
+                    <UiButton variant="secondary" @click="cropPicker?.click()">Crop a photo</UiButton>
+                    <UiButton variant="ghost" @click="openCropSample">Crop a sample image</UiButton>
+                </div>
+                <div v-if="cropResult" class="mt-4 flex items-center gap-4">
+                    <UiAvatar name="Cropped result" :src="cropResult.url" :size="128" />
+                    <p class="text-sm text-fg-secondary">{{ cropResult.label }}</p>
+                </div>
+                <SettingsAvatarCropper
+                    :file="cropFile"
+                    accept="image/jpeg,image/png,image/webp"
+                    :max-bytes="2 * 1024 * 1024"
+                    :output-size="512"
+                    :min-size="200"
+                    @save="onCropSaved"
+                    @cancel="cropFile = null"
+                />
             </section>
 
             <section :id="anchor('Modal')" aria-labelledby="h-modal">

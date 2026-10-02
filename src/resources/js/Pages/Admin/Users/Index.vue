@@ -4,6 +4,7 @@ import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue'
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
+import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiPill, { type PillTone } from '@/Components/ui/UiPill.vue';
 import UiSelect, { type SelectOption } from '@/Components/ui/UiSelect.vue';
 import { formatDateTime } from '@/Composables/useDateTime';
@@ -68,10 +69,10 @@ function goTo(cursor: string) {
 }
 
 const columns: AdminColumn[] = [
-    { key: 'username', label: 'Username', class: 'min-w-40' },
+    { key: 'username', label: 'Username', class: 'min-w-52' },
     { key: 'email', label: 'Email', class: 'min-w-56' },
     { key: 'role', label: 'Role', class: 'w-32' },
-    { key: 'status', label: 'Status', class: 'w-40' },
+    { key: 'status', label: 'Status', class: 'w-48 whitespace-nowrap' },
     { key: 'joined', label: 'Joined', class: 'w-56 whitespace-nowrap' },
     { key: 'lastSignIn', label: 'Last sign-in', class: 'w-56 whitespace-nowrap' },
 ];
@@ -126,8 +127,13 @@ const columns: AdminColumn[] = [
                     :loading="navigating"
                 >
                     <template #cell-username="{ row }">
-                        <Link :href="show(row.ulid).url" class="font-semibold text-fg underline-offset-2 hover:underline">{{ row.username }}</Link>
-                        <span v-if="row.deleted" class="block text-fg-muted">Deleted</span>
+                        <div class="flex items-center gap-3">
+                            <UiAvatar :name="row.username" :src="row.avatarUrl" :size="32" />
+                            <div class="min-w-0">
+                                <Link :href="show(row.ulid).url" class="font-semibold text-fg underline-offset-2 hover:underline">{{ row.username }}</Link>
+                                <span v-if="row.deleted" class="block text-fg-muted">Deleted</span>
+                            </div>
+                        </div>
                     </template>
                     <template #cell-email="{ row }">
                         <span class="break-all">{{ row.email }}</span>

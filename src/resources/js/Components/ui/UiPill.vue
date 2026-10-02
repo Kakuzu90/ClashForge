@@ -38,7 +38,7 @@ const tones: Record<PillTone, string> = {
 };
 
 const classes = computed(() => [
-    'inline-flex h-7 items-center gap-1 rounded-sm border px-2 text-xs uppercase text-fg',
+    'inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-sm border px-2 text-xs uppercase text-fg',
     tones[props.tone],
     props.selectable ? 'hit-target cursor-pointer hover:bg-surface-hover' : '',
     props.selected ? 'ring-2 ring-brand' : '',

@@ -103,7 +103,10 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
   detail 404s), so staff cannot look up themselves or the platform owners there.
 - Staff abilities live in Gates, one per staff row of §2 (`App\Domain\Auth\Enums\StaffAbility`,
   registered in `App\Providers\AuthorizationServiceProvider`), including `access-admin`
-  (moderator+), `manage-roles`, `resolve-disputes` and `view-audit-log`.
+  (admin+), `manage-roles`, `resolve-disputes` and `view-audit-log`.
+- Moderators never enter `/admin` (owner decision, 2026-10-02): their workspace is
+  `/moderation/reports` (`view-report-queue`, moderator+, admins too) in the member layout. The top
+  bar shows staff one link: Admin to admins, Reports to moderators.
 - Super admin holds every staff ability through the role hierarchy, except `impersonate`, which no
   role holds. There is no `Gate::before` hook, so ownership policies (the `○` rows above) and rule 1
   still apply to super admins and the matrix holds exactly.

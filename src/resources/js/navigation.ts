@@ -1,6 +1,7 @@
 import { home } from '@/routes';
 import { audit as adminAudit, dashboard as adminDashboard } from '@/routes/admin';
 import { index as adminUsers } from '@/routes/admin/users';
+import { index as moderationReports } from '@/routes/moderation/reports';
 import { edit as privacySettings } from '@/routes/settings/privacy';
 import { edit as profileSettings } from '@/routes/settings/profile';
 import { edit as securitySettings } from '@/routes/settings/security';
@@ -35,13 +36,21 @@ export interface HeaderLink {
     href: () => string;
     /** Shared `auth.can` ability required to see the link. */
     can: string;
+    /** Hidden when this ability is held, so one staff link shows at a time. */
+    hiddenWith?: string;
 }
 
-// Account-area links in the top bar, next to the account controls.
-export const headerLinks: HeaderLink[] = [{ key: 'admin', label: 'Admin', href: () => adminDashboard().url, can: 'accessAdmin' }];
+// Staff links in the top bar, before the bell: admins get Admin, moderators (who cannot open
+// /admin) get Reports (owner decision, 2026-10-02).
+export const headerLinks: HeaderLink[] = [
+    { key: 'admin', label: 'Admin', href: () => adminDashboard().url, can: 'accessAdmin' },
+    { key: 'reports', label: 'Reports', href: () => moderationReports().url, can: 'viewReportQueue', hiddenWith: 'accessAdmin' },
+];
 
 export function visibleHeaderLinks(links: HeaderLink[], can: Record<string, boolean>): (HeaderLink & { url: string })[] {
-    return links.filter((link) => can[link.can] === true).map((link) => ({ ...link, url: link.href() }));
+    return links
+        .filter((link) => can[link.can] === true && !(link.hiddenWith && can[link.hiddenWith] === true))
+        .map((link) => ({ ...link, url: link.href() }));
 }
 
 export interface ResolvedNavItem extends NavItem {

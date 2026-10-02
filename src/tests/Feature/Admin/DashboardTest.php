@@ -50,12 +50,17 @@ it('refuses a plain user', function () {
     $this->actingAs(User::factory()->create())->get('/admin')->assertForbidden();
 });
 
-it('still opens for a restricted moderator, who keeps read access', function () {
-    $this->actingAs(User::factory()->moderator()->restricted()->create())->get('/admin')->assertOk();
+it('refuses moderators, who work from the reports page instead', function () {
+    $this->actingAs(User::factory()->moderator()->create())->get('/admin')->assertForbidden();
+    $this->actingAs(User::factory()->moderator()->restricted()->create())->get('/admin')->assertForbidden();
 });
 
-it('sends a suspended moderator to the notice', function () {
-    $this->actingAs(User::factory()->moderator()->suspended()->create())->get('/admin')->assertRedirect('/account/suspended');
+it('still opens for a restricted admin, who keeps read access', function () {
+    $this->actingAs(User::factory()->admin()->restricted()->create())->get('/admin')->assertOk();
+});
+
+it('sends a suspended admin to the notice', function () {
+    $this->actingAs(User::factory()->admin()->suspended()->create())->get('/admin')->assertRedirect('/account/suspended');
 });
 
 it('renders the dashboard for staff', function (string $role) {
@@ -67,7 +72,7 @@ it('renders the dashboard for staff', function (string $role) {
             ->where('meta.title', 'Admin')
             ->where('auth.can.accessAdmin', true)
         );
-})->with(['moderator', 'admin', 'superAdmin']);
+})->with(['admin', 'superAdmin']);
 
 it('gives admins the three panels as separate deferred props', function () {
     $this->actingAs($this->admin)->get('/admin')
@@ -80,20 +85,6 @@ it('gives admins the three panels as separate deferred props', function () {
     $deferred = $this->actingAs($this->admin)->get('/admin')->viewData('page')['deferredProps'];
 
     expect($deferred)->toBe(['signups' => ['signups'], 'failedJobs' => ['failedJobs'], 'storage' => ['storage']]);
-});
-
-it('gives moderators no panels at all', function () {
-    $moderator = User::factory()->moderator()->create();
-
-    $this->actingAs($moderator)->get('/admin')
-        ->assertInertia(fn (Assert $page) => $page->where('platformStats', false));
-
-    expect($this->actingAs($moderator)->get('/admin')->viewData('page'))->not->toHaveKey('deferredProps');
-
-    foreach (['signups', 'failedJobs', 'storage'] as $prop) {
-        // Inertia answers a requested prop the page does not have with null.
-        expect(loadPanel($moderator, $prop)->assertOk()->json("props.{$prop}"))->toBeNull();
-    }
 });
 
 it('counts sign-ups per window at the edges, deleted and unverified ones included', function () {

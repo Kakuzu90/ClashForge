@@ -163,7 +163,7 @@ Priority: **M** = MVP, **P2** = phase 4–5, **P3** = phase 6–7.
 
 | ID | Pri | Requirement |
 |---|---|---|
-| FR-ADMIN-1 | M | Admin area at `/admin`, gated by role, with its own layout and no game-styling flourishes. |
+| FR-ADMIN-1 | M | Admin area at `/admin` for admins and super admins, with its own layout and no game-styling flourishes. Moderators work from `/moderation/reports` in the member layout instead. |
 | FR-ADMIN-2 | M | Manage: users, CoC accounts, claims, disputes, bases, comments, media, reports, recruitment posts, listings. |
 | FR-ADMIN-3 | M | Suspend/ban with reason, duration and internal note; the sanction is visible on the user record. |
 | FR-ADMIN-4 | M | Read-only moderation log and audit log with filters by actor, target, action and date. |

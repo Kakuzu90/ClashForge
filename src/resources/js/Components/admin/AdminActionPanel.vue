@@ -10,6 +10,7 @@ import { useToast } from '@/Composables/useToast';
 import { store as banStore } from '@/routes/admin/users/ban';
 import { destroy as sanctionDestroy } from '@/routes/admin/users/sanction';
 import { store as suspensionStore } from '@/routes/admin/users/suspension';
+import type { Page } from '@inertiajs/core';
 import { useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -58,7 +59,12 @@ function start(next: Kind) {
     kind.value = next;
 }
 
-function done(toast: string) {
+// A throttled write (global-write) redirects back with only `flash.error`, which Inertia counts as
+// a success; the error toast says why, so the form stays open and no success toast is shown.
+function done(page: Page, toast: string) {
+    if ((page.props.flash as { error?: string | null } | undefined)?.error) {
+        return;
+    }
     kind.value = null;
     form.reset();
     liftForm.reset();
@@ -71,17 +77,17 @@ function submit() {
     if (kind.value === 'suspend') {
         form.transform((data) => ({ ...data, days: Number.parseInt(data.days, 10) })).post(suspensionStore(props.ulid).url, {
             ...options,
-            onSuccess: () => done(`${props.username} is suspended.`),
+            onSuccess: (page) => done(page, `${props.username} is suspended.`),
         });
     } else if (kind.value === 'ban') {
         form.transform(({ days: _days, ...data }) => data).post(banStore(props.ulid).url, {
             ...options,
-            onSuccess: () => done(`${props.username} is banned.`),
+            onSuccess: (page) => done(page, `${props.username} is banned.`),
         });
     } else if (kind.value === 'lift') {
         liftForm.delete(sanctionDestroy(props.ulid).url, {
             ...options,
-            onSuccess: () => done(`The ${activeLabel.value} is lifted.`),
+            onSuccess: (page) => done(page, `The ${activeLabel.value} is lifted.`),
         });
     }
 }

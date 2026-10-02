@@ -35,6 +35,11 @@ const controlAttrs = computed(() => {
 });
 
 const inputEl = ref<HTMLInputElement | null>(null);
+
+// Password fields get a show/hide toggle; the value never leaves the input either way.
+const revealed = ref(false);
+const isPassword = computed(() => props.type === 'password');
+const inputType = computed(() => (isPassword.value && revealed.value ? 'text' : props.type));
 onMounted(() => {
     if (props.autofocus) inputEl.value?.focus();
 });
@@ -79,7 +84,7 @@ const describedBy = computed(
                 :id="inputId"
                 ref="inputEl"
                 v-model="model"
-                :type="type"
+                :type="inputType"
                 :maxlength="maxlength"
                 :disabled="disabled"
                 :readonly="readonly"
@@ -91,6 +96,37 @@ const describedBy = computed(
                 v-bind="controlAttrs"
             />
             <span v-if="suffix" :id="ids.suffix" class="pr-3 text-sm text-fg-muted">{{ suffix }}</span>
+            <button
+                v-if="isPassword"
+                type="button"
+                class="hit-target mr-1 inline-flex size-9 shrink-0 items-center justify-center rounded-sm text-fg-muted hover:bg-surface-raised hover:text-fg disabled:cursor-not-allowed"
+                :aria-label="revealed ? 'Hide password' : 'Show password'"
+                :aria-pressed="revealed ? 'true' : 'false'"
+                :aria-controls="inputId"
+                :disabled="disabled"
+                @click="revealed = !revealed"
+            >
+                <svg v-if="revealed" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
+                    <path
+                        d="M3 3l14 14M8.5 8.6a2 2 0 0 0 2.9 2.8M6.3 5.6C4.4 6.7 3 8.4 2 10c1.6 2.9 4.6 5.5 8 5.5 1.4 0 2.7-.4 3.8-1.1M9 4.6c.3 0 .7-.1 1-.1 3.4 0 6.4 2.6 8 5.5-.5.9-1.1 1.8-1.9 2.6"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                </svg>
+                <svg v-else width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
+                    <path
+                        d="M2 10c1.6-2.9 4.6-5.5 8-5.5s6.4 2.6 8 5.5c-1.6 2.9-4.6 5.5-8 5.5S3.6 12.9 2 10z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-linejoin="round"
+                    />
+                    <circle cx="10" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+            </button>
         </div>
         <p v-if="error" :id="ids.error" class="text-sm text-danger-fg">{{ error }}</p>
         <div v-if="hint || (counter && maxlength)" class="flex justify-between gap-2 text-sm text-fg-muted">

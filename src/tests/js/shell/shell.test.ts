@@ -1,8 +1,8 @@
 import BottomNav from '@/Components/shell/BottomNav.vue';
-import SideNav from '@/Components/shell/SideNav.vue';
+import HeaderNav from '@/Components/shell/HeaderNav.vue';
 import SiteFooter from '@/Components/shell/SiteFooter.vue';
 import { mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@inertiajs/vue3', () => ({ Link: { props: ['href'], template: '<a :href="href"><slot /></a>' } }));
 
@@ -30,50 +30,25 @@ describe('BottomNav', () => {
     });
 });
 
-describe('SideNav', () => {
-    beforeEach(() => localStorage.clear());
-
-    it('collapses, keeps labels for screen readers and remembers the choice', async () => {
-        const wrapper = mount(SideNav, { props: { items, currentUrl: '/' } });
-        const toggle = wrapper.get('button');
-        expect(toggle.attributes('aria-expanded')).toBe('true');
-        await toggle.trigger('click');
-        expect(toggle.attributes('aria-expanded')).toBe('false');
-        expect(wrapper.get('li span.sr-only').text()).toBe('Home');
-        expect(localStorage.getItem('shell.sidebar.collapsed')).toBe('1');
-    });
-
-    it('starts collapsed when the browser remembered it', async () => {
-        localStorage.setItem('shell.sidebar.collapsed', '1');
-        const wrapper = mount(SideNav, { props: { items, currentUrl: '/' } });
-        await wrapper.vm.$nextTick();
-        expect(wrapper.get('button').attributes('aria-expanded')).toBe('false');
-    });
-});
-
 describe('audit-003 regressions', () => {
-    beforeEach(() => localStorage.clear());
-
-    it('only animates the sidebar width after a user toggle', async () => {
-        localStorage.setItem('shell.sidebar.collapsed', '1');
-        const wrapper = mount(SideNav, { props: { items, currentUrl: '/' } });
-        await wrapper.vm.$nextTick();
-        expect(wrapper.get('aside').classes()).not.toContain('transition-[width]');
-        await wrapper.get('button').trigger('click');
-        expect(wrapper.get('aside').classes()).toContain('transition-[width]');
-    });
-
-    it('keeps one toggle label and lets aria-expanded carry the state', async () => {
-        const wrapper = mount(SideNav, { props: { items, currentUrl: '/' } });
-        const toggle = wrapper.get('button');
-        expect(toggle.text()).toBe('Sidebar');
-        await toggle.trigger('click');
-        expect(toggle.text()).toBe('Sidebar');
-    });
-
     it('marks the active tab with a shape, not only colour', () => {
         const wrapper = mount(BottomNav, { props: { items, currentUrl: '/' } });
         expect(wrapper.findAll('a')[0].find('span.bg-brand\\/20').exists()).toBe(true);
         expect(wrapper.findAll('a')[1].find('span.bg-brand\\/20').exists()).toBe(false);
+    });
+});
+
+describe('HeaderNav', () => {
+    it('shows text links only, the current one gold with a bottom bar', () => {
+        const wrapper = mount(HeaderNav, { props: { items, currentUrl: '/' } });
+        const [home, bases] = wrapper.findAll('a');
+
+        expect(wrapper.find('svg').exists()).toBe(false);
+        expect(home.text()).toBe('Home');
+        expect(home.attributes('aria-current')).toBe('page');
+        expect(home.classes()).toContain('text-brand');
+        expect(home.find('span.bg-brand').exists()).toBe(true);
+        expect(bases.attributes('aria-current')).toBeUndefined();
+        expect(bases.find('span.bg-brand').exists()).toBe(false);
     });
 });

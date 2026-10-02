@@ -172,7 +172,8 @@ require __DIR__.'/web/accounts.php';
 | `/settings/profile/username` (PUT) | username change, current password inline (FR-PROFILE-7) |
 | `/notifications` `/settings/*` `/dashboard` `/confirm-password` `/email/verify` | authenticated |
 | `/account/suspended` | suspension notice (a suspended account is sent here, [04 §1](04-roles-and-permissions.md)) |
-| `/admin/*` | staff |
+| `/admin/*` | admin and super admin (`access-admin`) |
+| `/moderation/reports` | moderators and above (`view-report-queue`) |
 | `/uploads/intent` `/uploads/{ulid}/complete` `/uploads/{ulid}` | presigned upload flow (JSON, owner only, [10 §3](10-media-storage.md)) |
 | `/health` `/sitemap.xml` `/robots.txt` | infrastructure; `/health` sits outside the `web` group (no session, no cookies) and replaces the framework's `/up` |
 

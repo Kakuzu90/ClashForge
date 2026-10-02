@@ -9,6 +9,7 @@ use App\Domain\Auth\Data\AdminUserSliceData;
 use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Enums\UserStatus;
 use App\Domain\Auth\Services\SessionService;
+use App\Domain\Users\Services\AvatarUrlService;
 use App\Models\User;
 use App\Support\Pagination\CursorShape;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,10 @@ class AdminUserQuery
 {
     private const CURSOR_COLUMN = 'id';
 
-    public function __construct(private readonly SessionService $sessions) {}
+    public function __construct(
+        private readonly SessionService $sessions,
+        private readonly AvatarUrlService $avatars,
+    ) {}
 
     public static function acceptsCursor(string $cursor): bool
     {
@@ -39,13 +43,18 @@ class AdminUserQuery
 
         $page = $query->cursorPaginate($perPage, cursor: Cursor::fromEncoded($cursor));
 
+        /** @var list<User> $users */
+        $users = $page->items();
+        $avatars = $this->avatars->forUsers(array_map(fn (User $user): int => $user->id, $users));
+
         $entries = [];
-        foreach ($page->items() as $user) {
+        foreach ($users as $user) {
             /** @var User $user */
             $status = $user->effectiveStatus();
             $entries[] = new AdminUserRowData(
                 ulid: $user->ulid,
                 username: $user->username,
+                avatarUrl: $avatars[$user->id] ?? null,
                 email: $user->email,
                 emailVerified: $user->email_verified_at !== null,
                 roleLabel: $user->role->label(),

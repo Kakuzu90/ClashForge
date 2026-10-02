@@ -10,8 +10,7 @@ defineOptions({ layout: AppLayout });
         name="App"
         :notes="[
             'Below 768px: bottom tab bar (56px + safe area)',
-            '768 to 1023px: nav row under the top bar',
-            '1024px and up: left sidebar, collapsible to 64px (remembered per browser)',
+            '768px and up: text links inside the top bar after the wordmark, the current one underlined',
             'Nav shows only items whose page exists (Phase 0: Home)',
         ]"
     />

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SettingsAvatarCropper from '@/Components/settings/SettingsAvatarCropper.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiProgress from '@/Components/ui/UiProgress.vue';
@@ -16,8 +17,16 @@ const props = defineProps<{
     error?: string;
 }>();
 
+// Mirrors config/media.php: the largest avatar variant (collections.avatar.variants.full.width) and
+// the smallest accepted image edge (image.min_width / min_height). The upload rules DTO does not
+// carry dimensions yet; the server checks both again either way.
+const AVATAR_OUTPUT_SIZE = 512;
+const AVATAR_MIN_SIZE = 200;
+
 const { phase, progress, error: uploadError, result, fileName, upload, retry, checkAgain, reset } = useUpload();
 const fileInput = ref<HTMLInputElement | null>(null);
+// Picked but not cropped yet; the crop dialog is open while this is set.
+const pendingFile = ref<File | null>(null);
 const saving = ref(false);
 const removing = ref(false);
 
@@ -35,10 +44,15 @@ function onFile(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (file) {
-        upload(file, 'avatar');
+        pendingFile.value = file;
     }
     // Picking the same file again starts a new upload.
     input.value = '';
+}
+
+function onCropped(file: File) {
+    pendingFile.value = null;
+    upload(file, 'avatar');
 }
 
 watch(phase, (next) => {
@@ -104,5 +118,15 @@ function remove() {
             </p>
             <p v-else-if="storedFailed" role="alert" class="text-sm text-danger-fg">That photo could not be used. Upload a different one.</p>
         </div>
+
+        <SettingsAvatarCropper
+            :file="pendingFile"
+            :accept="rules.accept"
+            :max-bytes="rules.maxBytes"
+            :output-size="AVATAR_OUTPUT_SIZE"
+            :min-size="AVATAR_MIN_SIZE"
+            @save="onCropped"
+            @cancel="pendingFile = null"
+        />
     </fieldset>
 </template>

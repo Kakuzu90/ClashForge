@@ -172,7 +172,7 @@ it('keeps the list within the query budget', function () {
 });
 
 it('shows the Logs nav item to admins only', function (string $role, bool $expected) {
-    $this->actingAs(User::factory()->{$role}()->create())->get('/admin')
+    $this->actingAs(User::factory()->{$role}()->create())->get('/')
         ->assertInertia(fn (Assert $page) => $page->where('auth.can.viewAuditLog', $expected));
 })->with([
     'moderator' => ['moderator', false],

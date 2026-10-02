@@ -50,10 +50,10 @@ it('signs a banned admin out on both routes', function (string $url) {
     $this->assertGuest();
 })->with(['/admin/users', '/admin/users/{ulid}']);
 
-it('refuses a restricted moderator, who keeps the admin area but not the user list', function () {
+it('refuses a restricted moderator the admin area and the user list', function () {
     $viewer = User::factory()->moderator()->restricted()->create();
 
-    $this->actingAs($viewer)->get('/admin')->assertOk();
+    $this->actingAs($viewer)->get('/admin')->assertForbidden();
     $this->actingAs($viewer)->get('/admin/users')->assertForbidden();
 });
 

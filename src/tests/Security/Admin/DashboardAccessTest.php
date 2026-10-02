@@ -43,12 +43,12 @@ it('gives every panel to admins and super admins, restricted and pending-deletio
     'pending-deletion admin' => ['admin', 'pendingDeletion'],
 ]);
 
-it('gives moderators, restricted ones included, the page without any panel', function (?string $state) {
+it('refuses moderators, restricted ones included, the page and every panel', function (?string $state) {
     $factory = User::factory()->moderator();
     $viewer = ($state === null ? $factory : $factory->{$state}())->create();
 
     foreach (DASHBOARD_PANELS as $prop) {
-        expect(partialDashboard($viewer, $prop)->assertOk()->json("props.{$prop}"))->toBeNull();
+        partialDashboard($viewer, $prop)->assertForbidden();
     }
 })->with(['moderator' => [null], 'restricted moderator' => ['restricted']]);
 

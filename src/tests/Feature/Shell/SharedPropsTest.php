@@ -26,11 +26,11 @@ it('never exposes private keys in shared props', function () {
         ->and(json_encode($props))->not->toContain('email', 'password', 'ip', 'role', 'token');
 });
 
-it('shares the admin flags for staff only, never the role', function (string $state, bool $admin, bool $adminOnly) {
+it('shares the staff flags, never the role', function (string $state, bool $moderator, bool $admin) {
     $user = User::factory()->{$state}()->create();
 
     $response = $this->actingAs($user)->get('/');
-    $response->assertInertia(fn (Assert $page) => $page->where('auth.can', ['accessAdmin' => $admin, 'viewUsers' => $adminOnly, 'viewAuditLog' => $adminOnly]));
+    $response->assertInertia(fn (Assert $page) => $page->where('auth.can', ['accessAdmin' => $admin, 'viewReportQueue' => $moderator, 'viewUsers' => $admin, 'viewAuditLog' => $admin]));
 
     expect(json_encode($response->viewData('page')['props']['auth']))->not->toContain('role', $user->role->value === 'user' ? 'moderator' : $user->role->value);
 })->with([

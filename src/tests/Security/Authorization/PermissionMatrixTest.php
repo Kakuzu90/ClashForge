@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Gate;
 // written there (user, moderator, admin, super admin). Changing a Gate means changing this table.
 
 const MATRIX = [
-    'access-admin' => [false, true, true, true],
+    'access-admin' => [false, false, true, true],
     'view-users' => [false, false, true, true],
     'view-platform-stats' => [false, false, true, true],
     'view-report-queue' => [false, true, true, true],
@@ -82,7 +82,7 @@ it('marks exactly the admin area, user list, platform stats, queue and logs as r
 it('gives staff powers back once a timed sanction has passed', function () {
     $moderator = User::factory()->moderator()->suspended(now()->subMinute())->create();
 
-    expect(Gate::forUser($moderator)->allows('access-admin'))->toBeTrue()
+    expect(Gate::forUser($moderator)->allows('view-report-queue'))->toBeTrue()
         ->and(Gate::forUser($moderator)->allows('hide-content'))->toBeTrue();
 });
 

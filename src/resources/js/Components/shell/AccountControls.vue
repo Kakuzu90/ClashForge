@@ -3,7 +3,6 @@ import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiDropdownMenu, { type MenuItem } from '@/Components/ui/UiDropdownMenu.vue';
 import { usePageProps } from '@/Composables/usePageProps';
-import { headerLinks, visibleHeaderLinks } from '@/navigation';
 import { login, logout } from '@/routes';
 import { show as profilePage } from '@/routes/profile';
 import { edit as profileSettings } from '@/routes/settings/profile';
@@ -11,9 +10,8 @@ import { router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 // Top-bar account area: sign in for guests; once signed in, the avatar opens the account menu
-// (specs/18 §6: your profile, settings, sign out), plus the Admin link for staff.
-const { auth, can, url } = usePageProps();
-const links = computed(() => visibleHeaderLinks(headerLinks, can.value));
+// (specs/18 §6: your profile, settings, sign out). Staff links sit in SiteHeader.
+const { auth, url } = usePageProps();
 const user = computed(() => auth.value?.user ?? null);
 const onLoginPage = computed(() => url.value.split(/[?#]/)[0] === login().url);
 const signingOut = ref(false);
@@ -40,7 +38,6 @@ function onSelect(key: string) {
 
 <template>
     <div v-if="user" class="flex items-center gap-1 whitespace-nowrap sm:gap-2">
-        <UiButton v-for="link in links" :key="link.key" variant="ghost" size="sm" :href="link.url">{{ link.label }}</UiButton>
         <UiDropdownMenu :items="menuItems" :label="`${user.username}, account menu`" @select="onSelect">
             <template #trigger>
                 <UiAvatar :name="user.username" :src="user.avatarUrl" :size="32" />

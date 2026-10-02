@@ -67,6 +67,7 @@ class HandleInertiaRequests extends Middleware
                 // Show/hide flags only; the server re-checks every action (specs/04 §3).
                 can: $user === null ? [] : [
                     'accessAdmin' => Gate::forUser($user)->allows(StaffAbility::AccessAdmin->value),
+                    'viewReportQueue' => Gate::forUser($user)->allows(StaffAbility::ViewReportQueue->value),
                     'viewUsers' => Gate::forUser($user)->allows(StaffAbility::ViewUsers->value),
                     'viewAuditLog' => Gate::forUser($user)->allows(StaffAbility::ViewAuditLog->value),
                 ],

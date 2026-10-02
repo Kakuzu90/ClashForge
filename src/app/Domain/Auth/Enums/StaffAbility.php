@@ -82,7 +82,6 @@ enum StaffAbility: string implements HasLabelAndColor
     public function minimumRole(): ?Role
     {
         return match ($this) {
-            self::AccessAdmin,
             self::ViewReportQueue,
             self::ClaimReportCase,
             self::HideContent,
@@ -91,6 +90,8 @@ enum StaffAbility: string implements HasLabelAndColor
             self::ReviewMediaQuarantine,
             // Moderators see their own actions only; the query scopes that (specs/04 §2).
             self::ViewModerationLog => Role::Moderator,
+            // Moderators work from the reports page outside /admin (owner decision, 2026-10-02).
+            self::AccessAdmin,
             // Admin user list and detail show email, which only admins see (specs/11 §5).
             self::ViewUsers,
             // Dashboard sign-ups, failed jobs and media storage (FR-ADMIN-5).

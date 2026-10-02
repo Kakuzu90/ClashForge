@@ -2,11 +2,14 @@ import AdminActionPanel from '@/Components/admin/AdminActionPanel.vue';
 import { enableAutoUnmount, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick, reactive } from 'vue';
+import { useToast } from '@/Composables/useToast';
 
 type Call = { method: string; url: string; data: Record<string, unknown> };
 const calls: Call[] = [];
+// The flash the next response carries; a throttled write comes back with only `error`.
+let flashError: string | null = null;
 
-// A small stand-in for Inertia's useForm: records the request and succeeds.
+// A small stand-in for Inertia's useForm: records the request and succeeds with a page.
 vi.mock('@inertiajs/vue3', () => ({
     useForm: (initial: Record<string, unknown>) => {
         let transform: ((data: Record<string, unknown>) => Record<string, unknown>) | null = null;
@@ -23,10 +26,10 @@ vi.mock('@inertiajs/vue3', () => ({
                 Object.assign(form, initial);
             },
         });
-        const send = (method: string) => (url: string, options: { onSuccess?: () => void }) => {
+        const send = (method: string) => (url: string, options: { onSuccess?: (page: unknown) => void }) => {
             const data = Object.fromEntries(Object.keys(initial).map((key) => [key, form[key]]));
             calls.push({ method, url, data: transform ? transform(data) : data });
-            options.onSuccess?.();
+            options.onSuccess?.({ props: { flash: { success: null, error: flashError } } });
         };
         form.post = send('post');
         form.delete = send('delete');
@@ -37,6 +40,8 @@ vi.mock('@inertiajs/vue3', () => ({
 enableAutoUnmount(afterEach);
 beforeEach(() => {
     calls.length = 0;
+    flashError = null;
+    useToast().clear();
     document.body.innerHTML = '';
 });
 
@@ -135,5 +140,33 @@ describe('AdminActionPanel', () => {
         await nextTick();
 
         expect(calls[0]).toEqual({ method: 'delete', url: '/admin/users/01hzzzzzzzzzzzzzzzzzzzzzzz/sanction', data: { note: 'Wrong account.' } });
+    });
+
+    it('confirms a suspension with a toast once it saved', async () => {
+        const wrapper = panel();
+        await wrapper
+            .findAll('button')
+            .find((b) => b.text() === 'Suspend')!
+            .trigger('click');
+        await type('Reason', 'spam');
+        document.querySelector<HTMLFormElement>('[role="dialog"] form')!.dispatchEvent(new Event('submit'));
+        await nextTick();
+
+        expect(useToast().toasts.value.map((t) => t.title)).toEqual(['chief is suspended.']);
+    });
+
+    it('keeps the form open and claims no success when the write was throttled', async () => {
+        flashError = 'Too many changes. Wait a minute and try again.';
+        const wrapper = panel();
+        await wrapper
+            .findAll('button')
+            .find((b) => b.text() === 'Suspend')!
+            .trigger('click');
+        await type('Reason', 'spam');
+        document.querySelector<HTMLFormElement>('[role="dialog"] form')!.dispatchEvent(new Event('submit'));
+        await nextTick();
+
+        expect(useToast().toasts.value.filter((t) => t.kind === 'success')).toEqual([]);
+        expect(dialog()).not.toBeNull();
     });
 });

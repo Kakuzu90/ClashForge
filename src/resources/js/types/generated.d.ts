@@ -26,6 +26,7 @@ deletedAt: string | null,
 export type AdminUserRowData = {
 ulid: string,
 username: string,
+avatarUrl: string | null,
 email: string,
 emailVerified: boolean,
 roleLabel: string,

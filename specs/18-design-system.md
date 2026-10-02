@@ -254,7 +254,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 |---|---|---|
 | **Button** | primary (gold), secondary (surface+border), ghost, danger, success | default, hover, active(compressed), focus-visible, disabled, loading(spinner, width-locked) |
 | | sizes: sm 32px, md 40px, lg 48px; `block`, `icon-only` (square, aria-label required) | |
-| **Input / Textarea** | default, with-prefix, with-suffix, with-counter, date (native picker) | default, focus, error, disabled, readonly |
+| **Input / Textarea** | default, with-prefix, with-suffix, with-counter, date (native picker), password (show/hide toggle inside the field: `aria-pressed`, "Show password" / "Hide password", 44px hit area; owner decision, 2026-10-02) | default, focus, error, disabled, readonly |
 | **Select** | native-styled, searchable (Vue combobox) | same |
 | **Checkbox / Radio / Toggle** | — | default, checked, indeterminate, focus, disabled |
 | **Pill / Tag** | neutral, category (per-category hue), th, status, removable | default, hover, selected |
@@ -262,7 +262,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 | **Avatar** | 24/32/48/64/96/128, with verified ring | image, initials fallback, loading |
 | **Card** | flat, raised, interactive (hover lift), feature | default, hover, focus-within (interactive only), selected |
 | **Modal / Sheet** | centered modal (desktop), bottom sheet (mobile) | open, closing; focus-trapped |
-| **Toast** | info, success, danger, **reward** (gold, animated) | enter, idle, exit |
+| **Toast** | info, success, danger, **reward** (gold, animated) | enter, idle, exit; the server's `flash.success` / `flash.error` after a save or redirect arrive as success / danger toasts from the layout's toaster (`useFlashToasts`), so forms show no inline "Saved." (2026-10-02) |
 | **Tooltip** | top/bottom/left/right | — |
 | **Dropdown menu** | — | keyboard navigable (WAI-ARIA menu button: Enter/Space/Down opens on the first item, Up on the last; arrows, Home, End move; Escape closes and returns focus; Tab and an outside click close) |
 | **Tabs** | underline, pill | active, focus |
@@ -345,11 +345,15 @@ titled plain box for the dashboard panels, numbers in the body font at `--text-h
 - Minimum touch target 44×44.
 
 ### Tablet (768–1023px)
-Two-column base grid, bottom nav becomes a top nav, filters become a collapsible inline panel.
+Two-column base grid; the bottom nav gives way to the desktop top-bar nav below (owner decision,
+2026-10-02); filters become a collapsible inline panel.
 
 ### Desktop (≥1024px)
-- Left sidebar (240px, collapsible to 64px icons): primary nav + quick filters.
-- Top bar: global search (prominent, `/` keyboard shortcut), notifications, user menu.
+- No sidebar and no second nav row in the member layout: the primary nav sits inside the top bar as
+  plain text links (no icons), straight after the wordmark; the current one is gold with a 4px gold
+  bar along the bottom edge of the header (owner decision, 2026-10-02).
+- Top bar, signed in, left to right: wordmark, primary nav … search (prominent, `/` keyboard shortcut once it
+  ships), the staff link (Admin for admins, Reports for moderators), notification bell, user menu.
 - Content max-width **1200px**, centred; base grid 3 columns (4 at ≥1440px).
 - Filters as a sticky left panel inside the content column on listing pages.
 
@@ -463,7 +467,9 @@ consequences; an inline current-password field and the danger button request del
 leaving the form for password confirmation. Password errors appear inline; the field clears after
 each request and is disabled while submitting. Suspended accounts see the explanation
 and an unavailable message, with no form; the ability comes from the server policy.
-*Profile:* avatar, then a Username flat card (current `@name`, the 30-day and 90-day rules, the new-name
+*Profile:* avatar (a picked photo opens a crop dialog first: drag to reposition, zoom slider, wheel or
+pinch, arrow keys and +/-, inside a square frame with a round guide; Save uploads the cropped square,
+Cancel uploads nothing; owner decision, 2026-10-02), then a Username flat card (current `@name`, the 30-day and 90-day rules, the new-name
 field and the current password; instead of the form, the date the next change opens, a link to
 confirm the email, or "unavailable while suspended"), then the profile form.
 *Security:* Password, Email address (the masked current address, a pending change with "Send the
@@ -479,9 +485,16 @@ uses the public layout, requires no sign-in and has a confirmation button; GET c
 Show success after POST and a generic invalid/expired-link state, without an email address
 ([16 §5](16-notifications.md); owner decision, 2026-10-01).
 
+### Moderation (`/moderation/reports`)
+The moderators' report queue in the member layout (specs/04 §3). Until reports exist (P3-06) it is
+the empty state "No open reports".
+
 ### Admin (`/admin/*`)
 Left nav (Dashboard · Reports · Disputes · Users · Content · Media · Marketplace · Logs) →
-DataTable views → detail/action panels. No game styling, no animation beyond 120ms fades,
+DataTable views → detail/action panels. From 768px the top bar and left nav stay fixed and only the
+content column scrolls; "Back to site" sits at the bottom of the left nav (below 768px, the end of
+the folded menu). The user list shows each account's avatar beside the username; status pills never
+wrap (owner decision, 2026-10-02). No game styling, no animation beyond 120ms fades,
 information-dense, keyboard-first. Each nav item appears once its page exists and the viewer
 holds its ability (`auth.can`, `adminNav` in `navigation.ts`); the longest matching link is the
 current one.
