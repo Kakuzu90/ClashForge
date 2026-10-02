@@ -2,7 +2,7 @@
 id: P2-07
 title: Wrap the CoC HTTP client in throttle, circuit-breaker and cache decorators, with a request log
 phase: 2
-status: review
+status: done
 depends_on: [P2-01]
 ---
 

@@ -41,8 +41,7 @@ Authentication identity and platform-level status. Deliberately thin — profile
 | status | varchar(20) | `active`\|`restricted`\|`suspended`\|`banned`\|`pending_deletion` |
 | status_reason | varchar(255) null | user-visible sanction reason |
 | status_expires_at | timestamptz null | timed restriction/suspension |
-| featured_coc_account_id | bigint null FK → coc_accounts | `ON DELETE SET NULL`, deferrable (circular with coc_accounts) |
-| verified_accounts_count | int default 0 | denormalised, drives the verified badge |
+| verified_accounts_count | int default 0 | denormalised, drives the verified badge; counts the user's `verified` and `disputed` rows. Written only by Auth's `UserStatusService::syncVerifiedAccounts()` (P2-02). The featured account is `coc_accounts.is_featured`, not a column here |
 | last_login_at / last_login_ip_hash | timestamptz / varchar(64) null | IP stored as HMAC-SHA256 keyed by `IP_HASH_SALT` (`App\Support\Privacy\IpHash`) |
 | username_changed_at | timestamptz null | enforces the 30-day rule |
 | verification_notice_key | char(26) null | P1-16: guarded/hidden dispatch ULID; changes per queued notice so stale jobs cannot clear or send a newer dispatch; cleared on anonymisation |
@@ -160,7 +159,7 @@ A CoC player tag attached to a website user. The central trust object of the pla
 | verified_at | timestamptz null | |
 | verification_method | varchar(20) null | `api_token`\|`admin` |
 | ign | varchar(30) | current in-game name |
-| th_level | smallint | |
+| th_level | smallint null | the game stats below are nullable: a field the API stops sending reads as null ([23 §5](23-edge-cases.md)) |
 | builder_hall_level | smallint null | |
 | xp_level | smallint | |
 | trophies / best_trophies / builder_trophies | int | |
@@ -168,7 +167,7 @@ A CoC player tag attached to a website user. The central trust object of the pla
 | attack_wins / defense_wins | int | |
 | donations / donations_received | int | |
 | clan_tag | varchar(15) null | denormalised for filtering |
-| clan_id | bigint null FK → clans | `ON DELETE SET NULL` |
+| clan_id | bigint null FK → clans | `ON DELETE SET NULL`; added with the clans stub (P2-13) |
 | clan_role | varchar(20) null | `member`\|`admin`\|`coLeader`\|`leader` |
 | league_id / league_name / league_icon_url | int null / varchar(50) null / text null | `league_id` resolves to our self-hosted emblem in the `game/` pack; the API URL is kept as a fallback. Never copied into `media` ([18 §2.3](18-design-system.md)) |
 | troops / heroes / spells / hero_equipment | jsonb default '[]' | raw-ish API shape, normalised keys |
@@ -179,11 +178,12 @@ A CoC player tag attached to a website user. The central trust object of the pla
 | api_sync_failures | smallint default 0 | drives backoff and `stale` display |
 | is_featured | bool default false | one per user, enforced by partial unique |
 | images_count | smallint default 0 | quota guard (max 5) |
-| created_at / updated_at / deleted_at | timestamptz | |
+| created_at / updated_at | timestamptz | no `deleted_at`: ownership history is never deleted ([13 §1](13-claiming-workflow.md)) |
 
 **Constraints:**
-- `UNIQUE (tag_normalized) WHERE status = 'verified'` — partial unique index: *only one verified
-  owner globally*, while multiple unverified claims may coexist.
+- `UNIQUE (tag_normalized) WHERE status IN ('verified','disputed')` — partial unique index: *only one
+  holder globally* (a disputed row still holds the tag, [13 §2](13-claiming-workflow.md)), while
+  multiple unverified claims may coexist.
 - `UNIQUE (user_id, tag_normalized)` — a user cannot attach the same tag twice.
 - `UNIQUE (user_id) WHERE is_featured` — one featured account per user.
 - `CHECK (th_level BETWEEN 1 AND 30)`, `CHECK (images_count <= 5)`.
@@ -200,15 +200,21 @@ Every attempt to attach a tag, successful or not. The forensic record behind dis
 | id | bigserial PK | |
 | coc_account_id | bigint null FK → coc_accounts | null if the attempt never created an account row |
 | tag_normalized | varchar(14) | always present |
-| user_id | bigint FK → users | claimant |
+| user_id | bigint FK → users | claimant; `ON DELETE RESTRICT` (forensic history) |
 | method | varchar(20) | `api_token`\|`dispute`\|`admin` |
 | status | varchar(20) | `pending`\|`succeeded`\|`failed`\|`rejected`\|`superseded` |
-| failure_reason | varchar(100) null | `invalid_token`\|`already_claimed`\|`api_error`\|`rate_limited` |
+| failure_reason | varchar(100) null | `invalid_token`\|`already_claimed`\|`api_error`\|`rate_limited`\|`not_found` |
 | ip_hash / user_agent | varchar(64) / varchar(255) | abuse detection |
 | created_at | timestamptz | |
 
 **Indexes:** `(tag_normalized, created_at DESC)`; `(user_id, created_at DESC)`;
 `(status)` partial `WHERE status = 'pending'`.
+
+**Lifecycle:** an attach writes `pending`; each verification attempt writes its own `succeeded` or
+`failed` row; on success the verifier's `pending` rows for that account become `succeeded`, and a
+superseded holder's own `pending` rows become `superseded`. A refused attach writes a `failed` row
+with no account; past a limit only the first refusal of the window is written. Every column is set
+by the service (nothing fillable).
 
 ### `coc_account_disputes` [M]
 A contested tag, routed to admins.

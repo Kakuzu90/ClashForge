@@ -48,12 +48,16 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P2-07 | Client decorators: throttle (rate budgets, interactive/background buckets), circuit breaker (incl. maintenance), cache + negative cache + stale-while-error, `coc_api_requests` log + prune, `CocApiStatus` (split from P2-01; banner and dashboard panel split to P2-10) | done | P2-01 | tasks/phase-2/P2-07-coc-client-decorators.md |
 | P2-10 | API status UI: site-wide banner while the CoC circuit is open or in maintenance (shared prop from `CocApiStatus`) + the dashboard's API sync health panel (from P1-13) (split from P2-07) | todo | P2-07, P1-13 | |
 | P2-08 | Key rotation via the developer portal (`coc:rotate-keys`, egress IP detection) + `/leagues` `/locations` reference data (`coc:refresh-reference-data`) (split from P2-01) | todo | P2-01 | |
-| P2-02 | Attach + token verification flow (+ the attach CTA in the own profile's Accounts empty state, from P1-04) | todo | P2-01, P2-07, P1-02 | |
+| P2-02 | Attach + token verification backend: `coc_accounts`, `coc_account_claims`, attach and verify services, supersede, policy, limits (UI → P2-11, notifications → P2-12, clans stub → P2-13, detach/featured → P2-14) | done | P2-01, P2-07, P1-02 | tasks/phase-2/P2-02-attach-and-verify.md |
 | P2-03 | Conflicts, disputes, ownership transfer (+ the dashboard's pending disputes panel, from P1-13) | todo | P2-02, P1-06 | |
-| P2-04 | PlayerCard, account detail, progression | todo | P2-02, P0-06 | |
+| P2-04 | PlayerCard, account detail, progression | todo | P2-02, P2-13, P0-06 | |
 | P2-05 | Asset pack v1 | todo | P0-06 | |
 | P2-06 | System health page (specs/20 §5–6, NFR-OBS-6): queue depth, oldest pending job, failed jobs grouped by class with retry / delete (audited), CoC key pool and sync success rate; linked from the dashboard's failed-jobs panel (from P1-13) | todo | P2-01, P2-07, P1-13 | |
 | P2-09 | Tiered sync, snapshots, manual refresh (specs/09 §6, FR-COC-9/10/14): `sync_states`, `coc:sync-accounts`, `SyncCocAccountJob`, snapshot-on-change, stale-data fallback (board gap: listed in specs/25 §4, from P2-01) | todo | P2-02, P2-07 | |
+| P2-11 | Attach flow UI (`/accounts/attach`: tag → confirmation card → token → success, error states for not found / conflict (with the token path through `VerifyOwnershipService::verifyTag`, specs/13 §4 A) / invalid token / API unavailable; the own profile's Accounts empty-state CTA, from P1-04) (split from P2-02) | todo | P2-02, P2-12 | |
+| P2-12 | Ownership notifications: CoC account verified (I + E), your verified account was claimed by someone else (I + E*), listening to `CocAccountVerified` / `CocAccountOwnershipTransferred` (specs/13 §8, specs/16) (split from P2-02) | todo | P2-02 | |
+| P2-13 | Clans stub: `clans` table (specs/07, read-only stub in M), ensure-clan listener on `CocAccountVerified`, `coc_accounts.clan_id` (split from P2-02) | todo | P2-02 | |
+| P2-14 | Detach, release and featured account (FR-COC-12/13, specs/13 §6): password re-confirmation, `released`, reuse on re-attach, featured switch; release a deleted account's tags at the end of the deletion window, and a banned owner's after 30 days (from P2-02 security review) (split from P2-02) | todo | P2-02 | |
 
 ## Phase 3 — Bases + moderation (MVP)
 

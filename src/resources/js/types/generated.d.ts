@@ -2,8 +2,8 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed';
-export type AuditSubject = 'user';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified';
+export type AuditSubject = 'user' | 'coc_account';
 }
 }
 namespace Auth {
@@ -227,6 +227,45 @@ namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
 export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed';
 export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
+}
+}
+namespace PlayerAccounts {
+namespace Data {
+export type AttachResultData = {
+outcome: App.Domain.PlayerAccounts.Enums.AttachOutcome,
+tag: string,
+player: App.Domain.PlayerAccounts.Data.CocPlayerPreviewData | null,
+accountUlid: string | null,
+holderUsername: string | null,
+retryAfter: number | null,
+};
+export type CocPlayerPreviewData = {
+tag: string,
+name: string,
+townHallLevel: number | null,
+trophies: number | null,
+expLevel: number | null,
+clanName: string | null,
+leagueName: string | null,
+stale: boolean,
+fetchedAt: string | null,
+};
+export type VerifyResultData = {
+outcome: App.Domain.PlayerAccounts.Enums.VerifyOutcome,
+accountUlid: string | null,
+superseded: boolean,
+featured: boolean,
+retryAfter: number | null,
+};
+}
+namespace Enums {
+export type AttachOutcome = 'ready' | 'attached' | 'already_attached' | 'not_found' | 'verified_elsewhere' | 'unavailable' | 'rate_limited';
+export type ClaimFailureReason = 'invalid_token' | 'already_claimed' | 'api_error' | 'rate_limited' | 'not_found';
+export type ClaimMethod = 'api_token' | 'dispute' | 'admin';
+export type ClaimStatus = 'pending' | 'succeeded' | 'failed' | 'rejected' | 'superseded';
+export type CocAccountStatus = 'unverified' | 'verified' | 'disputed' | 'suspended' | 'released';
+export type VerificationMethod = 'api_token' | 'admin';
+export type VerifyOutcome = 'verified' | 'invalid_token' | 'not_found' | 'unavailable' | 'rate_limited';
 }
 }
 namespace Users {

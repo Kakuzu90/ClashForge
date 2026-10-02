@@ -53,7 +53,6 @@
 | user → notification_preferences | 1:1, lazily created | user | cascade |
 | user → notification_email_deliveries | 1:N | user | cascade |
 | user → coc_accounts | 1:N | user | **set null + status `released`** — the tag must become reclaimable, and the history must survive |
-| user → featured coc_account | N:1 (nullable, circular) | user | set null |
 | coc_account → snapshots | 1:N | account | cascade |
 | coc_account → claims | 1:N | account (nullable) | set null (claims outlive the account row) |
 | coc_account → disputes | 1:N | account | restrict — a disputed account cannot be deleted |
@@ -96,8 +95,12 @@
 - The relationship is **temporal**: it can move between users. `coc_account_claims` records every
   attempt, `coc_account_disputes` records contested moves, `audit_logs` records the transfer.
   Nothing in the chain is deletable.
-- Ownership transfer keeps the same `coc_accounts` row (preserving snapshots and history) and
-  changes `user_id`, rather than creating a new row.
+- Rows are **per user** (`UNIQUE (user_id, tag_normalized)`). A transfer promotes the new owner's
+  own row and drops the previous holder's row to `unverified`, which keeps its `user_id` so they
+  can verify again (owner decision 2026-10-02, P2-02). Snapshot history is read by tag across rows.
+  A released row is reused by the next user who attaches the tag, so its history continues.
+- One featured account per user is `coc_accounts.is_featured` (partial unique); `users` holds no
+  pointer to it.
 
 ### 3.2 `base_layouts` ↔ `users` and `coc_accounts` — authorship vs credit
 
@@ -148,7 +151,7 @@ Every denormalised value has one authoritative writer and one repair job.
 | `base_metrics.views_count` | `base_view_events` | hourly aggregation job | full recount weekly |
 | `base_metrics.copies_count` | `base_copy_events` | hourly aggregation job | full recount weekly |
 | `base_metrics.trending_score` | metrics + age | scheduled scorer (15 min) | recomputed each run |
-| `users.verified_accounts_count` | `coc_accounts` | verification/detach service | nightly reconcile |
+| `users.verified_accounts_count` | `coc_accounts` (`verified` + `disputed`) | recounted inside the verification/detach transaction, written through Auth's `UserStatusService::syncVerifiedAccounts()` | nightly reconcile |
 | `user_stats.*` | bases, likes, comments | event listeners | nightly recompute |
 | `base_tags.usage_count` | pivot | tag sync in publish/unpublish | nightly reconcile |
 | `clans.members_count` | CoC API | clan sync job | next sync |

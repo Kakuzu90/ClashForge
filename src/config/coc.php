@@ -82,6 +82,17 @@ return [
         'retention_days' => 7,
     ],
 
+    // Attaching and verifying accounts (specs/04 §4, specs/09 §9, specs/23 §2). Attach counts each
+    // distinct tag once an hour, so looking a tag up and then attaching it is one attempt.
+    'accounts' => [
+        'attach_per_hour' => 5,
+        'verify_per_hour' => 5,
+        // Attached accounts at which a user is flagged for review (badge farming).
+        'anomaly_accounts' => 20,
+        // A flagged user is flagged again at most this often while above the threshold.
+        'anomaly_reflag_hours' => 24,
+    ],
+
     'fake' => [
         // Recorded responses, one file per tag (specs/19 §6).
         'fixtures_path' => base_path('tests/Fixtures/coc'),

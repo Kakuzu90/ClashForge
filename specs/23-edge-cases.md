@@ -29,7 +29,7 @@ Primary set in [13 §9](13-claiming-workflow.md). Additional:
 
 | Case | Behaviour |
 |---|---|
-| A user attaches 200 tags to farm badges | Attach rate limit (5/hour) plus an anomaly flag at 20+ accounts; unverified accounts grant nothing, so the incentive is minimal |
+| A user attaches 200 tags to farm badges | Attach rate limit (5 tags/hour) plus an anomaly flag (`coc.attach_anomaly`, security log) at 20+ accounts, at most once a day per user; unverified accounts grant nothing, so the incentive is minimal |
 | Tag valid in our normaliser but rejected by the API | Trust the API. Show "this tag doesn't exist" and log the mismatch to tune the normaliser |
 | Player renames in game | IGN updates on sync; the tag is the identity, so nothing else changes. Display shows the current name with no history (avoids exposing former names, which can be sensitive) |
 | Account's clan is private / war log hidden | Store what the API gives; render missing fields as "not shared" rather than blank |

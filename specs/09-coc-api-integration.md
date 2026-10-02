@@ -189,7 +189,7 @@ key from Supercell.
 
 | DTO | Contents |
 |---|---|
-| `PlayerData` | tag, name, townHallLevel, expLevel, trophies, bestTrophies, warStars, attackWins, defenseWins, donations, league, clan (tag, name, role, badge), labels, heroes[], troops[], spells[], heroEquipment[], achievements[] |
+| `PlayerData` | tag, name, townHallLevel, expLevel, trophies, bestTrophies, warStars, attackWins, defenseWins, donations, donationsReceived, builderHallLevel, builderBaseTrophies, league, clan (tag, name, role, badge), labels, heroes[], troops[], spells[], heroEquipment[], achievements[] |
 | `ClanData` | tag, name, description, badges, level, points, memberCount, warFrequency, warLeague, capitalHallLevel, requiredTownHall, requiredTrophies, type, location, members[] |
 | `TokenVerificationResult` | tag, status (`ok`/`invalid` from the API; `not_found`/`unavailable` from us), verifiedAt (only on `ok`) |
 | `UnitData` | name, level, maxLevel, village, superTroopIsActive |
@@ -231,7 +231,7 @@ short-lived and single-use-ish, so the flow must be immediate.
 3. `TokenVerifier` calls `POST /players/{tag}/verifytoken`.
 4. `status: ok` → verification succeeds; `status: invalid` → a precise error explaining that tokens
    expire in a few minutes and must be re-copied.
-5. Attempts are rate-limited (5/hour per user) and every attempt is written to
+5. Attempts are rate-limited (`coc-verify`, 5/hour per user) and every attempt is written to
    `coc_account_claims`, successful or not.
 
 Tokens are **never stored** — not in the database, not in logs, not in job payloads. They exist only

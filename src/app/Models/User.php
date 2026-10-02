@@ -50,6 +50,7 @@ use Illuminate\Notifications\Notifiable;
  * @property CarbonImmutable|null $verification_warning_queued_at
  * @property CarbonImmutable|null $verification_warning_sent_at
  * @property string|null $verification_notice_key
+ * @property int $verified_accounts_count
  */
 class User extends Authenticatable implements HasAccountStanding, MustVerifyEmail
 {
@@ -77,6 +78,7 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         'verification_warning_queued_at' => null,
         'verification_warning_sent_at' => null,
         'verification_notice_key' => null,
+        'verified_accounts_count' => '0',
     ];
 
     /**
@@ -173,6 +175,7 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
             'verification_warning_queued_at' => 'immutable_datetime',
             'verification_warning_sent_at' => 'immutable_datetime',
             'deletion_previous_status' => UserStatus::class,
+            'verified_accounts_count' => 'integer',
             'password' => 'hashed',
             'role' => Role::class,
             'status' => UserStatus::class,

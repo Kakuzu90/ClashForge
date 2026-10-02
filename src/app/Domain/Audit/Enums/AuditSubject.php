@@ -14,11 +14,13 @@ enum AuditSubject: string implements HasLabelAndColor
     use EnumHelpers;
 
     case User = 'user';
+    case CocAccount = 'coc_account';
 
     public function label(): string
     {
         return match ($this) {
             self::User => 'Account',
+            self::CocAccount => 'CoC account',
         };
     }
 

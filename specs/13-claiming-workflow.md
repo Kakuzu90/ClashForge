@@ -54,7 +54,7 @@ The most important workflow on the platform. Every other trust signal derives fr
 
 ```
 1. User enters "#2PP" ──▶ normalise (uppercase, strip #, O→0, charset & length check)
-2. Rate check: ≤5 attach attempts/hour
+2. Rate check: ≤5 distinct tags/hour (`coc-attach`; returning to the same tag is free)
 3. Already attached to this user?  ──▶ "you've already added this account"
 4. GET /players/{tag}
       ├─ 404  ──▶ "no player with that tag" (negative-cached 10 min)
@@ -71,17 +71,22 @@ The most important workflow on the platform. Every other trust signal derives fr
 ```
 
 ### 3.1 Verification success (single transaction)
-1. Re-check the conflict inside the transaction with `SELECT ... FOR UPDATE` on the tag —
-   the check in step 5 is advisory; this one is authoritative.
-2. If another row now holds `verified` for this tag:
-   - demote it to `unverified`, detach its `user_id` reference to a `previous_user_id` audit field,
-     mark its open claim rows `superseded`;
+The token is checked first, outside any transaction (`coc-verify`: 5 attempts/hour per user, every
+attempt counts). On `ok`:
+1. Lock every row of the tag with `SELECT ... FOR UPDATE`, in id order — the check in step 5 is
+   advisory; this one is authoritative. Then lock the `users` rows of the verifier and of every
+   holder, in id order, so two verifications by one user, or two crossing supersedes, serialise.
+2. If another row now holds the tag (`verified` or `disputed`):
+   - demote it to `unverified`; it keeps its `user_id`, so the previous holder still sees it and can
+     verify again, and it loses its featured flag; mark that holder's own `pending` claim rows
+     `superseded` (owner decision 2026-10-02, P2-02);
    - notify the previous holder: *"Someone verified ownership of #TAG with an in-game token. If this
-     was not you, your account may be compromised — secure it and contact support."*
+     was not you, your account may be compromised — secure it and contact support."* (P2-12)
 3. Promote this row: `status='verified'`, `verified_at`, `verification_method='api_token'`.
-4. Increment `users.verified_accounts_count`; set as featured if it is the user's first.
-5. Write the claim row as `succeeded`.
-6. Write `audit_logs` (`coc_account.verified`, before/after user ids).
+4. Recount `users.verified_accounts_count` for the verifier and each previous holder; set as featured
+   if the user has no featured account.
+5. Write the claim row as `succeeded` and close the verifier's `pending` rows as `succeeded`.
+6. Write `audit_logs` (`coc_account.verified`, `verified_user_ids` before and after).
 7. Commit, then dispatch `CocAccountVerified` → full profile sync, clan tracking, notification,
    search indexing.
 8. Auto-resolve any open dispute where this user is the claimant (`auto_resolved`).
@@ -102,7 +107,10 @@ The user is **not** allowed to attach. They see:
 
 Two paths, in this order of preference:
 
-**A. Token verification** (self-service, instant, preferred) → §3.1, automatic transfer.
+**A. Token verification** (self-service, instant, preferred) → §3.1, automatic transfer. The user
+has no row for the tag (attach was refused), so `VerifyOwnershipService::verifyTag()` checks the
+token first and only then creates their row and promotes it in the same transaction; a failed
+token leaves nothing but a `failed` claim row.
 
 **B. Dispute** (manual, slow, evidence-based) → §5.
 
@@ -171,8 +179,8 @@ claim (the claimant can still verify later with a token).
 - `coc_accounts.user_id → null`, `status='released'`, featured flag cleared, `verified_accounts_count`
   decremented, snapshots retained, `audit_logs` written.
 - Bases credited to that account keep their `user_id` (authorship) and lose the credit link.
-- If the user re-attaches later, the **same row is reused** (matched on `tag_normalized` +
-  `released`) so snapshot history is continuous.
+- If the user (or anyone) attaches the tag later, the **latest released row is reused** (matched on
+  `tag_normalized` + `released`) so snapshot history is continuous.
 
 **Released tags are immediately claimable** by anyone with a token. That is correct: account sales
 are prohibited but account *handovers* within families and clans happen, and the token is the truth.

@@ -259,7 +259,8 @@ After 30 days, the nightly pipeline anonymises the retained account and its Phas
 | `password-reset` | 3 / hour; 20 / hour per ip (link requests only) | ip + email; ip |
 | `verify-email-resend` | 3 / hour; a breach is a flash error on the notice page | user |
 | `email-change` | 3 accepted requests and resends / hour (`platform.auth.email_change_per_hour`), counted after validation (`EmailChangeLimit`), so typos are free | user |
-| `coc-attach` | 5 / hour | user |
+| `coc-attach` | 5 distinct tags / hour (`coc.accounts.attach_per_hour`); a preview and the attach of one tag count once | user |
+| `coc-verify` | 5 / hour (`coc.accounts.verify_per_hour`), every attempt; past the limit only the first refusal of the window is recorded | user |
 | `coc-refresh` | 1 / 10 min | user + account |
 | `base-publish` | 5 / day, 20 / week | user |
 | `comment` | 10 / hour, 60 / day | user |

@@ -261,7 +261,8 @@ whether the address was taken, `auth.email_changed`, `auth.email_change_cancelle
 `ip_hash`), new devices (`auth.new_device`),
 session revocation and expiry (`auth.session_revoked`, `auth.session_expired`), 2FA changes, role
 changes, deletion requests/cancellations (`auth.deletion_requested`, `auth.deletion_cancelled`), permission denials,
-CoC claim attempts and verification failures, ownership transfers, admin data access
+CoC claim attempts and verification failures (`coc.attach_attempt`, `coc.verification_failed`,
+`coc.attach_anomaly`), ownership transfers (`coc.ownership_superseded`), admin data access
 (`admin.user_viewed` on each admin user detail: actor and target ULID, `ip_hash`;
 `admin.users_listed` on each load of the user list rows: actor, which filters were used, row count,
 `ip_hash`, never the search text, which may be an email),

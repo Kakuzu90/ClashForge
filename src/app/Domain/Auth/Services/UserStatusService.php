@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 /**
  * Account status for enforcement (specs/04 §1), and the only writer of `users.status*`, called by
  * Moderation's SanctionService inside its transaction so a sanction applies on the next request.
+ * Also the writer of `users.verified_accounts_count` (specs/08 §5), for PlayerAccounts.
  */
 class UserStatusService
 {
@@ -35,6 +36,30 @@ class UserStatusService
     public function clearSanction(User $user): void
     {
         $user->forceFill(['status' => UserStatus::Active, 'status_reason' => null, 'status_expires_at' => null])->save();
+    }
+
+    /**
+     * Locks the given accounts in id order for the rest of the caller's transaction, so two
+     * verifications touching the same users serialise instead of racing or deadlocking (specs/13
+     * §9). Call it before reading anything the count or the featured flag depends on.
+     *
+     * @param  list<int>  $userIds
+     */
+    public function lockAccounts(array $userIds): void
+    {
+        $ids = array_values(array_unique($userIds));
+        sort($ids);
+
+        User::query()->withTrashed()->whereKey($ids)->orderBy('id')->lockForUpdate()->pluck('id');
+    }
+
+    /**
+     * Sets the verified-account count PlayerAccounts recounted inside its verification
+     * transaction (specs/13 §3.1); the nightly reconcile repairs any drift.
+     */
+    public function syncVerifiedAccounts(int $userId, int $count): void
+    {
+        User::query()->withTrashed()->whereKey($userId)->update(['verified_accounts_count' => max(0, $count)]);
     }
 
     public function effectiveStatus(User $user): UserStatus

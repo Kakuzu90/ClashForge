@@ -6,6 +6,7 @@ use App\Domain\GameAssets\GameAssetsServiceProvider;
 use App\Domain\Media\MediaServiceProvider;
 use App\Domain\Moderation\ModerationServiceProvider;
 use App\Domain\Notifications\NotificationsServiceProvider;
+use App\Domain\PlayerAccounts\PlayerAccountsServiceProvider;
 use App\Domain\Users\UsersServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\AuthorizationServiceProvider;
@@ -24,4 +25,5 @@ return [
     NotificationsServiceProvider::class,
     GameAssetsServiceProvider::class,
     CocIntegrationServiceProvider::class,
+    PlayerAccountsServiceProvider::class,
 ];
