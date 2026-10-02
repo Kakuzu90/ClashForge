@@ -1,0 +1,6 @@
+# Pack files stay out of git; each version's manifest.json is committed (specs/10 §11.2 step 4).
+*
+!*/
+!.gitignore
+!.gitkeep
+!manifest.json

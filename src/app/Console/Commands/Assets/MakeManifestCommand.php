@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 
 class MakeManifestCommand extends Command
 {
-    protected $signature = 'assets:make-manifest {path : Folder holding units/, townhalls/ and leagues/} {--pack-version= : Pack version the manifest describes}';
+    protected $signature = 'assets:make-manifest {path : Pack folder: units/, heroes/, spells/, equipments/, pets/, machines/, townhalls/, leagues/} {--pack-version= : Pack version the manifest describes}';
 
     protected $description = 'Write or refresh a game-asset pack manifest from its files, keeping the fields staff filled in';
 

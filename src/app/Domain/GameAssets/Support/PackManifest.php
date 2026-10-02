@@ -16,7 +16,9 @@ final class PackManifest
     public const FILENAME = 'manifest.json';
 
     // Relative, lower-case, no traversal: the key becomes part of a public URL and a bucket key.
-    private const KEY_PATTERN = '#^(units|townhalls|leagues)/[a-z0-9][a-z0-9_-]*\.[a-z0-9]+$#D';
+    private const KEY_PATTERN = '#^[a-z]+/(builder-base/)?[a-z0-9][a-z0-9_-]*\.[a-z0-9]+$#D';
+
+    public const BUILDER_FOLDER = 'builder-base';
 
     /** @var array<string, ManifestEntry> keyed by lookup key */
     private array $index = [];
@@ -126,6 +128,14 @@ final class PackManifest
     }
 
     /**
+     * `{folder}/builder-base/…` is Builder Base; anything else is the Home Village.
+     */
+    public static function villageForKey(string $key): Village
+    {
+        return str_contains($key, '/'.self::BUILDER_FOLDER.'/') ? Village::Builder : Village::Home;
+    }
+
+    /**
      * @param  array<mixed>  $raw
      * @param  list<string>  $problems
      */
@@ -148,8 +158,14 @@ final class PackManifest
             $problems[] = "{$where}: a {$category->value} belongs in {$category->folder()}/";
         }
 
-        if ($category?->isUnit() && $village === null) {
-            $problems[] = "{$where}: units need a village (".implode(' or ', Village::values()).')';
+        if ($category?->hasVillage()) {
+            if ($village === null) {
+                $problems[] = "{$where}: {$category->value} entries need a village (".implode(' or ', Village::values()).')';
+            } elseif ($village !== self::villageForKey($key)) {
+                $problems[] = "{$where}: village {$village->value} does not match the folder (Builder Base assets go in ".self::BUILDER_FOLDER.'/)';
+            }
+        } elseif ($category === GameAssetCategory::League && str_contains($key, '/'.self::BUILDER_FOLDER.'/')) {
+            $problems[] = "{$where}: leagues are keyed by id and have no ".self::BUILDER_FOLDER.'/ folder';
         }
 
         foreach (['ref', 'display_name', 'source'] as $field) {
@@ -177,7 +193,7 @@ final class PackManifest
             category: $category,
             ref: (string) $raw['ref'],
             displayName: (string) $raw['display_name'],
-            village: $category->isUnit() ? $village : null,
+            village: $category->hasVillage() ? $village : null,
             source: (string) $raw['source'],
             sha256: (string) $raw['sha256'],
             bytes: (int) $raw['bytes'],

@@ -2,6 +2,7 @@
 
 use App\Domain\GameAssets\Support\PackManifest;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,7 @@ describe('assets:make-manifest', function () {
         $manifest = PackManifest::fromFile("{$this->packDir}/manifest.json");
         $entry = $manifest->get('units/barbarian.png');
 
-        expect(array_keys($manifest->entries()))->toBe(['leagues/29000022.png', 'townhalls/16.png', 'units/archer-queen.png', 'units/barbarian.png'])
+        expect(array_keys($manifest->entries()))->toBe(['heroes/archer-queen.png', 'leagues/29000022.png', 'townhalls/16.png', 'units/barbarian.png'])
             ->and($entry->sha256)->toBe(hash_file('sha256', "{$this->packDir}/units/barbarian.png"))
             ->and($entry->bytes)->toBe(filesize("{$this->packDir}/units/barbarian.png"))
             ->and([$entry->width, $entry->height])->toBe([64, 64])
@@ -41,8 +42,53 @@ describe('assets:make-manifest', function () {
         file_put_contents("{$this->packDir}/units/wizard.png", self::png(64));
 
         $this->artisan('assets:make-manifest', ['path' => $this->packDir, '--pack-version' => '1'])
-            ->expectsOutputToContain('units/wizard.png: category must be one of')
+            ->expectsOutputToContain('units/wizard.png: source is required')
             ->assertFailed();
+    });
+
+    it('takes category and village from the folder', function () {
+        File::ensureDirectoryExists("{$this->packDir}/townhalls/builder-base");
+        File::ensureDirectoryExists("{$this->packDir}/pets");
+        file_put_contents("{$this->packDir}/townhalls/builder-base/5.png", self::png(70));
+        file_put_contents("{$this->packDir}/pets/unicorn.png", self::png(71));
+        $this->editManifest(fn (array $asset): array => [...$asset, 'source' => 'test fixture']);
+        $this->artisan('assets:make-manifest', ['path' => $this->packDir, '--pack-version' => '1']);
+        $this->editManifest(fn (array $asset): array => [...$asset, 'source' => 'test fixture']);
+
+        $this->artisan('assets:make-manifest', ['path' => $this->packDir, '--pack-version' => '1'])->assertSuccessful();
+
+        $manifest = PackManifest::fromFile("{$this->packDir}/manifest.json");
+        expect($manifest->get('townhalls/builder-base/5.png'))
+            ->category->value->toBe('town_hall')
+            ->village->value->toBe('builderBase')
+            ->displayName->toBe('Builder Hall 5')
+            ->and($manifest->get('pets/unicorn.png'))
+            ->category->value->toBe('pet')
+            ->village->value->toBe('home')
+            ->and($manifest->get('townhalls/16.png')->village->value)->toBe('home')
+            ->and($manifest->get('leagues/29000022.png')->village)->toBeNull();
+    });
+
+    it('lists files that cannot be packed as they are', function () {
+        file_put_contents("{$this->packDir}/units/giant.png", self::webp(64));
+        file_put_contents("{$this->packDir}/units/golem.png", self::png(64));
+        config(['assets.max_bytes' => filesize("{$this->packDir}/units/golem.png") - 1]);
+
+        // One bullet list is one write, so read the whole output rather than expecting each line.
+        expect(Artisan::call('assets:make-manifest', ['path' => $this->packDir, '--pack-version' => '1']))->toBe(1)
+            ->and(Artisan::output())
+            ->toContain('units/giant.png: the file is image/webp, so it must be named .webp')
+            ->toContain('units/golem.png: '.filesize("{$this->packDir}/units/golem.png").' bytes is over the');
+    });
+
+    it('skips the Zone.Identifier files Windows leaves next to downloads', function () {
+        file_put_contents("{$this->packDir}/units/barbarian.png:Zone.Identifier", "[ZoneTransfer]\nZoneId=3\n");
+
+        $this->artisan('assets:make-manifest', ['path' => $this->packDir, '--pack-version' => '1'])->assertSuccessful();
+        $this->artisan('assets:publish-pack', ['path' => $this->packDir, '--pack-version' => '1'])->assertSuccessful();
+
+        expect(PackManifest::fromFile("{$this->packDir}/manifest.json")->entries())->toHaveCount(4)
+            ->and($this->assetsDisk()->allFiles('game/1/units'))->toBe(['game/1/units/barbarian.png']);
     });
 
     it('refuses an unsafe version', function () {
@@ -56,7 +102,7 @@ describe('assets:publish-pack', function () {
 
         $disk = $this->assetsDisk();
 
-        foreach (['units/barbarian.png', 'units/archer-queen.png', 'townhalls/16.png', 'leagues/29000022.png'] as $key) {
+        foreach (['units/barbarian.png', 'heroes/archer-queen.png', 'townhalls/16.png', 'leagues/29000022.png'] as $key) {
             expect($disk->get("game/1/{$key}"))->toBe(file_get_contents("{$this->packDir}/{$key}"));
         }
 
@@ -74,11 +120,11 @@ describe('assets:publish-pack', function () {
             && $options === ['ContentType' => 'image/png', 'CacheControl' => config('assets.cache_control')]);
     });
 
-    it('takes Content-Type from the signature, not the file name', function () {
-        $image = imagecreatetruecolor(64, 64);
-        ob_start();
-        imagewebp($image);
-        file_put_contents("{$this->packDir}/townhalls/16.png", (string) ob_get_clean());
+    it('publishes a WebP file as image/webp', function () {
+        unlink("{$this->packDir}/townhalls/16.png");
+        file_put_contents("{$this->packDir}/townhalls/16.webp", self::webp(64));
+        $this->artisan('assets:make-manifest', ['path' => $this->packDir, '--pack-version' => '1']);
+        $this->editManifest(fn (array $asset): array => [...$asset, 'source' => 'test fixture']);
         $this->artisan('assets:make-manifest', ['path' => $this->packDir, '--pack-version' => '1'])->assertSuccessful();
 
         $disk = Mockery::mock($this->assetsDisk())->makePartial();
@@ -86,7 +132,7 @@ describe('assets:publish-pack', function () {
 
         $this->artisan('assets:publish-pack', ['path' => $this->packDir, '--pack-version' => '1'])->assertSuccessful();
 
-        $disk->shouldHaveReceived('put')->withArgs(fn (string $path, $contents, array $options = []) => $path === 'game/1/townhalls/16.png'
+        $disk->shouldHaveReceived('put')->withArgs(fn (string $path, $contents, array $options = []) => $path === 'game/1/townhalls/16.webp'
             && ($options['ContentType'] ?? null) === 'image/webp');
     });
 
@@ -161,6 +207,8 @@ describe('assets:publish-pack', function () {
             'file not in the manifest' => file_put_contents("{$dir}/units/extra.png", self::png(64)),
             'manifest entry without a file' => unlink("{$dir}/leagues/29000022.png"),
             'not an allowed type' => file_put_contents("{$dir}/units/barbarian.png", 'GIF89a not an image'),
+            'extension disagrees with the signature' => file_put_contents("{$dir}/townhalls/16.png", self::webp(66)),
+            'over the size limit' => config(['assets.max_bytes' => filesize("{$dir}/units/barbarian.png") - 1]),
             'wrong version' => file_put_contents("{$dir}/manifest.json", str_replace('"version": "1"', '"version": "2"', (string) file_get_contents("{$dir}/manifest.json"))),
         };
 
@@ -169,7 +217,7 @@ describe('assets:publish-pack', function () {
             ->assertFailed();
 
         expect($this->assetsDisk()->allFiles())->toBe([]);
-    })->with(['file changed after the manifest', 'file not in the manifest', 'manifest entry without a file', 'not an allowed type', 'wrong version']);
+    })->with(['file changed after the manifest', 'file not in the manifest', 'manifest entry without a file', 'not an allowed type', 'extension disagrees with the signature', 'over the size limit', 'wrong version']);
 
     it('removes everything it uploaded when a stored object does not verify', function () {
         // The store hands back different bytes for one object, as a transforming proxy would.

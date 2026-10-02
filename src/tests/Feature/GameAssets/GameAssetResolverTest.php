@@ -26,7 +26,7 @@ it('resolves catalogue assets to the active pack on the CDN, with intrinsic size
     $unit = resolver()->unit('archer queen');
 
     expect($unit->kind)->toBe(GameAssetKind::Unit)
-        ->and($unit->url)->toBe('https://cdn.test/game/1/units/archer-queen.png')
+        ->and($unit->url)->toBe('https://cdn.test/game/1/heroes/archer-queen.png')
         ->and($unit->alt)->toBe('Archer Queen')
         ->and($unit->short)->toBe('AQ')
         ->and([$unit->width, $unit->height])->toBe([65, 65])

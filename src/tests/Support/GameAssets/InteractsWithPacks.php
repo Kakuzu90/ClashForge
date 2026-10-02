@@ -29,19 +29,16 @@ trait InteractsWithPacks
 
         Storage::fake((string) config('assets.disk'));
 
-        foreach (['units/barbarian.png', 'units/archer-queen.png', 'townhalls/16.png', 'leagues/29000022.png'] as $i => $key) {
+        foreach (['units/barbarian.png', 'heroes/archer-queen.png', 'townhalls/16.png', 'leagues/29000022.png'] as $i => $key) {
             File::ensureDirectoryExists(dirname("{$this->packDir}/{$key}"));
             file_put_contents("{$this->packDir}/{$key}", self::png(64 + $i));
         }
 
         app(ManifestBuilder::class)->build($this->packDir, '1');
-        $this->editManifest(function (array $asset): array {
-            return match ($asset['key']) {
-                'units/barbarian.png' => [...$asset, 'category' => 'troop', 'village' => 'home', 'source' => 'test fixture'],
-                'units/archer-queen.png' => [...$asset, 'category' => 'hero', 'village' => 'home', 'source' => 'test fixture'],
-                'leagues/29000022.png' => [...$asset, 'display_name' => 'Legend League', 'source' => 'test fixture'],
-                default => [...$asset, 'source' => 'test fixture'],
-            };
+        // Category and village come from the folder; staff fill in the source and any names.
+        $this->editManifest(fn (array $asset): array => match ($asset['key']) {
+            'leagues/29000022.png' => [...$asset, 'display_name' => 'Legend League', 'source' => 'test fixture'],
+            default => [...$asset, 'source' => 'test fixture'],
         });
     }
 
@@ -73,6 +70,15 @@ trait InteractsWithPacks
         imagefilledellipse($image, intdiv($size, 2), intdiv($size, 2), $size - 4, $size - 4, (int) imagecolorallocate($image, 240, 190, 40));
         ob_start();
         imagepng($image);
+
+        return (string) ob_get_clean();
+    }
+
+    protected static function webp(int $size): string
+    {
+        $image = imagecreatetruecolor($size, $size);
+        ob_start();
+        imagewebp($image);
 
         return (string) ob_get_clean();
     }

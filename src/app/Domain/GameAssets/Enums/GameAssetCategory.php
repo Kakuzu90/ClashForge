@@ -16,6 +16,8 @@ enum GameAssetCategory: string implements HasLabelAndColor
     case Hero = 'hero';
     case Spell = 'spell';
     case Equipment = 'equipment';
+    case Pet = 'pet';
+    case SiegeMachine = 'siege_machine';
     case TownHall = 'town_hall';
     case League = 'league';
 
@@ -26,6 +28,8 @@ enum GameAssetCategory: string implements HasLabelAndColor
             self::Hero => 'Hero',
             self::Spell => 'Spell',
             self::Equipment => 'Hero equipment',
+            self::Pet => 'Pet',
+            self::SiegeMachine => 'Siege machine',
             self::TownHall => 'Town Hall',
             self::League => 'League',
         };
@@ -36,20 +40,49 @@ enum GameAssetCategory: string implements HasLabelAndColor
         return 'text-muted';
     }
 
+    /**
+     * Everything the API lists in a player's heroes, troops, spells or heroEquipment, looked up by
+     * its API name.
+     */
     public function isUnit(): bool
     {
-        return in_array($this, [self::Troop, self::Hero, self::Spell, self::Equipment], true);
+        return ! in_array($this, [self::TownHall, self::League], true);
     }
 
     /**
-     * The pack folder each category lives in (specs/10 §2).
+     * Units and Town Halls exist in both villages; the folder says which (specs/10 §11.1).
+     */
+    public function hasVillage(): bool
+    {
+        return $this !== self::League;
+    }
+
+    /**
+     * The pack folder each category lives in (specs/10 §11.1). Builder Base assets sit one level
+     * down, in `{folder}/builder-base/`.
      */
     public function folder(): string
     {
         return match ($this) {
+            self::Troop => 'units',
+            self::Hero => 'heroes',
+            self::Spell => 'spells',
+            self::Equipment => 'equipments',
+            self::Pet => 'pets',
+            self::SiegeMachine => 'machines',
             self::TownHall => 'townhalls',
             self::League => 'leagues',
-            default => 'units',
         };
+    }
+
+    public static function fromFolder(string $folder): ?self
+    {
+        foreach (self::cases() as $category) {
+            if ($category->folder() === $folder) {
+                return $category;
+            }
+        }
+
+        return null;
     }
 }

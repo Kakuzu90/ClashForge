@@ -192,7 +192,7 @@ config/
 ├── bases.php      # categories, TH range, trending weights, publish quotas
 ├── recruitment.php# activity levels, war preferences, expiry and bump windows
 ├── platform.php   # feature flags defaults, trust-ramp thresholds, reserved usernames, auth limiters, IP-hash key, profile limits + cache TTLs
-├── assets.php     # pack_version, manifest path, CDN base, enabled flag, placeholder + fallback rules
+├── assets.php     # pack_version, manifest path, CDN base, enabled flag, placeholder + fallback rules, max_bytes per packed file, catalogue display order
 ```
 
 No magic numbers in application code. Every limit, weight and window named above is a config key,

@@ -3,6 +3,7 @@
 namespace App\Domain\GameAssets\Services;
 
 use App\Domain\GameAssets\Enums\GameAssetCategory;
+use App\Domain\GameAssets\Enums\Village;
 use App\Domain\GameAssets\Exceptions\InvalidManifest;
 use App\Domain\GameAssets\Support\LocalPack;
 use App\Domain\GameAssets\Support\PackManifest;
@@ -11,8 +12,8 @@ use Illuminate\Support\Str;
 
 /**
  * Writes or refreshes a pack folder's manifest.json (specs/10 §11.2 step 2). Checksums, sizes and
- * dimensions always come from the files; the fields staff fill in (API name, display name,
- * category, village, source) are kept across runs.
+ * dimensions always come from the files, category and village from the folder; the fields staff
+ * fill in (API name, display name, source) are kept across runs.
  */
 class ManifestBuilder
 {
@@ -28,14 +29,15 @@ class ManifestBuilder
         foreach ($pack->files() as $key => $file) {
             $previous = $existing[$key] ?? [];
             $slug = pathinfo($key, PATHINFO_FILENAME);
-            $category = $this->categoryFor($key);
+            $category = GameAssetCategory::fromFolder(explode('/', $key)[0]);
+            $village = $category?->hasVillage() ? PackManifest::villageForKey($key) : null;
 
             $assets[] = [
                 'key' => $key,
-                'category' => $previous['category'] ?? $category?->value,
+                'category' => $category->value ?? ($previous['category'] ?? null),
                 'ref' => $previous['ref'] ?? ($category?->isUnit() === false ? $slug : Str::headline($slug)),
-                'display_name' => $previous['display_name'] ?? $this->displayName($category, $slug),
-                'village' => $previous['village'] ?? null,
+                'display_name' => $previous['display_name'] ?? $this->displayName($category, $village, $slug),
+                'village' => $village?->value,
                 'source' => $previous['source'] ?? '',
                 'sha256' => $file['sha256'],
                 'bytes' => $file['bytes'],
@@ -44,38 +46,34 @@ class ManifestBuilder
             ];
         }
 
-        file_put_contents($pack->manifestPath(), json_encode(
+        $json = json_encode(
             ['version' => $version, 'assets' => $assets],
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
-        )."\n");
+        )."\n";
 
         try {
-            PackManifest::fromFile($pack->manifestPath());
+            // Canonical bytes, so publish-pack can compare this file with the committed copy.
+            $json = PackManifest::fromJson($json)->toJson();
             $problems = [];
         } catch (InvalidManifest $e) {
             $problems = $e->problems;
         }
+
+        file_put_contents($pack->manifestPath(), $json);
+        $problems = [...$pack->fileProblems(), ...$problems];
 
         Log::info('assets.manifest_built', ['path' => $root, 'version' => $version, 'assets' => count($assets), 'problems' => count($problems)]);
 
         return $problems;
     }
 
-    /**
-     * Only town halls and leagues can be told from the folder; units need a category by hand.
-     */
-    private function categoryFor(string $key): ?GameAssetCategory
+    private function displayName(?GameAssetCategory $category, ?Village $village, string $slug): string
     {
-        return match (explode('/', $key)[0]) {
-            'townhalls' => GameAssetCategory::TownHall,
-            'leagues' => GameAssetCategory::League,
-            default => null,
-        };
-    }
+        if ($category !== GameAssetCategory::TownHall) {
+            return Str::headline($slug);
+        }
 
-    private function displayName(?GameAssetCategory $category, string $slug): string
-    {
-        return $category === GameAssetCategory::TownHall ? "Town Hall {$slug}" : Str::headline($slug);
+        return $village === Village::Builder ? "Builder Hall {$slug}" : "Town Hall {$slug}";
     }
 
     /**

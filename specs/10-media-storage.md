@@ -32,9 +32,10 @@ public/base_video/{media_ulid}/video_720p.mp4
 public/base_video/{media_ulid}/poster.webp
 private/{collection}/{media_ulid}/{variant}.webp     ← e.g. evidence; signed URLs only, staff access
 
-game/{pack_version}/units/{slug}.png          ← curated game assets, uploaded by staff, byte-exact
-game/{pack_version}/townhalls/{level}.png
-game/{pack_version}/leagues/{league_id}.png
+game/{pack_version}/{folder}/{slug}.{png|webp}               ← curated game assets, uploaded by staff, byte-exact
+game/{pack_version}/{folder}/builder-base/{slug}.{png|webp}  ← the Builder Base copy of a unit or hall
+game/{pack_version}/townhalls/{level}.png                    ← also townhalls/builder-base/{level}.png
+game/{pack_version}/leagues/{league_id}.png                  ← none in pack 1 (§11.1)
 game/{pack_version}/manifest.json
 ```
 
@@ -333,9 +334,12 @@ does not permit ([18 §2](18-design-system.md)).
 
 | Asset | Source | Why |
 |---|---|---|
-| Troop / hero / spell / equipment icons | **Self-hosted** in `game/{version}/units/` | Finite, versioned set; not in the API |
-| Town Hall imagery | **Self-hosted** in `game/{version}/townhalls/` | Finite set, one per level |
-| League emblems | **Self-hosted** in `game/{version}/leagues/`, keyed by league id | Finite set; mirroring removes a third-party dependency on every page render |
+| Troop / hero / spell / equipment / pet / siege machine icons | **Self-hosted** in `game/{version}/` under `units/`, `heroes/`, `spells/`, `equipments/`, `pets/`, `machines/` | Finite, versioned set; not in the API |
+| Town Hall and Builder Hall imagery | **Self-hosted** in `game/{version}/townhalls/` (Builder Halls in `townhalls/builder-base/`) | Finite set, one per level |
+| League emblems | **Referenced** from the API's `iconUrls` for now; the pack may self-host them in `game/{version}/leagues/`, keyed by league id | Pack 1 ships none: the API keys emblems by league-tier id, several tiers per family, and the id list comes from `/leagues` (P2-08). The resolver already prefers a packed emblem when one exists |
+
+Builder Base assets sit one level down, in `{folder}/builder-base/`; the folder decides the
+village. Guardians are not packed: the API sends no data for them, so nothing would display them.
 | **Clan badges** | **Referenced** from the API's `badgeUrls` | One per clan, unbounded and mutable — thousands of clans, badges change when a clan edits them. Mirroring would be a sync problem with no upside |
 
 So `GameAssetResolver` has two paths: manifest lookup for the static catalogue, pass-through of the
@@ -346,15 +350,23 @@ stored API URL for clan badges. Callers do not know or care which.
 1. Staff assemble the asset pack locally, preserving the **original files byte-for-byte** — no
    resizing, no format conversion, no optimisation pass, no sprite-sheeting. `pngcrush`,
    `imageoptim` and similar are explicitly out: lossless or not, they rewrite the file and
-   forfeit the "unmodified" claim.
+   forfeit the "unmodified" claim. Source files come from Supercell's Fan Kits (each entry's
+   `source` is `Supercell Fan Kit`). Renaming a file is fine (the bytes stay the same); a file
+   whose real type disagrees with its extension is renamed, never converted. Pack 1 was assembled
+   in `resources/game-assets/1/`, where git ignores everything but the manifest.
 2. `php artisan assets:make-manifest {path} --pack-version={n}` writes the pack's `manifest.json`:
    per asset, key, category, `ref` (the API's unit name, the Town Hall level or the league id),
-   display name, village (home/builderBase, units only), source, SHA-256, byte size, width and
-   height. Checksums, sizes and dimensions always come from the files; staff fill in the rest
-   (category and village for units, source), and reruns keep what they entered. The command lists
-   whatever is still missing. Only `image/png` and `image/webp`, by real signature, may be packed.
+   display name, village (home/builderBase, units and halls), source, SHA-256, byte size, width
+   and height. Checksums, sizes and dimensions come from the files, category and village from the
+   folder; staff fill in the rest (`ref` where the API name differs from the file name, e.g.
+   `P.E.K.K.A` or `Healing Spell`, and source), and reruns keep what they entered. The command
+   lists whatever is still missing, plus files that cannot be packed as they are: a type other
+   than `image/png` or `image/webp` by real signature, an extension that disagrees with the
+   signature, or a file over `assets.max_bytes` (§11.4). Windows `*:Zone.Identifier` download
+   markers are skipped.
 3. `php artisan assets:publish-pack {path} --pack-version={n}` (Symfony reserves `--version`)
-   checks the folder against the manifest (no missing, extra or changed files), refuses a version
+   checks the folder against the manifest (no missing, extra or changed files) and repeats the
+   file checks of step 2, refuses a version
    whose `game/{n}/` prefix already has objects or whose committed manifest describes a different
    pack, and holds a per-version lock for the run. It then uploads the whole tree to `game/{n}/`
    with `Content-Type` set from the real file signature and
@@ -368,6 +380,9 @@ stored API URL for clan badges. Callers do not know or care which.
 5. Activation is a config change (`ASSETS_PACK_VERSION`, read as `config('assets.pack_version')`).
    The previous version stays in the bucket, so a rollback is a one-line revert with no re-upload.
    With no version configured, every catalogue asset resolves to our placeholder.
+6. **Re-cuts after a game update** are the owner's job, within about a week of the update. Until
+   the next version is active, new units and levels render the placeholder with their name
+   ([09 §8](09-coc-api-integration.md)), so a late re-cut is cosmetic, not an outage.
 
 ### 11.3 Rules
 
@@ -393,9 +408,13 @@ stored API URL for clan badges. Callers do not know or care which.
 
 ### 11.4 Sizing and delivery
 
-- Ship each asset at a single sensible source resolution (the largest we display, typically
-  ≤256 px) and scale down in CSS. Multiple baked resolutions would mean multiple derivative files
-  from one original — avoid unless Supercell supplies them at those sizes.
+- Ship each asset at a single source resolution and scale down in CSS. Multiple baked resolutions
+  would mean multiple derivative files from one original — avoid unless Supercell supplies them
+  at those sizes.
+- **Size limit: `assets.max_bytes` (1 MB) per file, no pixel limit.** Files are never resized, so
+  an oversize file stays out of the pack until a smaller original is found, and its unit shows the
+  placeholder meanwhile. Pack 1 left out 52 of the staged files on this rule (most hero
+  equipment, Town Halls 12–18 and the Builder Base heroes, at up to 18 MB each).
 - Served from the same cookieless CDN origin as public media, with the same
   `X-Content-Type-Options: nosniff` and sandbox CSP headers.
 - Long-cached and versioned, so the asset pack contributes effectively nothing to bandwidth cost

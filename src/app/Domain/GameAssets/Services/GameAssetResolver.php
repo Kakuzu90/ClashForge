@@ -35,11 +35,15 @@ class GameAssetResolver
         return $this->make(GameAssetKind::Unit, $entry, $entry->displayName ?? $name, self::initials($name));
     }
 
-    public function townHall(int $level): GameAssetData
+    /**
+     * A Town Hall level, or with `Village::Builder` a Builder Hall level.
+     */
+    public function townHall(int $level, Village $village = Village::Home): GameAssetData
     {
-        $entry = $this->manifest()?->find('town_hall', (string) $level);
+        $entry = $this->manifest()?->find('town_hall', (string) $level, $village);
+        $alt = $village === Village::Builder ? "Builder Hall {$level}" : "Town Hall {$level}";
 
-        return $this->make(GameAssetKind::TownHall, $entry, "Town Hall {$level}", (string) $level);
+        return $this->make(GameAssetKind::TownHall, $entry, $alt, (string) $level);
     }
 
     /**

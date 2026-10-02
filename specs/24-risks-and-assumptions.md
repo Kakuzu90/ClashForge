@@ -101,8 +101,8 @@ To be resolved before the phase named:
 |---|---|---|
 | Q1 | Operating jurisdiction and legal entity — determines privacy law, tax, and marketplace analysis | Before launch |
 | Q2 | Domain name and branding (must not imply Supercell endorsement) | Before launch |
-| Q13 | Where does the curated asset pack come from (which source, and is redistributing a byte-exact copy from our own CDN acceptable under the Fan Content Policy as read in Q1's jurisdiction)? | Phase 2 |
-| Q14 | Who owns re-cutting the asset pack after a game update adds units or a TH level, and how fast? A missing asset degrades to a placeholder, so this is a chore, not an incident — but it is an unowned one today | Phase 2 |
+| Q13 | Where does the curated asset pack come from (which source, and is redistributing a byte-exact copy from our own CDN acceptable under the Fan Content Policy as read in Q1's jurisdiction)? **Source answered (owner, 2026-10-02):** Supercell's Fan Kits, byte-exact ([10 §11.2](10-media-storage.md)). The legal reading still follows Q1 | Phase 2 (source); before launch (legal reading) |
+| Q14 | Who owns re-cutting the asset pack after a game update adds units or a TH level, and how fast? **Answered (owner, 2026-10-02):** the owner, within about a week of the update; until then new items show the placeholder with their name ([10 §11.2](10-media-storage.md) step 6) | Phase 2 |
 | Q3 | Minimum age: 13 globally, or 16 in the EEA? Affects the age gate and consent | Phase 1 |
 | Q4 | Does the platform commit to an SLA for dispute resolution, and with what staffing? | Phase 2 |
 | Q5 | Are unverified CoC accounts shown publicly at all, or only to their owner? (Current spec: shown, clearly labelled — **confirm**) | Phase 2 |

@@ -15,7 +15,7 @@ return [
     // Kill switch: false → our own placeholders everywhere and no game asset is served (18 §2.1 (7)).
     'enabled' => (bool) env('ASSETS_ENABLED', true),
 
-    // Active pack under game/{version}/. Null until the first pack ships (P2-05): placeholders only.
+    // Active pack under game/{version}/. Null → placeholders only. Pack 1 shipped in P2-05.
     'pack_version' => env('ASSETS_PACK_VERSION'),
 
     // The committed manifest the resolver reads at runtime; {version} is replaced (specs/10 §11.2).
@@ -33,11 +33,15 @@ return [
     // One publish per version at a time; the lock expires on its own if a run dies.
     'publish_lock_seconds' => 1800,
 
-    // File types a pack may contain, by real signature.
+    // File types a pack may contain, by real signature, and the extension each must carry.
     'mimes' => [
         'image/png' => 'png',
         'image/webp' => 'webp',
     ],
+
+    // Largest file a pack may contain. Files are never resized (specs/10 §11.4): a bigger one
+    // stays out of the pack until a smaller original is found, and shows the placeholder.
+    'max_bytes' => 1024 * 1024,
 
     // Hosts allowed for URLs the CoC API hands us (clan badges, league icon fallback), https only.
     'remote_hosts' => ['api-assets.clashofclans.com'],
@@ -45,10 +49,11 @@ return [
     // Clan badge sizes as named by the API's badgeUrls (specs/09 §8).
     'badge_sizes' => ['small', 'medium', 'large'],
 
-    // Current available data in the API
+    // Display order of the catalogue, by pack file name without the extension (`{folder}/{slug}`).
+    // Read by the progression grids (P2-04); a test keeps pack 1 in step with these lists.
     // Heroes equipment in order
     'heroes_equipments' => [
-        'barbarian_king' => [
+        'barbarian-king' => [
             'barbarian-puppet',
             'rage-vial',
             'earthquake-boots',
@@ -77,11 +82,11 @@ return [
             'dark-crown',
         ],
         'grand-warden' => [
-            'eternal tome',
+            'eternal-tome',
             'life-gem',
             'rage-gem',
             'healing-tome',
-            'heroic torch',
+            'heroic-torch',
             'fireball',
             'lavaloon-puppet',
         ],
@@ -106,7 +111,7 @@ return [
 
     // Heroes in order
     'heroes' => [
-        'barbarian_king',
+        'barbarian-king',
         'archer-queen',
         'minion-prince',
         'grand-warden',
@@ -238,6 +243,6 @@ return [
         'super-hog-rider',
         'longshot',
         'smasher',
-        'logger'
+        'logger',
     ],
 ];

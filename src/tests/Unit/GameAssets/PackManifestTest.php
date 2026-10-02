@@ -26,11 +26,12 @@ function manifestJson(array $assets, string $version = '1'): string
 }
 
 it('parses a valid manifest and finds entries case-insensitively', function () {
-    $manifest = PackManifest::fromJson(manifestJson([manifestAsset(), manifestAsset(['key' => 'townhalls/16.png', 'category' => 'town_hall', 'ref' => '16', 'display_name' => 'Town Hall 16', 'village' => null])]));
+    $manifest = PackManifest::fromJson(manifestJson([manifestAsset(), manifestAsset(['key' => 'townhalls/16.png', 'category' => 'town_hall', 'ref' => '16', 'display_name' => 'Town Hall 16', 'village' => 'home'])]));
 
     expect($manifest->version)->toBe('1')
         ->and($manifest->find('unit', 'BARBARIAN', Village::Home)?->key)->toBe('units/barbarian.png')
-        ->and($manifest->find('town_hall', '16')?->key)->toBe('townhalls/16.png')
+        ->and($manifest->find('town_hall', '16', Village::Home)?->key)->toBe('townhalls/16.png')
+        ->and($manifest->find('town_hall', '16', Village::Builder))->toBeNull()
         ->and(PackManifest::fromJson($manifest->toJson())->toJson())->toBe($manifest->toJson());
 });
 
@@ -49,7 +50,11 @@ it('rejects invalid manifests with every problem listed', function (string $json
     'upper case key' => [manifestJson([manifestAsset(['key' => 'units/Barbarian.png'])]), 'key must look like'],
     'unknown category' => [manifestJson([manifestAsset(['category' => 'building'])]), 'category must be one of'],
     'wrong folder' => [manifestJson([manifestAsset(['category' => 'league'])]), 'belongs in leagues/'],
-    'unit without village' => [manifestJson([manifestAsset(['village' => null])]), 'units need a village'],
+    'unit without village' => [manifestJson([manifestAsset(['village' => null])]), 'troop entries need a village'],
+    'village disagrees with the folder' => [manifestJson([manifestAsset(['village' => 'builderBase'])]), 'does not match the folder'],
+    'builder base asset marked home' => [manifestJson([manifestAsset(['key' => 'townhalls/builder-base/5.png', 'category' => 'town_hall', 'ref' => '5'])]), 'does not match the folder'],
+    'league in a builder-base folder' => [manifestJson([manifestAsset(['key' => 'leagues/builder-base/1.png', 'category' => 'league', 'ref' => '1', 'village' => null])]), 'leagues are keyed by id'],
+    'nested folder' => [manifestJson([manifestAsset(['key' => 'units/extra/barbarian.png'])]), 'key must look like'],
     'bad checksum' => [manifestJson([manifestAsset(['sha256' => 'abc'])]), 'sha256 must be'],
     'missing source' => [manifestJson([manifestAsset(['source' => ''])]), 'source is required'],
     'zero width' => [manifestJson([manifestAsset(['width' => 0])]), 'width must be a positive integer'],

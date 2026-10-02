@@ -2,6 +2,7 @@
 
 use App\Domain\GameAssets\Services\GameAssetPolicy;
 use App\Domain\GameAssets\Services\GameAssetResolver;
+use App\Domain\GameAssets\Support\PackManifest;
 use Tests\Support\GameAssets\InteractsWithPacks;
 
 // API-supplied URLs (clan badges, league icons) cross a trust boundary: only https URLs on the
@@ -58,6 +59,21 @@ describe('pack URLs', function () {
             ->and($resolver->townHall(16)->url)->toBeNull()
             ->and($resolver->league(29000022, 'Legend League')->url)->toBeNull();
     })->with(['../1', '1/../../public', 'a b', '1/', '.hidden', "1\n", str_repeat('9', 40)]);
+});
+
+it('keeps every pack 1 asset inside game/1/ on the CDN', function () {
+    config(['assets.pack_version' => '1', 'assets.cdn_url' => 'https://cdn.test']);
+    app()->forgetScopedInstances();
+    $resolver = app(GameAssetResolver::class);
+
+    foreach (PackManifest::fromFile(resource_path('game-assets/1/manifest.json'))->entries() as $key => $entry) {
+        $asset = $entry->category->isUnit()
+            ? $resolver->unit($entry->ref, $entry->village)
+            : $resolver->townHall((int) $entry->ref, $entry->village);
+
+        expect($asset->url)->toBe("https://cdn.test/game/1/{$key}")
+            ->and($asset->url)->not->toContain('..');
+    }
 });
 
 it('rejects versions with a trailing newline', function () {

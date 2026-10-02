@@ -109,7 +109,7 @@ height: number | null,
 };
 }
 namespace Enums {
-export type GameAssetCategory = 'troop' | 'hero' | 'spell' | 'equipment' | 'town_hall' | 'league';
+export type GameAssetCategory = 'troop' | 'hero' | 'spell' | 'equipment' | 'pet' | 'siege_machine' | 'town_hall' | 'league';
 export type GameAssetKind = 'unit' | 'town_hall' | 'league' | 'clan_badge';
 export type Village = 'home' | 'builderBase';
 }

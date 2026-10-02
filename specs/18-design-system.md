@@ -25,8 +25,8 @@ Clash of Clans content. On this platform that means:
 
 | Asset | Permitted use | Where it appears |
 |---|---|---|
-| Troop, hero, spell and hero-equipment icons | Identifying that unit in a progression grid, a level chip or a base requirement | Account detail, PlayerCard, base metadata |
-| Town Hall imagery | Identifying a TH level alongside the numeral | TH badge, base card, filters |
+| Troop, hero, spell, hero-equipment, pet and siege machine icons (both villages) | Identifying that unit in a progression grid, a level chip or a base requirement | Account detail, PlayerCard, base metadata |
+| Town Hall and Builder Hall imagery | Identifying a TH or BH level alongside the numeral | TH badge, base card, filters |
 | Clan badges | Identifying a specific clan | ClanChip, clan cards, recruitment cards |
 | League emblems | Identifying a player's or clan's league | PlayerCard, stat blocks, recruitment filters |
 | Hero equipment / building imagery | Identifying the item being referred to | Progression grids |
@@ -69,10 +69,13 @@ the convention is the influence and the execution is ours ([18 §3](18-design-sy
   badge or league emblem. No template ever hardcodes a game-asset path. Turning the category off,
   swapping to originals, or changing the delivery origin is then one class.
 - **Two sources, invisible to callers.**
-  - *Curated catalogue* (troop, hero, spell and equipment icons, Town Hall imagery, league emblems):
-    a finite, versioned set that staff download and upload to R2 under `game/{version}/`,
+  - *Curated catalogue* (troop, hero, spell, equipment, pet and siege machine icons, Town Hall and
+    Builder Hall imagery, and league emblems once a pack carries them): a finite, versioned set
+    that staff download from Supercell's Fan Kits and upload to R2 under `game/{version}/`,
     **byte-for-byte**, served from our CDN. Procedure and rules in
     [10 §11](10-media-storage.md).
+  - *League emblems*: pack 1 ships none, so they come from the API's `iconUrls` (allowlisted, see
+    below) until a pack maps emblems to league-tier ids ([10 §11.1](10-media-storage.md)).
   - *Clan badges*: referenced from the API's own `badgeUrls` and stored as URLs
     (`clans.badge_urls` in [07](07-database-schema.md)). One badge per clan, unbounded and mutable
     — mirroring thousands of them would be a sync problem with no upside.
