@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useFlashToasts } from '@/Composables/useFlashToasts';
 import { useToast } from '@/Composables/useToast';
 import UiToast from './UiToast.vue';
 
@@ -6,6 +7,8 @@ import UiToast from './UiToast.vue';
 defineProps<{ aboveTabBar?: boolean }>();
 
 const { toasts, dismiss, pause, resume } = useToast();
+// Server flash messages after a form submit or redirect arrive here as toasts.
+useFlashToasts();
 </script>
 
 <template>

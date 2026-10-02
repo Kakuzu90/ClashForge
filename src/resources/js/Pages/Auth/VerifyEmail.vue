@@ -2,7 +2,6 @@
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiCard from '@/Components/ui/UiCard.vue';
-import { usePageProps } from '@/Composables/usePageProps';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { send } from '@/routes/verification';
 import { useForm } from '@inertiajs/vue3';
@@ -14,7 +13,6 @@ type Props = App.Http.Data.Auth.VerifyEmailPageData;
 // FR-AUTH-3/4: what to do until the email is confirmed, and a fresh link on request.
 defineProps<{ email: Props['email']; status: Props['status']; linkMinutes: Props['linkMinutes'] }>();
 
-const { flash } = usePageProps();
 const form = useForm({});
 
 function resend() {
@@ -27,7 +25,6 @@ function resend() {
         <h1 class="font-display text-h1">Confirm your email</h1>
 
         <UiAlert v-if="status" kind="success">{{ status }}</UiAlert>
-        <UiAlert v-else-if="flash?.error" kind="warning">{{ flash.error }}</UiAlert>
 
         <UiCard class="flex flex-col gap-4 p-5 sm:p-6">
             <p class="text-body">

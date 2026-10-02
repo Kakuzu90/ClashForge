@@ -85,7 +85,6 @@ function submit() {
 
                 <div class="flex flex-wrap items-center gap-3">
                     <UiButton type="submit" :loading="form.processing">Save privacy settings</UiButton>
-                    <span v-if="form.recentlySuccessful" role="status" class="text-sm text-fg-secondary">Saved.</span>
                     <Link
                         :href="show(username).url"
                         class="ml-auto inline-flex min-h-11 items-center text-sm font-semibold text-brand underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"

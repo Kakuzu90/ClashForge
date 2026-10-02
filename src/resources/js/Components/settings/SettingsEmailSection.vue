@@ -19,7 +19,6 @@ defineProps<{
 // `email-change` limit comes back as an `email` error.
 const form = useForm({ email: '', current_password: '' });
 const cancelForm = useForm({});
-const resent = ref(false);
 const formEl = ref<HTMLFormElement | null>(null);
 
 function failed() {
@@ -28,7 +27,6 @@ function failed() {
 }
 
 function submit() {
-    resent.value = false;
     form.put(update().url, {
         preserveScroll: true,
         onSuccess: () => form.reset(),
@@ -37,13 +35,9 @@ function submit() {
 }
 
 function sendAgain() {
-    resent.value = false;
     form.post(resend().url, {
         preserveScroll: true,
-        onSuccess: () => {
-            form.reset('current_password');
-            resent.value = true;
-        },
+        onSuccess: () => form.reset('current_password'),
         onError: failed,
     });
 }
@@ -75,7 +69,6 @@ function cancel() {
             <div class="flex flex-wrap items-center gap-3">
                 <UiButton variant="secondary" size="sm" :disabled="form.processing" @click="sendAgain">Send the link again</UiButton>
                 <UiButton variant="ghost" size="sm" :loading="cancelForm.processing" @click="cancel">Cancel the change</UiButton>
-                <span v-if="resent" role="status" class="text-sm text-fg-secondary">Sent.</span>
             </div>
         </div>
 

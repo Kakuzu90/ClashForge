@@ -135,7 +135,6 @@ function submit() {
 
                 <div class="flex items-center gap-3">
                     <UiButton type="submit" :loading="form.processing">Save profile</UiButton>
-                    <span v-if="form.recentlySuccessful" role="status" class="text-sm text-fg-secondary">Saved.</span>
                 </div>
             </form>
         </UiCard>

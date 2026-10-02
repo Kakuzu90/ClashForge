@@ -52,7 +52,6 @@ describe('Settings/Notifications', () => {
         expect(wrapper.text()).toContain('Always on');
         await wrapper.get('form').trigger('submit');
         expect(submitted).toEqual([{ url: '/settings/notifications', email_enabled: true, email_categories: { bases: true, social: false } }]);
-        expect(wrapper.text()).toContain('Saved.');
     });
 
     it('disables categories without losing their choices when global email is off', async () => {

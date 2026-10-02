@@ -63,7 +63,6 @@ function submit() {
                 </fieldset>
                 <div class="flex flex-wrap items-center gap-3">
                     <UiButton v-if="settings.canUpdate" type="submit" :loading="form.processing">Save email preferences</UiButton>
-                    <span v-if="form.recentlySuccessful" role="status" class="text-sm text-fg-secondary">Saved.</span>
                 </div>
             </form>
         </UiCard>
