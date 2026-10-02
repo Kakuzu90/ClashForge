@@ -111,9 +111,9 @@ const navigating = useNavigating((url) => url.pathname.startsWith(profilePrefix)
                                     <p class="font-semibold break-all text-fg">{{ account.name }}</p>
                                     <p class="font-mono text-sm text-fg-secondary">{{ account.tag }}</p>
                                 </div>
+                                <UiBadge v-if="account.featured" kind="featured" />
                                 <UiBadge v-if="account.status === 'verified'" kind="verified" />
                                 <UiPill v-else :label="account.statusLabel" :tone="statusTone[account.status]" />
-                                <UiBadge v-if="account.featured" kind="featured" />
                                 <Link
                                     v-if="account.status === 'unverified'"
                                     :href="verify(account.ulid).url"
