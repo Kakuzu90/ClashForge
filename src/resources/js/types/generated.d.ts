@@ -87,6 +87,12 @@ failures: number,
 failureRate: number | null,
 topError: string | null,
 };
+export type CocKeyData = {
+id: string,
+healthy: boolean,
+reason: string | null,
+unhealthySince: string | null,
+};
 }
 namespace Enums {
 export type CocCircuitReason = 'failures' | 'maintenance';
@@ -243,6 +249,58 @@ namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
 export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over';
 export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
+}
+}
+namespace Operations {
+namespace Data {
+export type FailedJobClassData = {
+name: string | null,
+count: number,
+lastFailedAt: string,
+};
+export type FailedJobGroupData = {
+name: string | null,
+queues: string[],
+count: number,
+lastHour: number,
+firstFailedAt: string,
+lastFailedAt: string,
+};
+export type FailedJobsByClassData = {
+total: number,
+lastHour: number,
+alertPerHour: number,
+overThreshold: boolean,
+retentionDays: number,
+classes: App.Domain.Operations.Data.FailedJobGroupData[],
+};
+export type FailedJobsSummaryData = {
+lastHour: number,
+last24Hours: number,
+alertPerHour: number,
+overThreshold: boolean,
+topClasses: App.Domain.Operations.Data.FailedJobClassData[],
+};
+export type QueueStatData = {
+name: string,
+waiting: number,
+delayed: number,
+reserved: number,
+oldestWaitSeconds: number | null,
+maxWaitSeconds: number | null,
+maxDepth: number,
+overWait: boolean,
+overDepth: boolean,
+};
+export type SchedulerStatusData = {
+state: App.Domain.Operations.Enums.SchedulerState,
+lastBeatAt: string | null,
+ageSeconds: number | null,
+maxAgeSeconds: number,
+};
+}
+namespace Enums {
+export type SchedulerState = 'running' | 'stopped' | 'unknown';
 }
 }
 namespace PlayerAccounts {
@@ -616,18 +674,6 @@ linkMinutes: number,
 }
 namespace Support {
 namespace Health {
-export type FailedJobClassData = {
-name: string | null,
-count: number,
-lastFailedAt: string,
-};
-export type FailedJobsSummaryData = {
-lastHour: number,
-last24Hours: number,
-alertPerHour: number,
-overThreshold: boolean,
-topClasses: App.Support.Health.FailedJobClassData[],
-};
 export type HealthStatus = 'ok' | 'degraded' | 'down' | 'unknown';
 }
 }

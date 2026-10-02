@@ -32,7 +32,7 @@ vi.mock('@inertiajs/vue3', async () => {
 
 type Props = App.Http.Data.Admin.AdminDashboardPageData & {
     signups?: App.Domain.Auth.Data.SignupStatsData;
-    failedJobs?: App.Support.Health.FailedJobsSummaryData;
+    failedJobs?: App.Domain.Operations.Data.FailedJobsSummaryData;
     storage?: App.Domain.Media.Data.MediaStorageData;
     cocApiHealth?: App.Domain.CocIntegration.Data.CocApiHealthData;
 };
@@ -58,7 +58,7 @@ const signups: App.Domain.Auth.Data.SignupStatsData = {
     last30Days: { total: 1204, verified: 1000 },
 };
 
-const failedJobs = (overrides: Partial<App.Support.Health.FailedJobsSummaryData> = {}): App.Support.Health.FailedJobsSummaryData => ({
+const failedJobs = (overrides: Partial<App.Domain.Operations.Data.FailedJobsSummaryData> = {}): App.Domain.Operations.Data.FailedJobsSummaryData => ({
     lastHour: 0,
     last24Hours: 0,
     alertPerHour: 20,
@@ -125,6 +125,13 @@ describe('Admin/Dashboard', () => {
         expect(text).toContain('App\\Jobs\\SendMail');
         expect(text).toContain('Unreadable job payload');
         expect(text).not.toContain('No failed jobs');
+    });
+
+    it('links the failed-jobs panel to System health', () => {
+        const link = render({ platformStats: true, failedJobs: failedJobs() }, ['failedJobs']).find('a[href="/admin/system"]');
+
+        expect(link.exists()).toBe(true);
+        expect(link.text()).toBe('Open System health');
     });
 
     it('shows the API state, keys and the last day of calls', () => {

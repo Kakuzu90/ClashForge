@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Health;
+namespace App\Domain\Operations\Data;
 
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;

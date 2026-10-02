@@ -6,9 +6,9 @@ use App\Domain\Auth\Enums\StaffAbility;
 use App\Domain\Auth\Queries\SignupStatsQuery;
 use App\Domain\CocIntegration\Services\CocApiHealthReport;
 use App\Domain\Media\Queries\MediaStorageQuery;
+use App\Domain\Operations\Queries\FailedJobsQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Data\Admin\AdminDashboardPageData;
-use App\Support\Health\FailedJobsSummary;
 use App\Support\Seo\PageMeta;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -22,7 +22,7 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(SignupStatsQuery $signups, FailedJobsSummary $failedJobs, MediaStorageQuery $storage, CocApiHealthReport $cocApi): Response
+    public function __invoke(SignupStatsQuery $signups, FailedJobsQuery $failedJobs, MediaStorageQuery $storage, CocApiHealthReport $cocApi): Response
     {
         Gate::authorize(StaffAbility::AccessAdmin->value);
 

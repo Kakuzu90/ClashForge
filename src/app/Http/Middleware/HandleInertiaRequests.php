@@ -72,6 +72,7 @@ class HandleInertiaRequests extends Middleware
                     'accessAdmin' => Gate::forUser($user)->allows(StaffAbility::AccessAdmin->value),
                     'viewReportQueue' => Gate::forUser($user)->allows(StaffAbility::ViewReportQueue->value),
                     'viewUsers' => Gate::forUser($user)->allows(StaffAbility::ViewUsers->value),
+                    'viewPlatformStats' => Gate::forUser($user)->allows(StaffAbility::ViewPlatformStats->value),
                     'viewAuditLog' => Gate::forUser($user)->allows(StaffAbility::ViewAuditLog->value),
                 ],
             ),

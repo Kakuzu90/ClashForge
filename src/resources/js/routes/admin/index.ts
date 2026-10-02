@@ -88,10 +88,55 @@ audit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     method: 'head',
 })
 
+/**
+* @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
+* @see app/Http/Controllers/Admin/SystemHealthController.php:26
+* @route '/admin/system'
+*/
+export const system = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: system.url(options),
+    method: 'get',
+})
+
+system.definition = {
+    methods: ["get","head"],
+    url: '/admin/system',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
+* @see app/Http/Controllers/Admin/SystemHealthController.php:26
+* @route '/admin/system'
+*/
+system.url = (options?: RouteQueryOptions) => {
+    return system.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
+* @see app/Http/Controllers/Admin/SystemHealthController.php:26
+* @route '/admin/system'
+*/
+system.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: system.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
+* @see app/Http/Controllers/Admin/SystemHealthController.php:26
+* @route '/admin/system'
+*/
+system.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: system.url(options),
+    method: 'head',
+})
+
 const admin = {
     dashboard: Object.assign(dashboard, dashboard),
     audit: Object.assign(audit, audit),
     users: Object.assign(users, users),
+    system: Object.assign(system, system),
 }
 
 export default admin

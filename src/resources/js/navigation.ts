@@ -1,5 +1,5 @@
 import { home } from '@/routes';
-import { audit as adminAudit, dashboard as adminDashboard } from '@/routes/admin';
+import { audit as adminAudit, dashboard as adminDashboard, system as adminSystem } from '@/routes/admin';
 import { index as adminUsers } from '@/routes/admin/users';
 import { index as moderationReports } from '@/routes/moderation/reports';
 import { edit as privacySettings } from '@/routes/settings/privacy';
@@ -95,6 +95,7 @@ export interface AdminNavItem {
 export const adminNav: AdminNavItem[] = [
     { key: 'dashboard', label: 'Dashboard', href: () => adminDashboard().url, can: 'accessAdmin' },
     { key: 'users', label: 'Users', href: () => adminUsers().url, can: 'viewUsers' },
+    { key: 'system', label: 'System', href: () => adminSystem().url, can: 'viewPlatformStats' },
     { key: 'logs', label: 'Logs', href: () => adminAudit().url, can: 'viewAuditLog' },
 ];
 

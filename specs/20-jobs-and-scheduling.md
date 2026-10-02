@@ -189,7 +189,7 @@ notice on retry (the same limitation as P1-15); provider idempotency remains a P
 | Job timeout | Same as exception; media jobs additionally mark the media `failed` |
 | Worker crash / OOM | Workers restart via the container policy; `--max-time` recycling bounds leaks; reserved jobs return to the queue after `retry_after` |
 | Queue backlog | Alert at depth >500 for 10 minutes. Runbook: scale the relevant worker, then investigate |
-| Poison job (fails every time) | After `tries`, it lands in `failed_jobs`; an admin page lists failures grouped by class for retry or deletion |
+| Poison job (fails every time) | After `tries`, it lands in `failed_jobs`; the System Health page lists failures grouped by class (§6), retry or deletion joins with P2-19 |
 | Deploy during a long job | `queue:restart` after deploy; workers finish the current job then exit |
 | Scheduler missed runs | Tasks are catch-up-safe by design (they select due work, not "work since last run"); a missed window self-heals on the next tick |
 | Database queue contention | The symptom that triggers the Redis migration ([21](21-caching-strategy.md)) |
@@ -211,9 +211,20 @@ connection entry with its own `retry_after`.
 | Scheduler heartbeat | No `schedule:run` in 5 min |
 | Worker liveness | Any worker container restarting more than twice in 10 min |
 
-An admin "System Health" page shows all of the above plus the CoC key-pool status, so a moderator
-can tell the difference between "the user is lying" and "sync has been broken since Tuesday"
-(P2-06, with the failed-job list and its retry / delete). Until then the admin dashboard's
+The admin "System Health" page (`/admin/system`, P2-06, `view-platform-stats`: admins, since
+moderators never enter `/admin`) shows the above plus the CoC key-pool status, so staff can tell
+"the user is lying" from "sync has been broken since Tuesday". It lists every queue of §1 (and
+any other found in `jobs`) with jobs waiting (runnable now), delayed and running, the oldest wait
+against `platform.health.queue_max_wait`, and depth against `platform.health.queue_max_depth`
+(500) as of page load; the "for 10 min" part of the depth alert belongs to alerting (P0-09).
+Failures are every row kept in `failed_jobs` (`platform.prune.failed_jobs_days`), grouped by the
+payload's `displayName` with the queues each failed on, job class and queue only. The scheduler
+row reads the `platform:heartbeat` beat (`platform.health.heartbeat_max_age`); no beat is
+"unknown", not stopped. Two rows are not on the page (owner decision, 2026-10-02): media
+processing p95 needs a processing-start time that `media` does not record (with P3-02), and
+worker liveness is a container restart count the app cannot see (container monitoring, P0-09).
+The CoC sync success rate joins with P2-09, and retry / delete of failed jobs with P2-19. The
+read models live in `Domain/Operations` ([05](05-architecture.md)). The admin dashboard's
 failed-jobs panel (P1-13) shows failures in the last hour and 24 h, flags the hour above the
 alert line (`platform.admin.failed_jobs_alert_per_hour`) and lists the most failed job classes by
 the payload's `displayName`; payloads and exception text never reach the page. Its Clash of Clans

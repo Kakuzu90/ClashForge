@@ -3,14 +3,16 @@
 namespace App\Domain\CocIntegration\Services;
 
 use App\Domain\CocIntegration\Data\CocApiHealthData;
+use App\Domain\CocIntegration\Data\CocKeyData;
+use App\Domain\CocIntegration\Data\CocKeyStatusData;
 use App\Domain\CocIntegration\Models\CocApiRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Date;
 
 /**
- * Reads for the admin dashboard's API panel (FR-ADMIN-5, specs/18 §6). It never calls the API:
- * the breaker and the keys come from the cache, the rest from `coc_api_requests`. The sync success
- * rate joins with P2-09.
+ * Reads for the admin dashboard's API panel (FR-ADMIN-5, specs/18 §6) and the System Health page.
+ * It never calls the API: the breaker and the keys come from the cache, the rest from
+ * `coc_api_requests`. The sync success rate joins with P2-09.
  */
 class CocApiHealthReport
 {
@@ -52,6 +54,21 @@ class CocApiHealthReport
             failureRate: $calls === 0 ? null : round($failures / $calls, 3),
             topError: is_string($topError) ? $topError : null,
         );
+    }
+
+    /**
+     * Every key of the pool with its state, for the System Health page.
+     *
+     * @return list<CocKeyData>
+     */
+    public function keys(): array
+    {
+        return array_map(fn (CocKeyStatusData $key): CocKeyData => new CocKeyData(
+            id: $key->id,
+            healthy: $key->healthy,
+            reason: $key->reason,
+            unhealthySince: $key->unhealthySince,
+        ), $this->keys->status()->keys);
     }
 
     /**

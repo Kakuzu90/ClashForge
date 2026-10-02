@@ -111,6 +111,10 @@ return [
         'required' => ['database', 'queue', 'storage', 'scheduler'],
         // Oldest pending job per queue before the queue reads as degraded, in seconds (specs/20 §6).
         'queue_max_wait' => ['high' => 300, 'default' => 1800],
+        // The queues the System Health page always lists, in the specs/20 §1 order, and the depth
+        // alert line per queue (specs/20 §6: more than 500 waiting).
+        'queues' => ['high', 'default', 'media', 'sync', 'low'],
+        'queue_max_depth' => 500,
         // The scheduler writes a heartbeat every minute; older than this it is down (specs/20 §6).
         'heartbeat_max_age' => 300,
         // platform:check-health runs every 5 min; a missed run lets the result lapse to "unknown".

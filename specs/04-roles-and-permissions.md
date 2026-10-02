@@ -65,7 +65,7 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
 | View moderation log | – | ○ own actions | ✓ | ✓ |
 | View audit log | – | – | ✓ | ✓ |
 | View user accounts (admin list and detail, with email) | – | – | ✓ | ✓ |
-| View platform stats (dashboard sign-ups, failed jobs, media storage) | – | – | ✓ | ✓ |
+| View platform stats (dashboard sign-ups, failed jobs, media storage; the System Health page) | – | – | ✓ | ✓ |
 | Change user roles | – | – | – | ✓ |
 | Manage feature flags / settings | – | – | – | ✓ |
 | Hard-delete a user | – | – | – | ✓ |

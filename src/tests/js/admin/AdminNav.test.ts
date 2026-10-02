@@ -29,14 +29,13 @@ describe('visibleAdminNav', () => {
         expect(visibleAdminNav(adminNav, { accessAdmin: true }).map((item) => item.key)).toEqual(['dashboard']);
         expect(visibleAdminNav(adminNav, { accessAdmin: true, viewAuditLog: true }).map((item) => item.url)).toEqual(['/admin', '/admin/audit']);
         expect(visibleAdminNav(adminNav, { accessAdmin: true, viewUsers: true }).map((item) => item.key)).toEqual(['dashboard', 'users']);
+        expect(visibleAdminNav(adminNav, { accessAdmin: true, viewPlatformStats: true }).map((item) => item.key)).toEqual(['dashboard', 'system']);
     });
 
-    it('keeps the specs/18 §6 order: Dashboard, Users, Logs', () => {
-        expect(visibleAdminNav(adminNav, { accessAdmin: true, viewUsers: true, viewAuditLog: true }).map((item) => item.url)).toEqual([
-            '/admin',
-            '/admin/users',
-            '/admin/audit',
-        ]);
+    it('keeps the specs/18 §6 order: Dashboard, Users, System, Logs', () => {
+        expect(
+            visibleAdminNav(adminNav, { accessAdmin: true, viewUsers: true, viewPlatformStats: true, viewAuditLog: true }).map((item) => item.url),
+        ).toEqual(['/admin', '/admin/users', '/admin/system', '/admin/audit']);
         expect(visibleAdminNav(adminNav, {})).toEqual([]);
     });
 });

@@ -139,11 +139,22 @@ class HealthChecker
         return is_string($cached) ? (HealthStatus::tryFrom($cached) ?? HealthStatus::Unknown) : HealthStatus::Unknown;
     }
 
-    private function scheduler(): HealthStatus
+    /**
+     * When the scheduler last ran `platform:heartbeat`, as a Unix timestamp; null when never
+     * recorded or expired.
+     */
+    public function lastHeartbeat(): ?int
     {
         $beat = $this->cached(self::HEARTBEAT_KEY);
 
-        if (! is_int($beat)) {
+        return is_int($beat) ? $beat : null;
+    }
+
+    private function scheduler(): HealthStatus
+    {
+        $beat = $this->lastHeartbeat();
+
+        if ($beat === null) {
             return HealthStatus::Unknown;
         }
 

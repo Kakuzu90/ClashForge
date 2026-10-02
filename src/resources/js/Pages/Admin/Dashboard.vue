@@ -11,11 +11,12 @@ import { formatBytes, formatCount } from '@/Composables/useNumberFormat';
 import { useVisitError } from '@/Composables/useVisitError';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { home } from '@/routes';
+import { system } from '@/routes/admin';
 import { Deferred, router } from '@inertiajs/vue3';
 
 defineOptions({ layout: AdminLayout });
 
-type JobClass = App.Support.Health.FailedJobClassData;
+type JobClass = App.Domain.Operations.Data.FailedJobClassData;
 type CollectionUsage = App.Domain.Media.Data.MediaCollectionUsageData;
 
 // FR-ADMIN-5. Each panel is its own deferred request: one that fails shows its error in place
@@ -23,7 +24,7 @@ type CollectionUsage = App.Domain.Media.Data.MediaCollectionUsageData;
 const props = defineProps<{
     platformStats: App.Http.Data.Admin.AdminDashboardPageData['platformStats'];
     signups?: App.Domain.Auth.Data.SignupStatsData;
-    failedJobs?: App.Support.Health.FailedJobsSummaryData;
+    failedJobs?: App.Domain.Operations.Data.FailedJobsSummaryData;
     storage?: App.Domain.Media.Data.MediaStorageData;
     cocApiHealth?: App.Domain.CocIntegration.Data.CocApiHealthData;
 }>();
@@ -149,6 +150,7 @@ const storageColumns: AdminColumn[] = [
                                 <time :datetime="row.lastFailedAt">{{ formatDateTime(row.lastFailedAt) }}</time>
                             </template>
                         </AdminTable>
+                        <UiButton class="self-start" variant="secondary" size="sm" :href="system().url">Open System health</UiButton>
                     </div>
                 </Deferred>
             </AdminPanel>

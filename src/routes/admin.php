@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SanctionController;
+use App\Http\Controllers\Admin\SystemHealthController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,7 @@ Route::middleware(['auth', 'account.active', 'can:access-admin'])->prefix('admin
     Route::get('/audit', AuditLogController::class)->middleware('throttle:admin-search')->name('audit');
     Route::get('/users', [UserController::class, 'index'])->middleware('throttle:admin-search')->name('users.index');
     Route::get('/users/{ulid}', [UserController::class, 'show'])->whereUlid('ulid')->name('users.show');
+    Route::get('/system', SystemHealthController::class)->name('system');
 
     // FR-ADMIN-3. `account.active` above blocks suspended, banned and pending-deletion staff.
     Route::middleware('throttle:global-write')->whereUlid('ulid')->group(function (): void {

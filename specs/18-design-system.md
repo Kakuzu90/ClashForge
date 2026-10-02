@@ -501,7 +501,7 @@ The moderators' report queue in the member layout (specs/04 §3). Until reports 
 the empty state "No open reports".
 
 ### Admin (`/admin/*`)
-Left nav (Dashboard · Reports · Disputes · Users · Content · Media · Marketplace · Logs) →
+Left nav (Dashboard · Reports · Disputes · Users · Content · Media · Marketplace · System · Logs) →
 DataTable views → detail/action panels. From 768px the top bar and left nav stay fixed and only the
 content column scrolls; "Back to site" sits at the bottom of the left nav (below 768px, the end of
 the folded menu). The user list shows each account's avatar beside the username; status pills never
@@ -520,7 +520,14 @@ group, with its own skeleton, empty state ("No failed jobs in the last 24 hours"
 a failed panel's "Try again" reloads every panel still missing. The Clash of Clans API panel (P2-10) is one of them. Panels sit behind
 `view-platform-stats` (admin+) and are left out of the response for anyone else; moderators see an
 empty state until the report queue lands (P3-06). Sizes in decimal units (1 GB = 1000 MB), as
-the bucket bills. Nothing on it is cached or polled.
+the bucket bills. Nothing on it is cached or polled. Its failed-jobs panel links to System Health.
+*System Health (`/admin/system`, P2-06):* the same panel pattern behind `view-platform-stats`, one
+deferred group per panel: Queues (waiting, delayed, running, oldest wait, alerts as text pills),
+Scheduler (heartbeat age; no heartbeat reads as "No heartbeat recorded", not stopped), Clash of
+Clans API (breaker plus each key by id, state, reason and since), Failed jobs (every kept failure
+by job class and queue, job class and queue only). Durations via `formatDuration`: hours and
+days carry the next unit ("3 h 5 min", "2 d 4 h"), minutes and seconds stand alone ("7 min"). The nav item "System" sits between Users and Logs
+(owner decision, 2026-10-02).
 
 ## 7. Motion
 
