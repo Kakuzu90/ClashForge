@@ -2,7 +2,7 @@
 id: P2-01
 title: Build the CoC API client behind an interface, with DTO mappers, a key pool and a fake
 phase: 2
-status: review
+status: done
 depends_on: [P0-02]
 ---
 

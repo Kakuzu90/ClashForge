@@ -4,16 +4,20 @@ namespace App\Domain\CocIntegration\Services;
 
 use App\Domain\CocIntegration\Data\CocKeyStatusData;
 use App\Domain\CocIntegration\Data\KeyPoolStatusData;
+use App\Domain\CocIntegration\Enums\CocFailureReason;
+use App\Domain\CocIntegration\Exceptions\CocApiFailure;
 use App\Domain\CocIntegration\Support\CocApiKey;
 use App\Domain\CocIntegration\Support\CocCacheKeys;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
- * The keys from `COC_API_TOKENS`, used round-robin (specs/09 §3). A key answering 403 is marked
- * unhealthy in the cache, shared by every worker, for `coc.key_pool.unhealthy_ttl` or until a
- * health probe succeeds with it.
+ * The keys from `COC_API_TOKENS`, used round-robin (specs/09 §3), each within its own budget of
+ * `coc.rate.per_key_per_second` (specs/09 §4). A key answering 403 is marked unhealthy in the
+ * cache, shared by every worker, for `coc.key_pool.unhealthy_ttl` or until a health probe succeeds
+ * with it.
  */
 class CocKeyPool
 {
@@ -37,25 +41,42 @@ class CocKeyPool
     }
 
     /**
-     * The next healthy key, skipping the ids already tried for this call; null when none is left.
+     * The next healthy key with budget left, skipping the ids already tried for this call, and
+     * spends one unit of its budget. Null when no healthy key is left.
      *
      * @param  list<string>  $exceptIds
+     *
+     * @throws CocApiFailure throttled, when healthy keys exist but every one is at its budget
      */
     public function next(array $exceptIds = []): ?CocApiKey
     {
-        $usable = array_values(array_filter(
+        $healthy = array_values(array_filter(
             $this->keys(),
             fn (CocApiKey $key): bool => ! in_array($key->id, $exceptIds, true) && ! $this->isUnhealthy($key->id),
         ));
 
-        if ($usable === []) {
+        if ($healthy === []) {
             return null;
+        }
+
+        $perKey = (int) config('coc.rate.per_key_per_second');
+        $usable = array_values(array_filter(
+            $healthy,
+            fn (CocApiKey $key): bool => ! RateLimiter::tooManyAttempts(CocCacheKeys::rateKey($key->id), $perKey),
+        ));
+
+        if ($usable === []) {
+            $wait = min(array_map(fn (CocApiKey $key): int => RateLimiter::availableIn(CocCacheKeys::rateKey($key->id)), $healthy));
+
+            throw new CocApiFailure(CocFailureReason::Throttled, max(1, $wait), 'every key is at its budget');
         }
 
         Cache::add(CocCacheKeys::keyCursor(), 0, (int) config('coc.key_pool.cursor_ttl'));
         $turn = (int) Cache::increment(CocCacheKeys::keyCursor());
+        $key = $usable[$turn % count($usable)];
+        RateLimiter::hit(CocCacheKeys::rateKey($key->id), 1);
 
-        return $usable[$turn % count($usable)];
+        return $key;
     }
 
     /**

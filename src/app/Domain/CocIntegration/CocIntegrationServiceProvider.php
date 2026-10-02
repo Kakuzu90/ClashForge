@@ -4,9 +4,14 @@ namespace App\Domain\CocIntegration;
 
 use App\Domain\CocIntegration\Contracts\CocApiClient;
 use App\Domain\CocIntegration\Services\CocKeyPool;
+use App\Domain\CocIntegration\Support\CachedCocApiClient;
+use App\Domain\CocIntegration\Support\CircuitBreaker;
+use App\Domain\CocIntegration\Support\CocRequestLog;
 use App\Domain\CocIntegration\Support\FakeCocApiClient;
 use App\Domain\CocIntegration\Support\HttpCocApiClient;
+use App\Domain\CocIntegration\Support\RateBudget;
 use App\Domain\CocIntegration\Support\ResponseMapper;
+use App\Domain\CocIntegration\Support\ThrottledCocApiClient;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
@@ -28,8 +33,14 @@ class CocIntegrationServiceProvider extends ServiceProvider
 
         // The fake must never answer for real players: resolving it in production throws, and
         // coc:check-health reports the misconfiguration as down.
+        // http: Cached(Throttled(Http)), so a cache hit spends no budget (specs/09 §1). The fake
+        // stays bare: tests script its failures directly.
         $this->app->bind(CocApiClient::class, fn (Application $app): CocApiClient => match (config('coc.driver')) {
-            'http' => $app->make(HttpCocApiClient::class),
+            'http' => new CachedCocApiClient(
+                new ThrottledCocApiClient($app->make(HttpCocApiClient::class), $app->make(CircuitBreaker::class), $app->make(RateBudget::class)),
+                $app->make(ResponseMapper::class),
+                $app->make(CocRequestLog::class),
+            ),
             'fake' => $app->isProduction()
                 ? throw new RuntimeException('COC_API_DRIVER=fake is not allowed in production.')
                 : $app->make(FakeCocApiClient::class),

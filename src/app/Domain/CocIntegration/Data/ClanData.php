@@ -2,9 +2,12 @@
 
 namespace App\Domain\CocIntegration\Data;
 
+use Carbon\CarbonImmutable;
+
 /**
  * `/clans/{tag}` mapped at the client boundary (specs/09 §8). The API calls the member count
- * `members` and the list `memberList`; here they are `memberCount` and `members`.
+ * `members` and the list `memberList`; here they are `memberCount` and `members`. `fetchedAt` and
+ * `stale` as on PlayerData.
  */
 final readonly class ClanData
 {
@@ -30,5 +33,7 @@ final readonly class ClanData
         public ?LocationData $location,
         public array $members,
         public array $rawPayload,
+        public ?CarbonImmutable $fetchedAt = null,
+        public bool $stale = false,
     ) {}
 }

@@ -10,6 +10,7 @@ use App\Domain\CocIntegration\Data\PlayerData;
 use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\CocIntegration\Data\TokenVerificationResult;
 use App\Domain\CocIntegration\Enums\CocFailureReason;
+use App\Domain\CocIntegration\Enums\CocPriority;
 use App\Domain\CocIntegration\Enums\TokenVerificationStatus;
 use App\Domain\CocIntegration\Exceptions\CocApiFailure;
 use App\Domain\CocIntegration\Exceptions\TagNotFound;
@@ -23,36 +24,38 @@ use SensitiveParameter;
 
 /**
  * `api.clashofclans.com/v1` over Laravel's HTTP client. Maps every row of specs/09 §7 to a
- * TagNotFound or a CocApiFailure. It neither retries nor caches: the decorators do (P2-07). The
- * one retry here is the key swap after a 403, because that is a key fault, not an API fault.
+ * TagNotFound or a CocApiFailure, and logs every request in `coc_api_requests`. Budgets, the
+ * circuit breaker and the cache are the decorators' (specs/09 §1). The one retry here is the key
+ * swap after a 403, because that is a key fault, not an API fault.
  */
 final class HttpCocApiClient implements CocApiClient
 {
     public function __construct(
         private readonly CocKeyPool $keys,
         private readonly ResponseMapper $mapper,
+        private readonly CocRequestLog $log,
     ) {}
 
-    public function player(PlayerTag $tag): PlayerData
+    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerData
     {
         $endpoint = 'players';
-        $response = $this->call($endpoint, 'GET', '/players/'.$tag->urlEncoded());
+        $response = $this->call($endpoint, $tag, 'GET', '/players/'.$tag->urlEncoded());
 
-        return $this->read($endpoint, $response, $tag, $this->mapper->player(...));
+        return $this->read($endpoint, $response, $tag, fn (Payload $p): PlayerData => $this->mapper->player($p, Date::now()));
     }
 
-    public function clan(ClanTag $tag): ClanData
+    public function clan(ClanTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): ClanData
     {
         $endpoint = 'clans';
-        $response = $this->call($endpoint, 'GET', '/clans/'.$tag->urlEncoded());
+        $response = $this->call($endpoint, $tag, 'GET', '/clans/'.$tag->urlEncoded());
 
-        return $this->read($endpoint, $response, $tag, $this->mapper->clan(...));
+        return $this->read($endpoint, $response, $tag, fn (Payload $p): ClanData => $this->mapper->clan($p, Date::now()));
     }
 
     public function verifyToken(PlayerTag $tag, #[SensitiveParameter] string $token): TokenVerificationResult
     {
         $endpoint = 'players.verifytoken';
-        $response = $this->call($endpoint, 'POST', '/players/'.$tag->urlEncoded().'/verifytoken', ['token' => $token]);
+        $response = $this->call($endpoint, $tag, 'POST', '/players/'.$tag->urlEncoded().'/verifytoken', ['token' => $token]);
 
         // The body echoes the token: never logged, never kept.
         $status = $this->read($endpoint, $response, $tag, $this->mapper->tokenStatus(...), logBody: false);
@@ -71,7 +74,7 @@ final class HttpCocApiClient implements CocApiClient
     public function probe(CocApiKey $key): ?bool
     {
         try {
-            $response = $this->request($key, 'GET', '/locations', ['limit' => 1]);
+            $response = $this->request('locations', null, $key, 'GET', '/locations', ['limit' => 1]);
         } catch (ConnectionException) {
             return null;
         }
@@ -91,7 +94,7 @@ final class HttpCocApiClient implements CocApiClient
      *
      * @param  array<string, mixed>  $body
      */
-    private function call(string $endpoint, string $method, string $path, array $body = []): Response
+    private function call(string $endpoint, CocTag $tag, string $method, string $path, array $body = []): Response
     {
         $tried = [];
 
@@ -103,7 +106,7 @@ final class HttpCocApiClient implements CocApiClient
             }
 
             try {
-                $response = $this->request($key, $method, $path, $body);
+                $response = $this->request($endpoint, $tag, $key, $method, $path, $body);
             } catch (ConnectionException) {
                 Log::warning('coc.request_failed', ['endpoint' => $endpoint, 'reason' => CocFailureReason::Timeout->value, 'key' => $key->id]);
 
@@ -124,11 +127,13 @@ final class HttpCocApiClient implements CocApiClient
     }
 
     /**
+     * One HTTP request, timed and written to the request log whatever its outcome.
+     *
      * @param  array<string, mixed>  $data  query for GET, JSON body otherwise
      *
      * @throws ConnectionException
      */
-    private function request(CocApiKey $key, string $method, string $path, array $data): Response
+    private function request(string $endpoint, ?CocTag $tag, CocApiKey $key, string $method, string $path, array $data): Response
     {
         $pending = Http::baseUrl((string) config('coc.base_url'))
             ->withToken($key->token())
@@ -136,7 +141,24 @@ final class HttpCocApiClient implements CocApiClient
             ->connectTimeout((int) config('coc.timeouts.connect'))
             ->timeout((int) config('coc.timeouts.total'));
 
-        return $method === 'GET' ? $pending->get($path, $data) : $pending->post($path, $data);
+        $started = hrtime(true);
+
+        try {
+            $response = $method === 'GET' ? $pending->get($path, $data) : $pending->post($path, $data);
+        } catch (ConnectionException $e) {
+            $this->log->record($endpoint, $tag, null, $this->elapsedMs($started), errorCode: CocFailureReason::Timeout->value);
+
+            throw $e;
+        }
+
+        $this->log->record($endpoint, $tag, $response->status(), $this->elapsedMs($started), errorCode: $response->successful() ? null : $this->apiReason($response));
+
+        return $response;
+    }
+
+    private function elapsedMs(int|float $started): int
+    {
+        return (int) round((hrtime(true) - $started) / 1_000_000);
     }
 
     /**

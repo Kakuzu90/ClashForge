@@ -15,13 +15,14 @@ use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\CocIntegration\Data\UnitData;
 use App\Domain\CocIntegration\Enums\TokenVerificationStatus;
 use App\Domain\CocIntegration\Exceptions\CocApiFailure;
+use Carbon\CarbonImmutable;
 
 /**
  * Supercell JSON → our DTOs (specs/09 §8). Nothing past this class reads an API array key.
  */
 final class ResponseMapper
 {
-    public function player(Payload $p): PlayerData
+    public function player(Payload $p, ?CarbonImmutable $fetchedAt = null, bool $stale = false): PlayerData
     {
         return new PlayerData(
             tag: $this->playerTag($p),
@@ -43,10 +44,12 @@ final class ResponseMapper
             heroEquipment: array_map($this->unit(...), $p->objects('heroEquipment')),
             achievements: array_map($this->achievement(...), $p->objects('achievements')),
             rawPayload: $p->all(),
+            fetchedAt: $fetchedAt,
+            stale: $stale,
         );
     }
 
-    public function clan(Payload $p): ClanData
+    public function clan(Payload $p, ?CarbonImmutable $fetchedAt = null, bool $stale = false): ClanData
     {
         $location = $p->object('location');
 
@@ -71,6 +74,8 @@ final class ResponseMapper
             ),
             members: array_map($this->member(...), $p->objects('memberList')),
             rawPayload: $p->all(),
+            fetchedAt: $fetchedAt,
+            stale: $stale,
         );
     }
 

@@ -6,6 +6,7 @@ use App\Domain\CocIntegration\Contracts\CocApiClient;
 use App\Domain\CocIntegration\Data\ClanLookupResult;
 use App\Domain\CocIntegration\Data\ClanTag;
 use App\Domain\CocIntegration\Enums\CocLookupStatus;
+use App\Domain\CocIntegration\Enums\CocPriority;
 use App\Domain\CocIntegration\Exceptions\CocApiFailure;
 use App\Domain\CocIntegration\Exceptions\TagNotFound;
 use Illuminate\Support\Facades\Log;
@@ -17,10 +18,10 @@ class ClanLookup
 {
     public function __construct(private readonly CocApiClient $client) {}
 
-    public function find(ClanTag $tag): ClanLookupResult
+    public function find(ClanTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): ClanLookupResult
     {
         try {
-            return new ClanLookupResult($tag, CocLookupStatus::Found, $this->client->clan($tag));
+            return new ClanLookupResult($tag, CocLookupStatus::Found, $this->client->clan($tag, $priority, $fresh));
         } catch (TagNotFound) {
             Log::info('coc.tag_not_found', ['kind' => 'clan', 'tag' => $tag->value]);
 

@@ -100,6 +100,12 @@ return [
     // Key for hashing IPs before they are stored (last_login_ip_hash, sessions.ip_hash).
     'ip_hash_salt' => env('IP_HASH_SALT') ?: env('APP_KEY'),
 
+    // platform:prune-operational-tables, daily (specs/20 §2). `coc_api_requests` uses
+    // coc.request_log.retention_days; sessions use session.lifetime and auth.absolute_session_days.
+    'prune' => [
+        'failed_jobs_days' => 30,
+    ],
+
     'health' => [
         // `coc` is never required: a game API outage degrades the platform, it does not take it down (NFR-AVAIL-2).
         'required' => ['database', 'queue', 'storage', 'scheduler'],

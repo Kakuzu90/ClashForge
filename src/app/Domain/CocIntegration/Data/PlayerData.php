@@ -2,10 +2,14 @@
 
 namespace App\Domain\CocIntegration\Data;
 
+use Carbon\CarbonImmutable;
+
 /**
  * `/players/{tag}` mapped at the client boundary (specs/09 §8). Only the tag and name are
  * required; a field the API stops sending reads as null (specs/23 §5). `rawPayload` is the full
  * response, kept for `raw_payload` so new fields can be backfilled without a re-sync.
+ * `fetchedAt` is when the API answered; `stale` means the API is unavailable and this is the last
+ * good answer, served so pages can say "data from X ago" (specs/09 §5).
  */
 final readonly class PlayerData
 {
@@ -38,5 +42,7 @@ final readonly class PlayerData
         public array $heroEquipment,
         public array $achievements,
         public array $rawPayload,
+        public ?CarbonImmutable $fetchedAt = null,
+        public bool $stale = false,
     ) {}
 }

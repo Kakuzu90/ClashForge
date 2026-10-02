@@ -63,6 +63,13 @@ Schedule::command('auth:refresh-disposable-domains')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'auth:refresh-disposable-domains']));
 
+Schedule::command('platform:prune-operational-tables')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'platform:prune-operational-tables']));
+
 Schedule::command('notifications:prune')
     ->dailyAt('02:15')
     ->withoutOverlapping()

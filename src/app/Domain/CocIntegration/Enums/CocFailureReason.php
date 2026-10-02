@@ -19,6 +19,7 @@ enum CocFailureReason: string implements HasLabelAndColor
     case Timeout = 'timeout';
     case NoHealthyKey = 'no_healthy_key';
     case Malformed = 'malformed';
+    case CircuitOpen = 'circuit_open';
 
     public function label(): string
     {
@@ -29,6 +30,7 @@ enum CocFailureReason: string implements HasLabelAndColor
             self::Timeout => 'Game API timed out',
             self::NoHealthyKey => 'No working API key',
             self::Malformed => 'Unexpected response from the game API',
+            self::CircuitOpen => 'Game API paused after errors',
         };
     }
 
@@ -36,7 +38,7 @@ enum CocFailureReason: string implements HasLabelAndColor
     {
         return match ($this) {
             self::Throttled, self::Maintenance => 'state-warning',
-            self::ServerError, self::Timeout, self::NoHealthyKey, self::Malformed => 'state-danger',
+            self::ServerError, self::Timeout, self::NoHealthyKey, self::Malformed, self::CircuitOpen => 'state-danger',
         };
     }
 }

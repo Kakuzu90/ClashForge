@@ -34,11 +34,14 @@ of defence, not the first.
 | Key pattern | Contents | TTL | Invalidated by |
 |---|---|---|---|
 | `coc:player:{TAG}` | Raw player payload | 5 min | Manual refresh, sync write |
-| `coc:player:{TAG}:last` | Last good payload (stale fallback) | 24 h | Next success |
+| `coc:player:{TAG}:last`, `coc:clan:{TAG}:last` | Last good payload (stale fallback for interactive views) | 24 h | Next success |
 | `coc:clan:{TAG}` | Clan payload | 15 min | Clan sync |
 | `coc:leagues`, `coc:locations` | Reference data | 7 days | Weekly refresh command |
-| `coc:404:{TAG}` | Negative lookup | 10 min | — |
-| `coc:circuit` | Circuit-breaker state | dynamic | State transitions |
+| `coc:404:player:{TAG}`, `coc:404:clan:{TAG}` | Negative lookup, per kind | 10 min | Next successful fetch of that tag |
+| `coc:circuit` | Circuit-breaker state (reason, until) | open period + 1 day | State transitions |
+| `coc:circuit:consecutive`, `coc:circuit:bucket:{n}:{ok\|fail}` | Breaker counters (run, 10 s buckets) | window + 1 bucket, renewed on write | Cleared when the breaker closes |
+| `coc:circuit:probe` | Half-open probe slot | `circuit.probe_interval` | Probe outcome |
+| `coc-rate:global:*`, `coc-rate:background:*`, `coc-rate:key:{id}` | Rate budgets (`RateLimiter`) | 1 s / 60 s | Automatic |
 | `coc:key:{id}:unhealthy` | Refused key marker (reason, since) | 1 h (`coc.key_pool.unhealthy_ttl`) | A successful `coc:check-health` probe |
 | `coc:key:cursor` | Round-robin counter | 24 h (`coc.key_pool.cursor_ttl`) | — (losing it restarts the rotation) |
 | `feed:trending:th{n}:p{page}` | Base card DTO list | 5 min | Trending recompute, base publish/hide |

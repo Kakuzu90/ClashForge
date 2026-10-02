@@ -2,6 +2,7 @@
 
 use App\Domain\CocIntegration\Contracts\CocApiClient;
 use App\Domain\CocIntegration\Data\PlayerTag;
+use App\Domain\CocIntegration\Models\CocApiRequest;
 use App\Domain\CocIntegration\Services\CocKeyPool;
 use App\Domain\CocIntegration\Services\PlayerLookup;
 use App\Domain\CocIntegration\Services\TokenVerifier;
@@ -43,7 +44,8 @@ it('keeps the keys out of logs, exceptions and the cache on every failure path',
     $result = app(PlayerLookup::class)->find($this->tag);
     $this->artisan('coc:check-health');
 
-    $everything = $this->appLogText().cachedText().serialize($result).json_encode(app(CocKeyPool::class)->status());
+    $everything = $this->appLogText().cachedText().serialize($result).json_encode(app(CocKeyPool::class)->status())
+        .CocApiRequest::query()->get()->toJson();
     expect($everything)->not->toContain(KEY_ONE)->not->toContain(KEY_TWO);
 })->with([
     'refused keys' => [fn ($t) => Http::response($t->cocFixtureBody('responses/error-invalidIp.json'), 403)],
@@ -61,7 +63,8 @@ it('never logs the in-game token, even when the verifytoken body is malformed', 
     expect($this->appLogMessages())->toContain('coc.malformed_response')
         ->and($this->appLogText())->not->toContain(IN_GAME)
         ->and(serialize($result))->not->toContain(IN_GAME)
-        ->and(cachedText())->not->toContain(IN_GAME);
+        ->and(cachedText())->not->toContain(IN_GAME)
+        ->and(CocApiRequest::query()->get()->toJson())->not->toContain(IN_GAME);
 });
 
 it('keeps the in-game token out of the result on success', function () {

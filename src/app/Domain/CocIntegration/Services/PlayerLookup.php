@@ -6,22 +6,24 @@ use App\Domain\CocIntegration\Contracts\CocApiClient;
 use App\Domain\CocIntegration\Data\PlayerLookupResult;
 use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\CocIntegration\Enums\CocLookupStatus;
+use App\Domain\CocIntegration\Enums\CocPriority;
 use App\Domain\CocIntegration\Exceptions\CocApiFailure;
 use App\Domain\CocIntegration\Exceptions\TagNotFound;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Fetches a player for other modules (specs/09 §1). Never throws for an API problem: the caller
- * gets `unavailable` and degrades (specs/09 §7).
+ * gets the last good answer marked stale, or `unavailable`, and degrades (specs/09 §5, §7).
+ * Sync jobs pass `Background`; a manual refresh passes `fresh: true` to skip the cache read.
  */
 class PlayerLookup
 {
     public function __construct(private readonly CocApiClient $client) {}
 
-    public function find(PlayerTag $tag): PlayerLookupResult
+    public function find(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerLookupResult
     {
         try {
-            return new PlayerLookupResult($tag, CocLookupStatus::Found, $this->client->player($tag));
+            return new PlayerLookupResult($tag, CocLookupStatus::Found, $this->client->player($tag, $priority, $fresh));
         } catch (TagNotFound) {
             // Our normaliser accepted it and the API did not: logged to tune the normaliser (specs/23 §2).
             Log::info('coc.tag_not_found', ['kind' => 'player', 'tag' => $tag->value]);

@@ -10,6 +10,7 @@ use App\Domain\CocIntegration\Data\PlayerData;
 use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\CocIntegration\Data\TokenVerificationResult;
 use App\Domain\CocIntegration\Enums\CocFailureReason;
+use App\Domain\CocIntegration\Enums\CocPriority;
 use App\Domain\CocIntegration\Enums\TokenVerificationStatus;
 use App\Domain\CocIntegration\Exceptions\CocApiFailure;
 use App\Domain\CocIntegration\Exceptions\TagNotFound;
@@ -100,18 +101,18 @@ final class FakeCocApiClient implements CocApiClient
         return $this->calls;
     }
 
-    public function player(PlayerTag $tag): PlayerData
+    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerData
     {
         $this->record('players', $tag);
 
-        return $this->mapper->player(new Payload($this->find('players', $this->players, $tag), 'players'));
+        return $this->mapper->player(new Payload($this->find('players', $this->players, $tag), 'players'), Date::now());
     }
 
-    public function clan(ClanTag $tag): ClanData
+    public function clan(ClanTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): ClanData
     {
         $this->record('clans', $tag);
 
-        return $this->mapper->clan(new Payload($this->find('clans', $this->clans, $tag), 'clans'));
+        return $this->mapper->clan(new Payload($this->find('clans', $this->clans, $tag), 'clans'), Date::now());
     }
 
     public function verifyToken(PlayerTag $tag, #[SensitiveParameter] string $token): TokenVerificationResult

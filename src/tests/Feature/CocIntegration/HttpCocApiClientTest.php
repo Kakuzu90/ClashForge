@@ -58,8 +58,9 @@ it('fetches and maps a clan', function () {
 it('spreads calls across the keys round-robin (specs/09 §3)', function () {
     Http::fake(['*' => cocResponse($this, 'players/2PQ8GRJC.json')]);
 
-    app(PlayerLookup::class)->find($this->tag);
-    app(PlayerLookup::class)->find($this->tag);
+    // fresh: the second call would otherwise be a cache hit.
+    app(PlayerLookup::class)->find($this->tag, fresh: true);
+    app(PlayerLookup::class)->find($this->tag, fresh: true);
 
     $keys = Http::recorded()->map(fn (array $pair): string => $pair[0]->header('Authorization')[0])->all();
     expect($keys)->toHaveCount(2)->and(array_unique($keys))->toHaveCount(2);

@@ -9,8 +9,8 @@ return [
     |
     | Everything goes through the CocApiClient contract (specs/09 §1). `fake` serves the recorded
     | fixtures and is the default outside production; production must run `http`, and resolving
-    | the fake there throws. The cache, rate, circuit, sync and key_rotation groups of specs/09 §11
-    | arrive with the tasks that read them (P2-07, P2-08, P2-09).
+    | the fake there throws. `http` is wrapped as Cached(Throttled(Http)) (specs/09 §1). The sync
+    | and key_rotation groups of specs/09 §11 arrive with P2-09 and P2-08.
     |
     */
 
@@ -41,6 +41,45 @@ return [
     'log' => [
         // A malformed 200 is logged with its body (specs/23 §5), cut to this many bytes.
         'malformed_body_bytes' => 2048,
+    ],
+
+    // Self-imposed budget, well below any observed ceiling (specs/09 §4). Background calls may use
+    // only (1 - interactive_share) of the global budget, so the rest stays for people waiting.
+    'rate' => [
+        'global_per_second' => 10,
+        'global_per_minute' => 500,
+        'per_key_per_second' => 5,
+        'interactive_share' => 0.3,
+    ],
+
+    // specs/09 §7. Opens after `consecutive_failures` in a row, or when more than `error_rate` of
+    // at least `min_samples` calls in the last `window` seconds failed (counted in buckets of
+    // `bucket_seconds`). While open, one probe call is let through every `probe_interval` seconds.
+    'circuit' => [
+        'consecutive_failures' => 10,
+        'error_rate' => 0.5,
+        'window' => 120,
+        'min_samples' => 20,
+        'bucket_seconds' => 10,
+        'probe_interval' => 60,
+        // Ceiling on a maintenance Retry-After; past it the probe decides.
+        'max_open_seconds' => 3600,
+    ],
+
+    // Seconds (specs/09 §5, specs/21 §3).
+    'cache' => [
+        'player_ttl' => 300,
+        // A background fetch writes the same key for longer, so a view right after a sync is free.
+        'player_sync_ttl' => 1800,
+        'clan_ttl' => 900,
+        'negative_ttl' => 600,
+        // The last good payload, served marked stale while the API is unavailable.
+        'stale_ttl' => 86400,
+    ],
+
+    'request_log' => [
+        // `coc_api_requests` rows older than this are pruned (specs/07).
+        'retention_days' => 7,
     ],
 
     'fake' => [

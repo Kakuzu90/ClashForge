@@ -6,8 +6,9 @@ use App\Domain\CocIntegration\Enums\CocFailureReason;
 use App\Domain\CocIntegration\Enums\CocLookupStatus;
 
 /**
- * What PlayerLookup returns instead of throwing: `player` is set exactly when `status` is Found;
- * `failure` and `retryAfter` (seconds, when the API said) only when it is Unavailable.
+ * What PlayerLookup returns instead of throwing: `player` is set exactly when `status` is Found
+ * (possibly the last good answer, `player->stale`); `failure` and `retryAfter` (seconds, when the
+ * API said) only when it is Unavailable.
  */
 final readonly class PlayerLookupResult
 {

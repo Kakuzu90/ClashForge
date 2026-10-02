@@ -107,7 +107,7 @@ for a full temp volume does not.
 | `platform:anonymize-deleted` (command, runs inline) | Nightly, 04:00 | Executes the 30-day deletion pipeline through `AccountDeletionService`, chunked by id (`platform.auth.deletion_batch_size`, 100); locks and re-checks each account, audits once. `--dry-run` counts due accounts without changes. Media deletion remains queued after commit |
 | `GenerateSitemapJob` | Nightly | Public bases + profiles, chunked sitemap index |
 | `ExportUserDataJob` | On request | Builds a ZIP, uploads privately, emails a 7-day signed link |
-| `PruneOperationalTablesJob` | Nightly | `sessions`, `cache` expired rows, `coc_api_requests` >7d, `failed_jobs` >30d, `base_view_events` >30d |
+| `platform:prune-operational-tables` (command, runs inline, `--dry-run`) | Nightly, 02:00 | `coc_api_requests` > `coc.request_log.retention_days` (7), `failed_jobs` > `platform.prune.failed_jobs_days` (30), expired `cache` and `cache_locks` rows, `sessions` idle past `session.lifetime` or older than the 30-day absolute cap; `base_view_events` > 30 d joins with P3-04 |
 | `platform:check-health` (command, runs inline) | Every 5 min | R2 reachability (one HEAD, no writes) and the CoC key pool (`coc:check-health`, one `/locations` call per key) → cached health state read by `/health`; fails when storage is not ok or no CoC key works |
 | `platform:heartbeat` (command) | Every minute | Scheduler liveness marker for `/health` (§6) |
 

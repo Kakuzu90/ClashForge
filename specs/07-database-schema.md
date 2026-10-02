@@ -683,8 +683,9 @@ by `id`, which follows insertion order. Partition by month after year one.
 ### `coc_api_requests` [M]
 Rolling log of outbound API calls for rate-limit accounting and incident forensics. Pruned at 7 days.
 
-`id`, `endpoint (varchar 60)`, `tag null`, `status_code`, `duration_ms`, `was_cached (bool)`,
-`error_code null`, `created_at`.
+`id`, `endpoint (varchar 60)`, `tag (varchar 16) null`, `status_code null` (a timeout has no
+response), `duration_ms`, `was_cached (bool)`, `error_code (varchar 64) null` (the API's `reason`, or
+`timeout`), `created_at`. One row per outbound request and per cache hit.
 **Indexes:** `(created_at)`, `(endpoint, created_at)`, `(status_code, created_at)`.
 
 ### `sync_states` [M]

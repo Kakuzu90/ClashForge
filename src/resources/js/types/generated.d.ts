@@ -74,8 +74,11 @@ export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pen
 }
 namespace CocIntegration {
 namespace Enums {
-export type CocFailureReason = 'throttled' | 'maintenance' | 'server_error' | 'timeout' | 'no_healthy_key' | 'malformed';
+export type CocCircuitReason = 'failures' | 'maintenance';
+export type CocCircuitState = 'closed' | 'open' | 'half_open';
+export type CocFailureReason = 'throttled' | 'maintenance' | 'server_error' | 'timeout' | 'no_healthy_key' | 'malformed' | 'circuit_open';
 export type CocLookupStatus = 'found' | 'not_found' | 'unavailable';
+export type CocPriority = 'interactive' | 'background';
 export type TokenVerificationStatus = 'ok' | 'invalid' | 'not_found' | 'unavailable';
 }
 }

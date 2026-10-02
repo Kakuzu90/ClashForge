@@ -21,7 +21,9 @@ Domain services ─▶ PlayerLookup / ClanLookup / TokenVerifier   (use-case ser
 ```
 
 Decorator order at the container binding: `Cached( Throttled( Http ) )`. Caching sits outermost so
-a cache hit costs no rate-limit budget.
+a cache hit costs no rate-limit budget. Only the `http` driver is wrapped; the fake stays bare. Every
+player and clan call carries a `CocPriority` (`interactive` by default, `background` for sync) and a
+`fresh` flag (manual refresh) that the decorators read.
 
 ## 2. Endpoints used
 
@@ -73,12 +75,13 @@ requests per second per key, with throttling responses under sustained load. We 
 
 | Control | Value | Mechanism |
 |---|---|---|
-| Global budget | 10 req/s, 500 req/min across all keys | `RateLimiter` via `Cache` (atomic increment + lock) |
-| Per-key budget | 5 req/s | same, keyed by key id |
-| Interactive priority | User-triggered lookups reserve 30% of the budget | two limiter buckets: `coc-interactive`, `coc-background` |
-| Background yield | Sync jobs check the interactive bucket and back off when it is under pressure | `SyncThrottle` guard |
-| 429 handling | Honour `Retry-After` when present, else exponential backoff with jitter, max 5 attempts | job `backoff()` |
-| Request log | Every call recorded in `coc_api_requests` (endpoint, status, duration, cached) | pruned at 7 days |
+| Global budget | 10 req/s, 500 req/min across all keys, taken once per logical call | `RateLimiter` via `Cache`: `coc-rate:global:{second,minute}` |
+| Per-key budget | 5 req/s | `coc-rate:key:{id}`, checked when `CocKeyPool` picks a key; the second request of a 403 key swap spends it but not the global budget, so a key outage can exceed the global numbers by one request per call |
+| Interactive priority | User-triggered lookups reserve 30% of the budget | background calls also count against `coc-rate:background:{second,minute}`, capped at `floor(global × 0.7)` (7/s, 350/min) |
+| Background yield | The sync scheduler sizes its batch from the background budget left this minute | `CocApiStatus::backgroundBudgetRemaining()` |
+| Over budget | No call and no sleep: the call fails as `throttled` with the wait as `retryAfter` | background jobs `release()` |
+| 429 handling | Same `throttled` failure with the API's `Retry-After`; never counted by the circuit breaker | job `backoff()` |
+| Request log | One `coc_api_requests` row per outbound request (both requests of a key swap, health probes as `locations`) and per cache hit (`was_cached`; 404 for a cached miss). `error_code` is the API's `reason` or `timeout`; a failed insert is logged and never fails the call | pruned at 7 days |
 
 Background sync jobs use `Job::release()` rather than blocking sleeps, so a throttled worker frees
 the process for other queues.
@@ -92,16 +95,21 @@ the process for other queues.
 | Clan (`/clans/{tag}`) | 15 min | `coc:clan:{TAG}` | Members change slowly |
 | Clan search results | 5 min | `coc:clansearch:{hash}` | Bounded by query hash |
 | Leagues / locations | 7 days | `coc:leagues`, `coc:locations` | Static |
-| Negative cache: 404 `notFound` | 10 min | `coc:404:{TAG}` | Stops retry storms on typo'd tags |
+| Negative cache: 404 `notFound` | 10 min | `coc:404:player:{TAG}`, `coc:404:clan:{TAG}` | Stops retry storms on typo'd tags; per kind, since a player and a clan may share a tag |
 | Circuit-breaker state | — | `coc:circuit` | Shared across workers |
 
 All caching uses the `Cache` facade with tags avoided (the database store does not support tag
-flushing efficiently); invalidation is by explicit key deletion on manual refresh.
+flushing efficiently). Entries are plain arrays (`{payload, fetched_at}`, the tag without `#` in the
+key), mapped again on read; an entry that no longer maps is dropped and fetched again. Interactive
+calls read the entry and the negative cache; background and `fresh` (manual refresh) calls skip both
+reads but write, which is how a manual refresh invalidates. Token verification is never cached.
 
 **Stale-while-error:** every successful response is also written to a long-lived
-`coc:player:{TAG}:last` entry (24 h). When the API fails, the client returns that payload marked
-`stale: true`, and the UI shows a "data from X ago" label. The database snapshot is the deeper
-fallback below that.
+`coc:player:{TAG}:last` / `coc:clan:{TAG}:last` entry (24 h). When the API fails, an interactive,
+non-`fresh` call gets that payload as a `found` result with `stale: true` and its original
+`fetchedAt`, and the UI shows a "data from X ago" label. Background and `fresh` calls get the failure
+instead, so sync backs off and a manual refresh says the API is unavailable. The database snapshot
+is the deeper fallback below that.
 
 ## 6. Synchronisation strategy
 
@@ -148,15 +156,23 @@ timeout so the user sees the result; on timeout it falls back to dispatching a j
 | IP not whitelisted | 403 `accessDenied.invalidIp` | Same as above + urgent alert (this breaks everything) |
 | Tag not found | 404 `notFound` | Negative-cache 10 min; user-facing "no player with that tag" |
 | Throttled | 429 | Backoff with jitter; background jobs release to the queue |
-| Maintenance | 503 `inMaintenance` | **Open the circuit for the stated duration**; the API returns a maintenance end time — honour it; site-wide banner |
-| Server error | 500/502/504 | Retry ×3 with backoff, then circuit-breaker accounting |
+| Maintenance | 503 `inMaintenance` | **Open the circuit at once**, for `Retry-After` when sent (capped at `circuit.max_open_seconds`, 1 h), else until the next successful probe; site-wide banner |
+| Server error | 500/502/504 | No in-request retry: the call fails at once and counts toward the circuit breaker; background jobs retry through their queue backoff (60/300/900 s, [20 §1](20-jobs-and-scheduling.md)) |
 | Network timeout | — | 5 s connect, 10 s total; counts as a failure |
 | Malformed payload | 200 but unexpected shape | Log with the raw body, treat as failure, do not partially write |
 
 ### Circuit breaker
-- Opens after 10 consecutive failures or a >50% error rate over 2 minutes (min 20 samples).
-- While open: no outbound calls; everything serves from cache/snapshots; a site banner appears; a
-  half-open probe runs every 60 s.
+- Opens after 10 consecutive failures or a >50% error rate over 2 minutes (min 20 samples, counted
+  in 10 s cache buckets). Failures are 5xx, timeout, malformed and maintenance; a 404 is an answer,
+  and 429 and 403 belong to the budget and the key pool, so none of them count.
+- While open: no outbound calls; calls fail as `circuit_open` (or `maintenance`) with the wait;
+  everything serves from cache/snapshots; a site banner appears. Once the open period (60 s) ends,
+  the first real call to win `coc:circuit:probe` (an atomic `Cache::add`) is the half-open probe:
+  success closes the breaker and clears the window, a counted failure reopens it for 60 s, and any
+  other outcome hands the probe to the next call. Only the probe changes an open breaker; late
+  answers from calls admitted earlier are ignored.
+- `CocApiStatus` exposes the state (closed / open / half_open, reason, `openUntil`) to other modules;
+  half-open counts as available.
 - During maintenance windows the breaker is opened explicitly for the announced duration —
   Supercell's maintenance is frequent and scheduled; the platform must be boring about it.
 
@@ -242,9 +258,10 @@ Full state machine, conflict and dispute handling: [13-claiming-workflow.md](13-
 
 ```
 driver (fake|http), base_url, tokens[], timeouts{connect,total}, key_pool{unhealthy_ttl,cursor_ttl,id_length},
-log{malformed_body_bytes}, fake{fixtures_path,valid_token},
-cache{player_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
-rate{global_per_second,per_key_per_second,interactive_share}, circuit{threshold,window,probe_interval},
+log{malformed_body_bytes}, fake{fixtures_path,valid_token}, request_log{retention_days},
+cache{player_ttl,player_sync_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
+rate{global_per_second,global_per_minute,per_key_per_second,interactive_share},
+circuit{consecutive_failures,error_rate,window,min_samples,bucket_seconds,probe_interval,max_open_seconds},
 sync{tiers{hot,warm,cold,frozen}, batch_size, queue}, key_rotation{enabled, portal_email, portal_password}
 ```
 
