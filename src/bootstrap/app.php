@@ -45,6 +45,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);
 
+        // The in-game API token never goes back into the session with old input (specs/09 §9).
+        $exceptions->dontFlash(['api_token']);
+
         // Every policy or Gate denial reaches the `security` log (specs/11 §3). Rendering is unchanged.
         $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
             if ($e->getPrevious() instanceof AuthorizationException) {

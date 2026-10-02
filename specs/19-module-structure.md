@@ -159,7 +159,8 @@ require __DIR__.'/web/accounts.php';
 | `/` | home feed |
 | `/u/{username}` | public profile |
 | `/accounts/{ulid}` | CoC account detail |
-| `/accounts/attach` | attach flow |
+| `/accounts/attach` | attach flow, step 1 (`?tag=` prefills; POST `…/preview`, `/accounts/attach`, `…/verify-tag`) |
+| `/accounts/{ulid}/verify` `/accounts/{ulid}/verified` | attach flow steps 2 and 3, the owner's row only (POST `…/verify` sends the token) |
 | `/bases` `/bases/th{n}` `/bases/{category}` `/bases/th{n}/{category}` | discovery |
 | `/bases/{slug}` | base detail (`{ulid}-{title-slug}`) |
 | `/bases/{slug}/copy` | server-side copy-click redirect |

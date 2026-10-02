@@ -1,21 +1,26 @@
 <script setup lang="ts">
 import ProfileSkeleton from '@/Components/profile/ProfileSkeleton.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
+import UiBadge from '@/Components/ui/UiBadge.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiEmptyState from '@/Components/ui/UiEmptyState.vue';
+import UiPill, { type PillTone } from '@/Components/ui/UiPill.vue';
 import UiStatBlock from '@/Components/ui/UiStatBlock.vue';
 import UiTabs, { type TabItem } from '@/Components/ui/UiTabs.vue';
 import { formatMonthYear } from '@/Composables/useDateTime';
 import { useNavigating } from '@/Composables/useNavigating';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { attach, verify } from '@/routes/accounts';
 import { show } from '@/routes/profile';
 import { edit as privacySettings } from '@/routes/settings/privacy';
 import { edit as profileSettings } from '@/routes/settings/profile';
+import { Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
 
-const props = defineProps<{ profile: App.Http.Data.Profile.ProfileShowPageData['profile'] }>();
+type Props = App.Http.Data.Profile.ProfileShowPageData;
+const props = defineProps<{ profile: Props['profile']; ownAccounts?: Props['ownAccounts'] }>();
 
 const name = computed(() => props.profile.displayName ?? props.profile.username);
 const memberSince = computed(() => formatMonthYear(props.profile.memberSince));
@@ -32,6 +37,15 @@ const tabs: TabItem[] = [
     { key: 'bases', label: 'Bases' },
 ];
 const tab = ref('accounts');
+
+// The pill colour for a non-verified account; the words come from the server.
+const statusTone: Record<App.Domain.PlayerAccounts.Enums.CocAccountStatus, PillTone> = {
+    unverified: 'neutral',
+    verified: 'success',
+    disputed: 'warning',
+    suspended: 'danger',
+    released: 'neutral',
+};
 
 const profilePrefix = show.definition.url.split('{')[0] ?? '';
 const navigating = useNavigating((url) => url.pathname.startsWith(profilePrefix));
@@ -88,11 +102,38 @@ const navigating = useNavigating((url) => url.pathname.startsWith(profilePrefix)
 
         <UiTabs v-model="tab" :tabs="tabs" label="Profile sections">
             <template #accounts>
-                <UiEmptyState
-                    v-if="profile.isOwn"
-                    title="No accounts yet"
-                    body="Your verified Clash of Clans accounts will show here once account linking opens."
-                />
+                <template v-if="profile.isOwn">
+                    <!-- A plain list until PlayerCards (P2-04); only the owner gets it. -->
+                    <div v-if="ownAccounts && ownAccounts.length > 0" class="flex flex-col gap-4 py-4">
+                        <ul class="flex flex-col divide-y divide-line-subtle rounded-lg border border-line-subtle bg-surface">
+                            <li v-for="account in ownAccounts" :key="account.ulid" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-semibold break-all text-fg">{{ account.name }}</p>
+                                    <p class="font-mono text-sm text-fg-secondary">{{ account.tag }}</p>
+                                </div>
+                                <UiBadge v-if="account.status === 'verified'" kind="verified" />
+                                <UiPill v-else :label="account.statusLabel" :tone="statusTone[account.status]" />
+                                <UiBadge v-if="account.featured" kind="featured" />
+                                <Link
+                                    v-if="account.status === 'unverified'"
+                                    :href="verify(account.ulid).url"
+                                    :aria-label="`Verify ${account.name}`"
+                                    class="text-sm font-medium text-brand underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                                >
+                                    Verify
+                                </Link>
+                            </li>
+                        </ul>
+                        <div>
+                            <UiButton :href="attach().url" variant="secondary" size="sm">Attach another account</UiButton>
+                        </div>
+                    </div>
+                    <UiEmptyState v-else title="No accounts yet" body="Attach your Clash of Clans account and verify it with an in-game token.">
+                        <template #action>
+                            <UiButton :href="attach().url">Attach an account</UiButton>
+                        </template>
+                    </UiEmptyState>
+                </template>
                 <p v-else class="py-6 text-body text-fg-muted">No public accounts.</p>
             </template>
             <template #bases>

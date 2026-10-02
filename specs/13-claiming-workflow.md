@@ -116,7 +116,13 @@ has no row for the tag (attach was refused), so `VerifyOwnershipService::verifyT
 token first and only then creates their row and promotes it in the same transaction; a failed
 token leaves nothing but a `failed` claim row.
 
-**B. Dispute** (manual, slow, evidence-based) → §5.
+**B. Dispute** (manual, slow, evidence-based) → §5. The card's dispute button joins with P2-03.
+
+The card names the holder only where their own profile would show the tag: a listed account
+(not banned or pending deletion) whose profile the viewer can see, with "show connected accounts"
+on. Otherwise it reads "already verified by another Clash Commons player". The name is checked
+again on every view of the card, so a privacy change or a ban applies at once (owner decision
+2026-10-02, P2-11).
 
 If the existing holder is `unverified` rather than `verified`, there is no conflict at all: both
 rows may coexist, and whoever verifies first wins.

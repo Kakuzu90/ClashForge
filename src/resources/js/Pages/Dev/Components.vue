@@ -25,6 +25,7 @@ import UiRadioGroup, { type RadioOption } from '@/Components/ui/UiRadioGroup.vue
 import UiSelect, { type SelectOption } from '@/Components/ui/UiSelect.vue';
 import UiSkeleton from '@/Components/ui/UiSkeleton.vue';
 import UiStatBlock from '@/Components/ui/UiStatBlock.vue';
+import UiSteps from '@/Components/ui/UiSteps.vue';
 import UiTabs, { type TabItem } from '@/Components/ui/UiTabs.vue';
 import UiTextarea from '@/Components/ui/UiTextarea.vue';
 import UiToast from '@/Components/ui/UiToast.vue';
@@ -192,6 +193,7 @@ const sections = [
     'Alerts',
     'Skeletons',
     'Progress',
+    'Steps',
     'Game assets',
     'Empty state',
     'Notifications',
@@ -538,6 +540,15 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiProgress label="Uploading screenshot.png" :value="100" />
                     <UiProgress label="Processing (indeterminate)" />
                     <UiProgress label="Hidden label, still announced" :value="40" hide-label />
+                </div>
+            </section>
+
+            <section :id="anchor('Steps')" aria-labelledby="h-steps">
+                <h2 id="h-steps" class="font-display text-h1">Steps</h2>
+                <div class="mt-4 flex flex-col gap-6">
+                    <UiSteps :steps="['Find your account', 'Prove it is yours', 'Done']" :current="1" label="First step" />
+                    <UiSteps :steps="['Find your account', 'Prove it is yours', 'Done']" :current="2" label="Middle step" />
+                    <UiSteps :steps="['Find your account', 'Prove it is yours', 'Done']" :current="3" label="Last step" />
                 </div>
             </section>
 

@@ -39,11 +39,13 @@ class CocAccountTakenOverNotification extends Notification implements InAppNotif
     {
         $notice = NotificationType::CocAccountTakenOver->render($this->params);
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject($notice->title)
             ->greeting("Hi {$notifiable->username},")
             ->line($notice->body)
             ->salutation('Clash Commons');
+
+        return $notice->url === null ? $mail : $mail->action('Verify it again', url($notice->url));
     }
 
     public function toInApp(mixed $notifiable): InAppMessageData

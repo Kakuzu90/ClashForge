@@ -110,7 +110,7 @@ enum NotificationType: string implements HasLabelAndColor
             self::CocAccountTakenOver => new RenderedNotificationData(
                 title: 'Someone else verified one of your accounts',
                 body: 'Someone verified '.self::cocAccount($params, 'one of your Clash of Clans accounts').' with an in-game API token, so it is no longer verified on your Clash Commons account. If that was not you, someone else can get into your game account: secure it in game, then verify it again with a new token.',
-                url: null,
+                url: is_string($params['tag'] ?? null) && $params['tag'] !== '' ? route('accounts.attach', ['tag' => $params['tag']], absolute: false) : null,
             ),
         };
     }

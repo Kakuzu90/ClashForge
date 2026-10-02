@@ -234,6 +234,10 @@ short-lived and single-use-ish, so the flow must be immediate.
 5. Attempts are rate-limited (`coc-verify`, 5/hour per user) and every attempt is written to
    `coc_account_claims`, successful or not.
 
+The form field is `api_token`. It is in the exception handler's `dontFlash`, so a failed
+validation never returns it as old input; the pages clear it after every submit; it is never a
+prop or a flash value; and Sentry drops request bodies and frame variables (P2-11).
+
 Tokens are **never stored** — not in the database, not in logs, not in job payloads. They exist only
 inside the request that verifies them. The claim record stores the outcome, not the token. The
 verifytoken response echoes the token: only its `status` is read, and a malformed verifytoken body

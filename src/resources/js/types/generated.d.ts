@@ -251,6 +251,15 @@ leagueName: string | null,
 stale: boolean,
 fetchedAt: string | null,
 };
+export type OwnCocAccountData = {
+ulid: string,
+tag: string,
+name: string,
+status: App.Domain.PlayerAccounts.Enums.CocAccountStatus,
+statusLabel: string,
+townHallLevel: number | null,
+featured: boolean,
+};
 export type VerifyResultData = {
 outcome: App.Domain.PlayerAccounts.Enums.VerifyOutcome,
 accountUlid: string | null,
@@ -260,6 +269,7 @@ retryAfter: number | null,
 };
 }
 namespace Enums {
+export type AttachBlock = 'email_unverified' | 'account_blocked';
 export type AttachOutcome = 'ready' | 'attached' | 'already_attached' | 'not_found' | 'verified_elsewhere' | 'unavailable' | 'rate_limited';
 export type ClaimFailureReason = 'invalid_token' | 'already_claimed' | 'api_error' | 'rate_limited' | 'not_found';
 export type ClaimMethod = 'api_token' | 'dispute' | 'admin';
@@ -364,6 +374,23 @@ export type AccountStatusPageData = {
 status: App.Domain.Auth.Enums.UserStatus,
 reason: string | null,
 endsAt: string | null,
+};
+}
+namespace Accounts {
+export type AttachPageData = {
+tag: string | null,
+preview: App.Domain.PlayerAccounts.Data.AttachResultData | null,
+verifyResult: App.Domain.PlayerAccounts.Data.VerifyResultData | null,
+block: App.Domain.PlayerAccounts.Enums.AttachBlock | null,
+};
+export type VerifiedPageData = {
+account: App.Domain.PlayerAccounts.Data.OwnCocAccountData,
+firstAccount: boolean,
+profileUsername: string,
+};
+export type VerifyPageData = {
+account: App.Domain.PlayerAccounts.Data.OwnCocAccountData,
+result: App.Domain.PlayerAccounts.Data.VerifyResultData | null,
 };
 }
 namespace Admin {
@@ -505,6 +532,7 @@ confirmUrl: string | null,
 namespace Profile {
 export type ProfileShowPageData = {
 profile: App.Domain.Users.Data.PublicProfileData,
+ownAccounts: App.Domain.PlayerAccounts.Data.OwnCocAccountData[] | null,
 };
 }
 namespace Settings {

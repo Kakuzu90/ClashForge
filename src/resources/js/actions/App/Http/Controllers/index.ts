@@ -3,6 +3,7 @@ import Dev from './Dev'
 import Auth from './Auth'
 import Account from './Account'
 import Profile from './Profile'
+import Accounts from './Accounts'
 import Settings from './Settings'
 import Notifications from './Notifications'
 import Moderation from './Moderation'
@@ -16,6 +17,7 @@ const Controllers = {
     Auth: Object.assign(Auth, Auth),
     Account: Object.assign(Account, Account),
     Profile: Object.assign(Profile, Profile),
+    Accounts: Object.assign(Accounts, Accounts),
     Settings: Object.assign(Settings, Settings),
     Notifications: Object.assign(Notifications, Notifications),
     Moderation: Object.assign(Moderation, Moderation),

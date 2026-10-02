@@ -268,6 +268,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 | **Tabs** | underline, pill | active, focus |
 | **Pagination** | numbered, load-more, infinite-sentinel | loading |
 | **Progress** | bar, ring, upload-progress | determinate, indeterminate |
+| **Steps** | numbered steps of a short fixed flow (`UiSteps`, the attach flow; P2-11) | done, current (`aria-current="step"`), upcoming |
 | **Skeleton** | text-line, card, avatar, stat, media | shimmer (disabled under reduced-motion) |
 | **Empty state** | with illustration slot, title, body, primary action | — |
 | **Alert / Banner** | info, warning, danger, maintenance | dismissible |
@@ -390,6 +391,9 @@ follow button (P2) → featured PlayerCard (hero variant) → stat blocks (bases
 copies, war stars across accounts) → tabs: Accounts · Bases · Activity (P2) · Bookmarks (own only)
 → tab content.
 *Empty (no accounts):* prompt to attach an account (own profile) / "no public accounts" (others).
+Until PlayerCards (P2-04), the own Accounts tab lists the owner's rows (name, tag, status, a
+"Verify" link on unverified ones) and shows the attach prompt only when there are none; other
+viewers see nothing there yet (P2-11).
 *Empty (no bases):* own → "publish your first base" CTA; others → muted message.
 *Loading:* cover + avatar skeleton, then tab content skeletons.
 *Error (hidden profile):* a `private` profile (to anyone but the owner), a `members` profile (to a
@@ -411,7 +415,11 @@ account → sync status footer ("updated 12 minutes ago" + manual refresh button
 ### Attach account flow (`/accounts/attach`)
 Three steps with a progress indicator: (1) enter tag → confirmation card; (2) in-game token
 instructions with an illustrated, original step-by-step and a paste field; (3) success screen with
-a RewardToast and a "set as featured" prompt.
+a RewardToast and a "set as featured" prompt. As built (P2-11, owner decisions 2026-10-02): the
+token steps are numbered text until original illustrations exist; the RewardToast shows on the
+first verified account only; step 3 says "This is now your featured account" when it became
+featured, and the switch prompt joins with P2-14. A user who may not attach (email not
+confirmed) sees why on step 1 instead of the form.
 *Error states:* tag not found · already verified by someone else (conflict card with both the token
 path and the dispute path) · invalid token (with "tokens expire in a few minutes — copy a fresh
 one") · API unavailable (retry later, nothing lost).

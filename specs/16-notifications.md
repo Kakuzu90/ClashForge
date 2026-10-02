@@ -35,7 +35,7 @@ longer available", with no link.
 | | Account suspended / banned | I + E* (email since P1-14; in-app since P1-07) | — | immediate |
 | | Sanction lifted / expired | I + E (email since P1-14; in-app since P1-07) | — | immediate |
 | **Ownership** | CoC account verified | I + E (P2-12; names the tag and in-game name) | — | immediate |
-| | Your verified account was claimed by someone else | I + E* (P2-12; names the tag only, never the new holder or the in-game name) | — | immediate |
+| | Your verified account was claimed by someone else | I + E* (P2-12; names the tag only, never the new holder or the in-game name; links to `/accounts/attach?tag=…`, the email's button reads "Verify it again", P2-11) | — | immediate |
 | | Dispute opened against you | I + E | — | immediate |
 | | Dispute response reminder (day 3, day 6) | I + E | — | scheduled |
 | | Dispute decision | I + E | — | immediate |

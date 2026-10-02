@@ -73,13 +73,40 @@ describe('Profile/Show', () => {
     });
 
     it('offers the owner the edit links and setup prompts, and others muted empty text', () => {
-        const own = mount(Show, { props: { profile: profile({ isOwn: true }) } });
+        const own = mount(Show, { props: { profile: profile({ isOwn: true }), ownAccounts: [] } });
         expect(own.text()).toContain('Edit profile');
         expect(own.text()).toContain('No accounts yet');
+        expect(own.find('a[href="/accounts/attach"]').text()).toBe('Attach an account');
 
         const other = mount(Show, { props: { profile: profile() } });
         expect(other.text()).not.toContain('Edit profile');
         expect(other.text()).toContain('No public accounts.');
+    });
+
+    it("lists the owner's accounts with a verify link on unverified ones", () => {
+        const account = (overrides: Partial<App.Domain.PlayerAccounts.Data.OwnCocAccountData>): App.Domain.PlayerAccounts.Data.OwnCocAccountData => ({
+            ulid: '01J00000000000000000000001',
+            tag: '#2PQ8GRJC',
+            name: 'Main',
+            status: 'verified',
+            statusLabel: 'Verified',
+            townHallLevel: 16,
+            featured: true,
+            ...overrides,
+        });
+        const wrapper = mount(Show, {
+            props: {
+                profile: profile({ isOwn: true }),
+                ownAccounts: [account({}), account({ ulid: '01J00000000000000000000002', tag: '#GRJ0P8UV', name: 'Alt', status: 'unverified', statusLabel: 'Unverified', featured: false })],
+            },
+        });
+
+        expect(wrapper.text()).not.toContain('No accounts yet');
+        expect(wrapper.findAll('li').filter((item) => item.text().includes('#2PQ8GRJC'))[0]!.text()).not.toContain('Verify');
+        const verify = wrapper.find('a[href="/accounts/01J00000000000000000000002/verify"]');
+        expect(verify.text()).toBe('Verify');
+        expect(verify.attributes('aria-label')).toBe('Verify Alt');
+        expect(wrapper.find('a[href="/accounts/attach"]').text()).toBe('Attach another account');
     });
 
     it('falls back to the username and leaves out the about section when it is empty', () => {

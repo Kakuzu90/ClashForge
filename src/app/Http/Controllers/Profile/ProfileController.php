@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Profile;
 
+use App\Domain\PlayerAccounts\Queries\AccountReadModel;
 use App\Domain\Users\Data\PublicProfileData;
 use App\Domain\Users\Queries\PublicProfileReadModel;
 use App\Http\Controllers\Controller;
 use App\Http\Data\Profile\ProfileShowPageData;
+use App\Models\User;
 use App\Support\Seo\PageMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,7 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ProfileController extends Controller
 {
-    public function show(Request $request, string $username, PublicProfileReadModel $profiles): Response
+    public function show(Request $request, string $username, PublicProfileReadModel $profiles, AccountReadModel $accounts): Response
     {
         $view = $profiles->find($username, $request->user());
 
@@ -35,7 +37,11 @@ class ProfileController extends Controller
                 ->setStatusCode(404);
         }
 
-        $page = new ProfileShowPageData(profile: $view->profile);
+        $viewer = $request->user();
+        $page = new ProfileShowPageData(
+            profile: $view->profile,
+            ownAccounts: $view->profile->isOwn && $viewer instanceof User ? $accounts->own($viewer) : null,
+        );
 
         return PageMeta::page('Profile/Show', $page->toArray(), $this->meta($view->profile, $view->indexable))->toResponse($request);
     }

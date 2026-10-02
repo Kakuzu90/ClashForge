@@ -41,7 +41,7 @@ it('names the account, or falls back when the row predates its parameters (specs
         ->and(NotificationType::CocAccountTakenOver->render($params)->body)->toStartWith('Someone verified #2PQ8GRJC (Chief Pat) with an in-game API token')
         ->and(NotificationType::CocAccountTakenOver->render($params)->body)->toContain('secure it in game, then verify it again with a new token.')
         ->and(NotificationType::CocAccountTakenOver->render([])->body)->toStartWith('Someone verified one of your Clash of Clans accounts')
-        ->and(NotificationType::CocAccountTakenOver->render($params)->url)->toBeNull();
+        ->and(NotificationType::CocAccountTakenOver->render($params)->url)->toBe('/accounts/attach?tag=%232PQ8GRJC');
 });
 
 it('files both ownership notices under Accounts', function () {

@@ -2,11 +2,13 @@
 
 namespace App\Domain\PlayerAccounts\Services;
 
+use App\Domain\Auth\Services\UserLookupService;
 use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\CocIntegration\Enums\CocLookupStatus;
 use App\Domain\CocIntegration\Services\PlayerLookup;
 use App\Domain\PlayerAccounts\Data\AttachResultData;
 use App\Domain\PlayerAccounts\Data\CocPlayerPreviewData;
+use App\Domain\PlayerAccounts\Enums\AttachBlock;
 use App\Domain\PlayerAccounts\Enums\AttachOutcome;
 use App\Domain\PlayerAccounts\Enums\ClaimFailureReason;
 use App\Domain\PlayerAccounts\Enums\ClaimStatus;
@@ -16,6 +18,7 @@ use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Support\AccountRows;
 use App\Domain\PlayerAccounts\Support\ClaimLimits;
 use App\Domain\PlayerAccounts\Support\ClaimRecorder;
+use App\Domain\Users\Services\PrivacyPolicyResolver;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
@@ -39,7 +42,22 @@ class AttachAccountService
         private readonly ClaimLimits $limits,
         private readonly ClaimRecorder $claims,
         private readonly AccountRows $rows,
+        private readonly UserLookupService $users,
+        private readonly PrivacyPolicyResolver $privacy,
     ) {}
+
+    /**
+     * Why this user may not attach, for the page to explain instead of failing on submit; null
+     * when they may (CocAccountPolicy::attach).
+     */
+    public function block(User $user): ?AttachBlock
+    {
+        return match (true) {
+            Gate::forUser($user)->allows('attach', CocAccount::class) => null,
+            ! $user->hasVerifiedEmail() => AttachBlock::EmailUnverified,
+            default => AttachBlock::AccountBlocked,
+        };
+    }
 
     public function preview(User $user, PlayerTag $tag): AttachResultData
     {
@@ -71,7 +89,7 @@ class AttachAccountService
         $holder = $this->holder($user, $tag);
 
         return $holder !== null
-            ? new AttachResultData(AttachOutcome::VerifiedElsewhere, $tag->value, player: $player, holderUsername: $holder->user?->username)
+            ? new AttachResultData(AttachOutcome::VerifiedElsewhere, $tag->value, player: $player, holderUsername: $this->holderName($user, $holder))
             : new AttachResultData(AttachOutcome::Ready, $tag->value, player: $player);
     }
 
@@ -93,7 +111,7 @@ class AttachAccountService
         }
 
         if (($holder = $this->holder($user, $tag)) !== null) {
-            return $this->refuse($user, $tag, AttachOutcome::VerifiedElsewhere, ClaimFailureReason::AlreadyClaimed, holder: $holder->user?->username);
+            return $this->refuse($user, $tag, AttachOutcome::VerifiedElsewhere, ClaimFailureReason::AlreadyClaimed, holder: $this->holderName($user, $holder));
         }
 
         $lookup = $this->players->find($tag);
@@ -138,8 +156,8 @@ class AttachAccountService
     }
 
     /**
-     * Another user's row holding the tag, with that user's username for the conflict card (specs/13
-     * §4). A holder whose website account is gone still holds the tag; the card then has no name.
+     * Another user's row holding the tag (specs/13 §4). A holder whose website account is gone
+     * still holds the tag.
      */
     private function holder(User $user, PlayerTag $tag): ?CocAccount
     {
@@ -149,6 +167,34 @@ class AttachAccountService
             ->whereIn('status', self::HOLDING)
             ->where(fn ($q) => $q->where('user_id', '!=', $user->id)->orWhereNull('user_id'))
             ->first();
+    }
+
+    /**
+     * The current holder's username for a conflict card shown again later: privacy and bans apply
+     * on every view, not only when the tag was looked up.
+     */
+    public function holderUsername(User $viewer, PlayerTag $tag): ?string
+    {
+        $holder = $this->holder($viewer, $tag);
+
+        return $holder === null ? null : $this->holderName($viewer, $holder);
+    }
+
+    /**
+     * The holder's username for the conflict card, only where their profile would show this tag:
+     * a listed account whose profile this viewer can see, with connected accounts shown. Otherwise
+     * null, and the card says "another Clash Commons player" (owner decision 2026-10-02, P2-11).
+     */
+    private function holderName(User $viewer, CocAccount $holder): ?string
+    {
+        $username = $holder->user?->username;
+        $owner = $username === null ? null : $this->users->findListed($username);
+
+        if ($owner === null || ! $this->privacy->canView($viewer, $owner) || ! $this->privacy->settingsFor($owner->id)->showCocAccounts) {
+            return null;
+        }
+
+        return $owner->username;
     }
 
     /**
