@@ -517,7 +517,7 @@ network failure becomes an inline alert with the `X-Request-Id` instead of Inert
 a 429 from `admin-search` becomes a "wait a moment" warning).
 *Dashboard (`/admin`):* one panel per FR-ADMIN-5 surface, each its own deferred prop in its own
 group, with its own skeleton, empty state ("No failed jobs in the last 24 hours") and inline error;
-a failed panel's "Try again" reloads every panel still missing. The Clash of Clans API panel (P2-10) is one of them. Panels sit behind
+a failed panel's "Try again" reloads every panel still missing. The Clash of Clans API panel (P2-10) is one of them; since P2-09 it shows the account sync success rate over 30 minutes ("Under 90%" pill below the line) and the accounts that stopped syncing. Panels sit behind
 `view-platform-stats` (admin+) and are left out of the response for anyone else; moderators see an
 empty state until the report queue lands (P3-06). Sizes in decimal units (1 GB = 1000 MB), as
 the bucket bills. Nothing on it is cached or polled. Its failed-jobs panel links to System Health.

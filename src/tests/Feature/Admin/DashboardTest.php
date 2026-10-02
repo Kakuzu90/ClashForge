@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\CocIntegration\Models\SyncState;
 use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Models\Media;
 use App\Domain\Media\Models\MediaVariant;
@@ -216,4 +217,22 @@ it('keeps each panel within the query budget', function (string $prop) {
 it('reads its limits from config', function () {
     expect(config('platform.admin.failed_jobs_alert_per_hour'))->toBe(20)
         ->and(config('platform.admin.failed_jobs_top_classes'))->toBe(5);
+});
+
+it('adds the account sync success rate and the stopped accounts to the API panel', function () {
+    $alert = (float) config('coc.sync.success_alert');
+    foreach (range(1, 8) as $id) {
+        SyncState::factory()->forAccount($id)->create(['last_attempt_at' => now()->subMinutes(5), 'last_success_at' => $id <= 7 ? now()->subMinutes(5) : now()->subDays(2)]);
+    }
+    SyncState::factory()->forAccount(20)->stopped()->create();
+
+    expect(loadPanel($this->admin, 'cocApiHealth')->json('props.cocApiHealth'))->toMatchArray([
+        'syncWindowMinutes' => config('coc.sync.success_window_minutes'),
+        'syncAttempts' => 8,
+        'syncSuccesses' => 7,
+        'syncSuccessRate' => 0.875,
+        'syncAlert' => $alert,
+        'syncBelowAlert' => $alert > 0.875,
+        'syncStopped' => 1,
+    ]);
 });

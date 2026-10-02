@@ -115,7 +115,7 @@ for a full temp volume does not.
 
 ```
 * / 1 min    platform:heartbeat            (the one task allowed at :00; withoutOverlapping(5))
-* / 5 min    coc:sync-accounts            (withoutOverlapping, onOneServer)
+2-59/5      coc:sync-accounts            (withoutOverlapping, onOneServer; offset off :00)
 * / 5 min    platform:check-health
 * / 15 min   bases:recompute-trending
 * / 15 min   moderation:expire-sanctions   (at :07, :22, :37, :52, so never at :00)
@@ -223,7 +223,8 @@ row reads the `platform:heartbeat` beat (`platform.health.heartbeat_max_age`); n
 "unknown", not stopped. Two rows are not on the page (owner decision, 2026-10-02): media
 processing p95 needs a processing-start time that `media` does not record (with P3-02), and
 worker liveness is a container restart count the app cannot see (container monitoring, P0-09).
-The CoC sync success rate joins with P2-09, and retry / delete of failed jobs with P2-19. The
+The CoC sync success rate (P2-09) is on the API panel, and retry / delete of failed jobs joins
+with P2-19. The
 read models live in `Domain/Operations` ([05](05-architecture.md)). The admin dashboard's
 failed-jobs panel (P1-13) shows failures in the last hour and 24 h, flags the hour above the
 alert line (`platform.admin.failed_jobs_alert_per_hour`) and lists the most failed job classes by
@@ -231,4 +232,8 @@ the payload's `displayName`; payloads and exception text never reach the page. I
 API panel (P2-10) shows the breaker state (and the next try while open), healthy keys of the
 total, and the last `coc.health.window_hours` (24) of `coc_api_requests`: calls, cache hits,
 failures as the breaker counts them (timeout or 5xx; 403, 429 and 404 are not) and the most
-common error code. The CoC sync success rate joins that panel with P2-09.
+common error code. Since P2-09 it also shows the account sync success rate: `sync_states` rows
+whose latest attempt falls in the last `coc.sync.success_window_minutes` (30), succeeded or not,
+flagged under `coc.sync.success_alert` (90 %), plus the accounts that stopped syncing (frozen and
+out of retries). Each row holds its latest attempt only, so this is the rate per account, close
+to the per-attempt rate since a tier is hours long.

@@ -41,6 +41,10 @@ const API_STATE: Record<App.Domain.CocIntegration.Enums.CocCircuitState, { label
     open: { label: 'Unavailable', tone: 'danger' },
 };
 
+function percent(rate: number): string {
+    return new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 }).format(rate);
+}
+
 const visitError = useVisitError();
 
 // One error per page, cleared by the next visit, so a retry reloads every panel still missing.
@@ -143,7 +147,7 @@ const keyColumns: AdminColumn[] = [
                 </Deferred>
             </AdminPanel>
 
-            <AdminPanel title="Clash of Clans API" description="The circuit breaker and every API key. The sync success rate joins once syncing starts.">
+            <AdminPanel title="Clash of Clans API" description="The circuit breaker, the account sync and every API key.">
                 <Deferred data="cocApiHealth">
                     <template #fallback>
                         <UiAlert v-if="visitError" kind="danger" title="The API panel didn't load">
@@ -167,6 +171,20 @@ const keyColumns: AdminColumn[] = [
                             <span class="text-fg-secondary">· {{ cocApiHealth.keysHealthy }} of {{ cocApiHealth.keysTotal }} keys healthy</span>
                         </div>
 
+                        <div class="flex flex-col gap-1 text-sm">
+                            <p v-if="cocApiHealth.syncAttempts === 0" class="text-fg-secondary">No account syncs in the last {{ cocApiHealth.syncWindowMinutes }} minutes.</p>
+                            <p v-else class="flex flex-wrap items-center gap-2 text-fg-secondary">
+                                <span>
+                                    Account syncs, {{ cocApiHealth.syncWindowMinutes }} min:
+                                    <span class="text-fg">{{ percent(cocApiHealth.syncSuccessRate ?? 0) }}</span>
+                                    of {{ formatCount(cocApiHealth.syncAttempts) }} succeeded
+                                </span>
+                                <UiPill v-if="cocApiHealth.syncBelowAlert" tone="danger" :label="`Under ${percent(cocApiHealth.syncAlert)}`" />
+                            </p>
+                            <p v-if="cocApiHealth.syncStopped > 0" class="text-fg-secondary">
+                                {{ formatCount(cocApiHealth.syncStopped) }} {{ cocApiHealth.syncStopped === 1 ? 'account' : 'accounts' }} stopped syncing after repeated failures.
+                            </p>
+                        </div>
                         <p v-if="cocKeys.length === 0" class="text-sm text-fg-secondary">
                             No API keys configured. Without keys, only the fixture client answers.
                         </p>

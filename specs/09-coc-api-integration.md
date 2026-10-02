@@ -126,21 +126,37 @@ tier, and the scheduler picks due rows.
 | `frozen` | 5+ consecutive failures, or account not found | 7 days, then stop and flag |
 
 Unverified accounts are **not** background-synced at all — only on manual refresh. They are not
-trusted data and not worth the budget.
+trusted data and not worth the budget. Disputed accounts keep syncing (the holder still holds the
+tag, [13 §2](13-claiming-workflow.md)); suspended and released ones stop.
+
+Since P2-09 (owner decisions, 2026-10-02): "owner active" is the later of the last password
+sign-in and the newest session's last request (`UserActivityReader`); "viewed in the last 24 h"
+joins once the account page records views (P2-04). Intervals are `coc.sync.tiers`. Frozen
+retries every 7 days and, after `coc.sync.frozen_max_attempts` (4) failed retries, stops
+(`next_due_at` null); System Health counts it as "stopped syncing" and a later success revives
+it. `sync_states` belongs to CocIntegration behind `SyncSchedule`; the account module picks the
+tier.
 
 ### Scheduler shape
 
-- `coc:sync-accounts` runs every 5 minutes, selects up to N due rows ordered by `next_due_at`,
+- `coc:sync-accounts` runs every 5 minutes (from :02, so not on the hour), claims up to N due rows
+  (each moves `coc.sync.claim_seconds` ahead, so a job waiting in a backlog is never queued twice) ordered by `next_due_at`,
   and dispatches one job per account onto the `sync` queue. N is derived from the remaining
   background rate budget, so the scheduler self-throttles.
 - Each `SyncCocAccountJob` is `ShouldBeUnique` on the account id (60 s) and uses
   `WithoutOverlapping`, so a slow run never doubles up.
 - On success: update `coc_accounts`, write a `coc_account_snapshots` row **only if a tracked value
-  changed**, reset `api_sync_failures`, compute the next tier and `next_due_at`.
+  changed** (progression only: TH / BH level, XP level, best trophies, war stars, unit levels,
+  clan tag, league id; [07](07-database-schema.md)), reset `api_sync_failures`, compute the next
+  tier and `next_due_at`. Verification writes the first snapshot and starts the schedule (a
+  listener on `CocAccountVerified`, which an admin dispute transfer dispatches too).
 - On `notFound` (404): increment failures; after 3 consecutive, set the account to a `stale` display
   state and notify the owner ("we can't find this tag any more — it may have been renamed or
   deleted"). Never auto-unverify: tag lookups fail transiently.
-- On 5xx / timeout: exponential backoff, do not count toward the "not found" counter.
+- On 5xx / timeout / malformed: exponential backoff (`coc.sync.backoff_base` doubled per failure,
+  capped at the tier interval), do not count toward the "not found" counter. Trouble on our side
+  (circuit open, throttled, no healthy key) postpones the account by the API's wait without
+  counting a failure, and `coc:sync-accounts` queues nothing while the circuit is open.
 - Clan sync (`coc:sync-clans`) runs hourly for clans with `tracked_reason` set, same pattern.
 
 ### Manual refresh
@@ -272,7 +288,7 @@ log{malformed_body_bytes}, fake{fixtures_path,valid_token}, request_log{retentio
 cache{player_ttl,player_sync_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
 rate{global_per_second,global_per_minute,per_key_per_second,interactive_share},
 circuit{consecutive_failures,error_rate,window,min_samples,bucket_seconds,probe_interval,max_open_seconds},
-sync{tiers{hot,warm,cold,frozen}, batch_size, queue}, key_rotation{enabled, portal_email, portal_password}
+sync{tiers{hot,warm,cold,frozen}, hot_active_days, warm_active_days, batch_size, queue, claim_seconds, backoff_base, not_found_stale, frozen_after, frozen_max_attempts, success_window_minutes, success_alert}, key_rotation{enabled, portal_email, portal_password}
 ```
 
 Every value is environment-overridable. No magic numbers anywhere else in the codebase.

@@ -86,6 +86,13 @@ cacheHits: number,
 failures: number,
 failureRate: number | null,
 topError: string | null,
+syncWindowMinutes: number,
+syncAttempts: number,
+syncSuccesses: number,
+syncSuccessRate: number | null,
+syncAlert: number,
+syncBelowAlert: boolean,
+syncStopped: number,
 };
 export type CocKeyData = {
 id: string,
@@ -100,6 +107,8 @@ export type CocCircuitState = 'closed' | 'open' | 'half_open';
 export type CocFailureReason = 'throttled' | 'maintenance' | 'server_error' | 'timeout' | 'no_healthy_key' | 'malformed' | 'circuit_open';
 export type CocLookupStatus = 'found' | 'not_found' | 'unavailable';
 export type CocPriority = 'interactive' | 'background';
+export type SyncResourceType = 'coc_account' | 'clan';
+export type SyncTier = 'hot' | 'warm' | 'cold' | 'frozen';
 export type TokenVerificationStatus = 'ok' | 'invalid' | 'not_found' | 'unavailable';
 }
 }
@@ -247,7 +256,7 @@ url: string | null,
 }
 namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
-export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over';
+export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over' | 'coc_account_not_found';
 export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
 }
 }
@@ -357,6 +366,8 @@ export type DisputeDecision = 'transfer' | 'deny' | 'suspend' | 'ask_claimant' |
 export type DisputeParty = 'claimant' | 'holder';
 export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
 export type DisputeStatus = 'open' | 'awaiting_admin' | 'awaiting_claimant' | 'awaiting_holder' | 'resolved_transfer' | 'resolved_denied' | 'resolved_suspended' | 'withdrawn' | 'auto_resolved';
+export type SnapshotSource = 'scheduled' | 'manual' | 'verification';
+export type SyncOutcome = 'changed' | 'unchanged' | 'not_found' | 'failed' | 'postponed' | 'skipped';
 export type VerificationMethod = 'api_token' | 'admin';
 export type VerifyOutcome = 'verified' | 'invalid_token' | 'not_found' | 'unavailable' | 'rate_limited' | 'tag_suspended';
 }

@@ -55,3 +55,14 @@ it('files both ownership notices under Accounts', function () {
 it('lists only the categories with a type as in use', function () {
     expect(NotificationCategory::inUse())->toBe([NotificationCategory::Security, NotificationCategory::Ownership, NotificationCategory::Bases]);
 });
+
+it('words the account-not-found notice as still verified, under Accounts (specs/09 §6, specs/16 §2)', function () {
+    $notice = NotificationType::CocAccountNotFound->render(['tag' => '#2PQ8GRJC', 'name' => 'Chief Pat']);
+
+    expect($notice->title)->toBe("We can't find one of your accounts")
+        ->and($notice->body)->toStartWith('Clash of Clans no longer finds #2PQ8GRJC (Chief Pat).')
+        ->and($notice->body)->toContain('It stays verified')
+        ->and(NotificationType::CocAccountNotFound->render([])->body)->toStartWith('Clash of Clans no longer finds one of your accounts.')
+        ->and(NotificationType::CocAccountNotFound->category())->toBe(NotificationCategory::Ownership)
+        ->and(NotificationType::CocAccountNotFound->color())->toBe('state-warning');
+});

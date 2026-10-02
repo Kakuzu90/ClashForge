@@ -40,7 +40,7 @@ longer available", with no link.
 | | Dispute response reminder (day 3, day 6) | I + E | — | scheduled |
 | | Dispute decision | I + E | — | immediate |
 | | Re-verification requested | I + E | — | immediate |
-| | Account not found for 3 syncs | I | — | batched |
+| | Account not found for 3 syncs | I (P2-09; once, on the sync that makes the account stale; names the tag and in-game name; says it stays verified) | — | immediate |
 | | Tag released | I | — | immediate |
 | **Bases** | Comment on your base | I + E (opt) | `base:{id}:comments` | batched 5 min |
 | | Reply to your comment | I + E (opt) | `comment:{id}:replies` | batched 5 min |

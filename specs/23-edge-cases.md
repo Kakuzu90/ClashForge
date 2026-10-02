@@ -35,7 +35,7 @@ Primary set in [13 §9](13-claiming-workflow.md). Additional:
 | Account's clan is private / war log hidden | Store what the API gives; render missing fields as "not shared" rather than blank |
 | Two accounts in our database have the same IGN | Fine. IGNs are not unique in game; tags are. Search shows the tag alongside every IGN |
 | Verified account's owner is banned | Account hidden with the owner; tag released after 30 days |
-| A verified account has been inactive for a year | Still verified. Sync drops to the frozen tier. No auto-expiry of ownership — inactivity is not abandonment |
+| A verified account has been inactive for a year | Still verified. Sync drops to the cold tier (72 h); frozen is for failing accounts only ([09 §6](09-coc-api-integration.md)). No auto-expiry of ownership — inactivity is not abandonment |
 
 ## 3. Bases
 

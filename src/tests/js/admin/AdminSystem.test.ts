@@ -66,6 +66,13 @@ const cocApiHealth: App.Domain.CocIntegration.Data.CocApiHealthData = {
     failures: 0,
     failureRate: 0,
     topError: null,
+    syncWindowMinutes: 30,
+    syncAttempts: 0,
+    syncSuccesses: 0,
+    syncSuccessRate: null,
+    syncAlert: 0.9,
+    syncBelowAlert: false,
+    syncStopped: 0,
 };
 
 type Props = InstanceType<typeof System>['$props'];
@@ -171,6 +178,7 @@ describe('Admin/System', () => {
         ).text();
 
         expect(text).toContain('1 of 2 keys healthy');
+        expect(text).toContain('No account syncs in the last 30 minutes.');
         expect(text).toContain('a1b2c3d4');
         expect(text).toContain('Healthy');
         expect(text).toContain('Unhealthy');

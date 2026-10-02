@@ -155,7 +155,7 @@ const storageColumns: AdminColumn[] = [
                 </Deferred>
             </AdminPanel>
 
-            <AdminPanel title="Clash of Clans API" description="Our calls to the game API. The sync success rate joins once syncing starts.">
+            <AdminPanel title="Clash of Clans API" description="Our calls to the game API, and how the account sync is doing.">
                 <Deferred data="cocApiHealth">
                     <template #fallback>
                         <UiAlert v-if="visitError" kind="danger" title="The API panel didn't load">
@@ -177,6 +177,20 @@ const storageColumns: AdminColumn[] = [
                                 next try <time :datetime="cocApiHealth.openUntil">{{ formatDateTime(cocApiHealth.openUntil) }}</time>
                             </span>
                             <span class="text-fg-secondary">· {{ cocApiHealth.keysHealthy }} of {{ cocApiHealth.keysTotal }} keys healthy</span>
+                        </div>
+                        <div class="flex flex-col gap-1 text-sm">
+                            <p v-if="cocApiHealth.syncAttempts === 0" class="text-fg-secondary">No account syncs in the last {{ cocApiHealth.syncWindowMinutes }} minutes.</p>
+                            <p v-else class="flex flex-wrap items-center gap-2 text-fg-secondary">
+                                <span>
+                                    Account syncs, {{ cocApiHealth.syncWindowMinutes }} min:
+                                    <span class="text-fg">{{ percent(cocApiHealth.syncSuccessRate ?? 0) }}</span>
+                                    of {{ formatCount(cocApiHealth.syncAttempts) }} succeeded
+                                </span>
+                                <UiPill v-if="cocApiHealth.syncBelowAlert" tone="danger" :label="`Under ${percent(cocApiHealth.syncAlert)}`" />
+                            </p>
+                            <p v-if="cocApiHealth.syncStopped > 0" class="text-fg-secondary">
+                                {{ formatCount(cocApiHealth.syncStopped) }} {{ cocApiHealth.syncStopped === 1 ? 'account' : 'accounts' }} stopped syncing after repeated failures.
+                            </p>
                         </div>
                         <p v-if="cocApiHealth.calls === 0 && cocApiHealth.cacheHits === 0" class="text-sm text-fg-secondary">
                             No calls in the last {{ cocApiHealth.windowHours }} hours.

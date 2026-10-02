@@ -140,6 +140,14 @@ class CocAccount extends Model
         return $this->hasMany(CocAccountClaim::class);
     }
 
+    /**
+     * @return HasMany<CocAccountSnapshot, $this>
+     */
+    public function snapshots(): HasMany
+    {
+        return $this->hasMany(CocAccountSnapshot::class);
+    }
+
     protected function casts(): array
     {
         return [

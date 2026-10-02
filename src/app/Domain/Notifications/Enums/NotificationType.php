@@ -26,6 +26,7 @@ enum NotificationType: string implements HasLabelAndColor
     case MediaProcessingFailed = 'media_processing_failed';
     case CocAccountVerified = 'coc_account_verified';
     case CocAccountTakenOver = 'coc_account_taken_over';
+    case CocAccountNotFound = 'coc_account_not_found';
 
     public function label(): string
     {
@@ -39,6 +40,7 @@ enum NotificationType: string implements HasLabelAndColor
             self::MediaProcessingFailed => 'Upload failed',
             self::CocAccountVerified => 'Account verified',
             self::CocAccountTakenOver => 'Account taken over',
+            self::CocAccountNotFound => 'Account not found',
         };
     }
 
@@ -46,7 +48,7 @@ enum NotificationType: string implements HasLabelAndColor
     {
         return match ($this) {
             self::AccountSuspended, self::AccountBanned, self::MediaProcessingFailed, self::CocAccountTakenOver => 'state-danger',
-            self::PasswordChanged, self::NewDeviceSignIn => 'state-warning',
+            self::PasswordChanged, self::NewDeviceSignIn, self::CocAccountNotFound => 'state-warning',
             self::EmailVerified, self::SanctionEnded, self::CocAccountVerified => 'state-success',
         };
     }
@@ -55,7 +57,7 @@ enum NotificationType: string implements HasLabelAndColor
     {
         return match ($this) {
             self::MediaProcessingFailed => NotificationCategory::Bases,
-            self::CocAccountVerified, self::CocAccountTakenOver => NotificationCategory::Ownership,
+            self::CocAccountVerified, self::CocAccountTakenOver, self::CocAccountNotFound => NotificationCategory::Ownership,
             default => NotificationCategory::Security,
         };
     }
@@ -111,6 +113,12 @@ enum NotificationType: string implements HasLabelAndColor
                 title: 'Someone else verified one of your accounts',
                 body: 'Someone verified '.self::cocAccount($params, 'one of your Clash of Clans accounts').' with an in-game API token, so it is no longer verified on your Clash Commons account. If that was not you, someone else can get into your game account: secure it in game, then verify it again with a new token.',
                 url: is_string($params['tag'] ?? null) && $params['tag'] !== '' ? route('accounts.attach', ['tag' => $params['tag']], absolute: false) : null,
+            ),
+            // specs/09 §6: after three 404s in a row. The account stays verified (specs/13 §9).
+            self::CocAccountNotFound => new RenderedNotificationData(
+                title: "We can't find one of your accounts",
+                body: 'Clash of Clans no longer finds '.self::cocAccount($params, 'one of your accounts').'. It may have been renamed or deleted in game. It stays verified on your Clash Commons account, and we keep checking.',
+                url: null,
             ),
         };
     }

@@ -14,6 +14,9 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  * counted apart. A failure is what the breaker counts (specs/09 §7): a timeout or a 5xx, maintenance
  * included; 403 and 429 belong to the key pool and the budget, and a 404 is an answer. A malformed
  * 200 is logged as a 200, so it is not counted here. `failureRate` is null with no calls.
+ * The sync fields are account syncs over `syncWindowMinutes` (specs/20 §6: flagged under
+ * `syncAlert`), `syncSuccessRate` null with no attempts; `syncStopped` counts accounts frozen and out
+ * of retries.
  */
 #[TypeScript]
 class CocApiHealthData extends Data
@@ -30,5 +33,12 @@ class CocApiHealthData extends Data
         public int $failures,
         public ?float $failureRate,
         public ?string $topError,
+        public int $syncWindowMinutes,
+        public int $syncAttempts,
+        public int $syncSuccesses,
+        public ?float $syncSuccessRate,
+        public float $syncAlert,
+        public bool $syncBelowAlert,
+        public int $syncStopped,
     ) {}
 }

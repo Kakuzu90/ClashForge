@@ -117,6 +117,36 @@ return [
         'text_max' => 1000,
     ],
 
+    // Background sync of verified accounts (specs/09 §6, specs/20 §2–3, §6). Seconds unless named.
+    'sync' => [
+        // How often each tier is synced; a frozen resource retries this often until it stops.
+        'tiers' => [
+            'hot' => (int) env('COC_SYNC_HOT', 7200),
+            'warm' => (int) env('COC_SYNC_WARM', 43200),
+            'cold' => (int) env('COC_SYNC_COLD', 259200),
+            'frozen' => (int) env('COC_SYNC_FROZEN', 604800),
+        ],
+        // Owner activity windows: active within `hot_active_days` is hot, within `warm_active_days` warm.
+        'hot_active_days' => 7,
+        'warm_active_days' => 30,
+        // Most jobs one `coc:sync-accounts` run dispatches; the background budget may allow fewer.
+        'batch_size' => (int) env('COC_SYNC_BATCH', 100),
+        'queue' => 'sync',
+        // A queued account is not due again for this long, so a backlog never queues it twice. Above
+        // the job's three tries with their backoff (60 + 300 + 900 s).
+        'claim_seconds' => 1800,
+        // First retry after a failed sync, doubled per failure and capped at the tier's interval.
+        'backoff_base' => 300,
+        // 404s in a row before an account shows as stale and its owner hears about it.
+        'not_found_stale' => 3,
+        // Failures in a row before a resource freezes, and failed weekly retries before it stops.
+        'frozen_after' => 5,
+        'frozen_max_attempts' => 4,
+        // The sync success rate on the admin pages, and the line under which it is flagged.
+        'success_window_minutes' => 30,
+        'success_alert' => 0.9,
+    ],
+
     'fake' => [
         // Recorded responses, one file per tag (specs/19 §6).
         'fixtures_path' => base_path('tests/Fixtures/coc'),

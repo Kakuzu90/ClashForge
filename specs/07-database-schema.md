@@ -175,7 +175,7 @@ A CoC player tag attached to a website user. The central trust object of the pla
 | labels | jsonb default '[]' | player labels from the API |
 | raw_payload | jsonb null | last full API response, for debugging and new-field backfill |
 | api_synced_at | timestamptz null | freshness for the "last updated" label |
-| api_sync_failures | smallint default 0 | drives backoff and `stale` display |
+| api_sync_failures | smallint default 0 | consecutive 404s from the sync; at `coc.sync.not_found_stale` (3) the account shows as `stale` and its owner is told once. Other API failures back off through `sync_states` and leave it alone (P2-09) |
 | is_featured | bool default false | one per user, enforced by partial unique |
 | images_count | smallint default 0 | quota guard (max 5) |
 | created_at / updated_at | timestamptz | no `deleted_at`: ownership history is never deleted ([13 §1](13-claiming-workflow.md)) |
@@ -251,13 +251,17 @@ Point-in-time progression, and the fallback when the API is down.
 | id | bigserial PK | |
 | coc_account_id | bigint FK → coc_accounts | cascade |
 | captured_at | timestamptz | |
-| th_level, xp_level, trophies, best_trophies, war_stars, attack_wins, defense_wins, donations | int/smallint | |
+| th_level, builder_hall_level, xp_level, trophies, best_trophies, war_stars, attack_wins, defense_wins, donations | int/smallint null | `builder_hall_level` added in P2-09 (a Builder Hall change is progression) |
 | clan_tag | varchar(15) null | |
 | league_id | int null | |
 | heroes / troops / spells / hero_equipment | jsonb | full progression copy |
 | source | varchar(20) | `scheduled`\|`manual`\|`verification` |
 
-**Unique:** `(coc_account_id, captured_at)`.
+**Unique:** `(coc_account_id, captured_at)`; `captured_at` is whole seconds, and a second write in
+the same second keeps the first. A row is written when a progression value changed (TH / BH
+level, XP level, best trophies, war stars, any unit's level, clan tag, league id), never for
+trophies, attack / defense wins or donations alone (owner decision, 2026-10-02), and once at
+verification (`source = verification`).
 **Indexes:** `(coc_account_id, captured_at DESC)`. **Retention:** keep all for 90 days, then one row
 per account per day, then one per week after a year (compaction job). Partition by month once past
 ~5M rows.
@@ -706,7 +710,11 @@ response), `duration_ms`, `was_cached (bool)`, `error_code (varchar 64) null` (t
 Per-resource sync bookkeeping so a restarted scheduler resumes correctly.
 
 `id`, `resource_type (coc_account|clan)`, `resource_id`, `last_attempt_at`, `last_success_at`,
-`consecutive_failures`, `next_due_at`, `tier (hot|warm|cold)`.
+`consecutive_failures`, `frozen_attempts` (failed weekly retries since freezing), `next_due_at`
+(null: frozen and out of retries, "stopped syncing"), `tier (hot|warm|cold|frozen)`,
+`created_at / updated_at`. Owned by CocIntegration (`SyncSchedule`, [05](05-architecture.md)).
+Extra index `(last_attempt_at)` for the sync success rate. A resource no longer synced (released,
+suspended, unverified) loses its row; a later verification starts a new one.
 **Unique:** `(resource_type, resource_id)`. **Index:** `(next_due_at) WHERE next_due_at IS NOT NULL`.
 
 ### Framework tables [M]

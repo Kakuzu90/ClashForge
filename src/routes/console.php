@@ -41,6 +41,15 @@ Schedule::command('moderation:expire-sanctions')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'moderation:expire-sanctions']));
 
+// Every 5 minutes, offset to :02 (specs/09 §6): due account syncs, within the background budget.
+// Short mutex: a missed tick is picked up by the next one.
+Schedule::command('coc:sync-accounts')
+    ->cron('2-59/5 * * * *')
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'coc:sync-accounts']));
+
 // Hourly, offset to :25 (specs/13 §5): unanswered disputes go to the admins, abandoned ones close.
 Schedule::command('coc:process-disputes')
     ->hourlyAt(25)

@@ -5,6 +5,7 @@ namespace App\Domain\CocIntegration\Services;
 use App\Domain\CocIntegration\Data\CocApiHealthData;
 use App\Domain\CocIntegration\Data\CocKeyData;
 use App\Domain\CocIntegration\Data\CocKeyStatusData;
+use App\Domain\CocIntegration\Enums\SyncResourceType;
 use App\Domain\CocIntegration\Models\CocApiRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Date;
@@ -12,13 +13,14 @@ use Illuminate\Support\Facades\Date;
 /**
  * Reads for the admin dashboard's API panel (FR-ADMIN-5, specs/18 §6) and the System Health page.
  * It never calls the API: the breaker and the keys come from the cache, the rest from
- * `coc_api_requests`. The sync success rate joins with P2-09.
+ * `coc_api_requests`, and the sync success rate from `sync_states`.
  */
 class CocApiHealthReport
 {
     public function __construct(
         private readonly CocApiStatus $status,
         private readonly CocKeyPool $keys,
+        private readonly SyncSchedule $sync,
     ) {}
 
     public function summary(): CocApiHealthData
@@ -40,6 +42,8 @@ class CocApiHealthReport
         $calls = (int) ($counts->calls ?? 0);
         $state = $this->status->state();
         $pool = $this->keys->status();
+        $rate = $this->sync->rate(SyncResourceType::CocAccount);
+        $alert = (float) config('coc.sync.success_alert');
 
         return new CocApiHealthData(
             state: $state->state,
@@ -53,6 +57,13 @@ class CocApiHealthReport
             failures: $failures,
             failureRate: $calls === 0 ? null : round($failures / $calls, 3),
             topError: is_string($topError) ? $topError : null,
+            syncWindowMinutes: $rate->windowMinutes,
+            syncAttempts: $rate->attempts,
+            syncSuccesses: $rate->successes,
+            syncSuccessRate: $rate->rate,
+            syncAlert: $alert,
+            syncBelowAlert: $rate->rate !== null && $rate->rate < $alert,
+            syncStopped: $this->sync->stoppedCount(SyncResourceType::CocAccount),
         );
     }
 

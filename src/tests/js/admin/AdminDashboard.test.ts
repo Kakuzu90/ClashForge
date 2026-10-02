@@ -49,6 +49,13 @@ const cocApiHealth = (overrides: Partial<App.Domain.CocIntegration.Data.CocApiHe
     failures: 30,
     failureRate: 0.025,
     topError: 'timeout',
+    syncWindowMinutes: 30,
+    syncAttempts: 0,
+    syncSuccesses: 0,
+    syncSuccessRate: null,
+    syncAlert: 0.9,
+    syncBelowAlert: false,
+    syncStopped: 0,
     ...overrides,
 });
 
@@ -155,6 +162,24 @@ describe('Admin/Dashboard', () => {
         expect(open).toContain('Maintenance');
         expect(open).toContain('next try');
         expect(open).toContain('No calls in the last 24 hours.');
+    });
+
+    it('shows the account sync rate, flags it under the line and counts stopped accounts', () => {
+        const below = render(
+            { platformStats: true, cocApiHealth: cocApiHealth({ syncAttempts: 120, syncSuccesses: 96, syncSuccessRate: 0.8, syncBelowAlert: true, syncStopped: 2 }) },
+            ['cocApiHealth'],
+        ).text();
+        const none = render({ platformStats: true, cocApiHealth: cocApiHealth() }, ['cocApiHealth']).text();
+        const healthy = render({ platformStats: true, cocApiHealth: cocApiHealth({ syncAttempts: 50, syncSuccesses: 50, syncSuccessRate: 1, syncStopped: 1 }) }, ['cocApiHealth']).text();
+
+        expect(below).toContain('80%');
+        expect(below).toContain('of 120 succeeded');
+        expect(below).toContain('Under 90%');
+        expect(below).toContain('2 accounts stopped syncing');
+        expect(none).toContain('No account syncs in the last 30 minutes.');
+        expect(none).not.toContain('stopped syncing');
+        expect(healthy).not.toContain('Under 90%');
+        expect(healthy).toContain('1 account stopped syncing');
     });
 
     it('does not flag a rate at or under the line', () => {

@@ -2,7 +2,9 @@
 
 namespace App\Domain\PlayerAccounts;
 
+use App\Domain\PlayerAccounts\Events\CocAccountVerified;
 use App\Domain\PlayerAccounts\Listeners\SendOwnershipNotice;
+use App\Domain\PlayerAccounts\Listeners\StartAccountSync;
 use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Models\CocAccountDispute;
 use App\Domain\PlayerAccounts\Policies\CocAccountDisputePolicy;
@@ -18,5 +20,6 @@ class PlayerAccountsServiceProvider extends ServiceProvider
         Gate::policy(CocAccount::class, CocAccountPolicy::class);
         Gate::policy(CocAccountDispute::class, CocAccountDisputePolicy::class);
         Event::subscribe(SendOwnershipNotice::class);
+        Event::listen(CocAccountVerified::class, StartAccountSync::class);
     }
 }
