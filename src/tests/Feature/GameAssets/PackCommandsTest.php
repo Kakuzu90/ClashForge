@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\GameAssets\Services\ManifestBuilder;
 use App\Domain\GameAssets\Support\PackManifest;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Artisan;
@@ -44,6 +45,17 @@ describe('assets:make-manifest', function () {
         $this->artisan('assets:make-manifest', ['path' => $this->packDir, '--pack-version' => '1'])
             ->expectsOutputToContain('units/wizard.png: source is required')
             ->assertFailed();
+    });
+
+    it('names a new spell the way the API does', function () {
+        File::ensureDirectoryExists("{$this->packDir}/spells");
+        file_put_contents("{$this->packDir}/spells/healing.png", self::png(64));
+
+        app(ManifestBuilder::class)->build($this->packDir, '1');
+
+        $assets = json_decode((string) file_get_contents("{$this->packDir}/manifest.json"), true)['assets'];
+        $entry = collect($assets)->firstWhere('key', 'spells/healing.png');
+        expect([$entry['ref'], $entry['display_name']])->toBe(['Healing Spell', 'Healing Spell']);
     });
 
     it('takes category and village from the folder', function () {

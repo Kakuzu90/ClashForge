@@ -556,10 +556,11 @@ days carry the next unit ("3 h 5 min", "2 d 4 h"), minutes and seconds stand alo
 | Modal / sheet | Fade scrim 150ms; sheet slides up 250ms `--ease-out` | — |
 | Skeleton shimmer | 1.5s linear loop | — |
 | Page transition | None. Inertia swaps pages instantly; a top progress bar shows only after 250 ms | — |
+| Maxed unit chip | Canvas flames around the "Max" chip in progression grids (`GameFireRing`); one shared simulation, paused off screen and in hidden tabs | 30 fps loop |
 
 `@media (prefers-reduced-motion: reduce)` — all transforms and loops are disabled, transitions drop
-to ≤50ms opacity only, count-ups render the final value immediately, and shimmer becomes a static
-tint. This is implemented once in the base stylesheet, not per component.
+to ≤50ms opacity only, count-ups render the final value immediately, shimmer becomes a static
+tint, and the maxed-chip flames hold one still frame. This is implemented once in the base stylesheet, not per component.
 
 ## 8. Accessibility checklist (enforced in review)
 

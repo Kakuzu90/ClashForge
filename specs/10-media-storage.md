@@ -411,10 +411,14 @@ stored API URL for clan badges. Callers do not know or care which.
 - Ship each asset at a single source resolution and scale down in CSS. Multiple baked resolutions
   would mean multiple derivative files from one original — avoid unless Supercell supplies them
   at those sizes.
-- **Size limit: `assets.max_bytes` (1 MB) per file, no pixel limit.** Files are never resized, so
+- **Size limit: `assets.max_bytes` (20 MB) per file, no pixel limit.** Files are never resized, so
   an oversize file stays out of the pack until a smaller original is found, and its unit shows the
-  placeholder meanwhile. Pack 1 left out 52 of the staged files on this rule (most hero
-  equipment, Town Halls 12–18 and the Builder Base heroes, at up to 18 MB each).
+  placeholder meanwhile. Pack 1 used a 1 MB limit and left out 52 of the staged files (most hero
+  equipment, Town Halls 12–18 and the Builder Base heroes, at up to 18 MB each); the owner raised
+  the limit on 2026-10-04 and pack 2 ships them unmodified, with the league emblems (one per
+  family, matched by the API's league name when the pack has no emblem for the id). A tile is
+  still drawn at 48–64 px, so these files cost far more bandwidth than they show; smaller
+  originals replace them in a later pack when found.
 - Served from the same cookieless CDN origin as public media, with the same
   `X-Content-Type-Options: nosniff` and sandbox CSP headers.
 - Long-cached and versioned, so the asset pack contributes effectively nothing to bandwidth cost

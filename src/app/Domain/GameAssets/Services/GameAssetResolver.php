@@ -11,6 +11,7 @@ use App\Domain\GameAssets\Support\PackManifest;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * The one place a Clash of Clans asset URL is produced (specs/18 §2.3). Catalogue assets come from
@@ -47,14 +48,18 @@ class GameAssetResolver
     }
 
     /**
-     * Our self-hosted emblem when the pack has it, the API's icon otherwise (specs/09 §8).
+     * Our self-hosted emblem when the pack has it, the API's icon otherwise (specs/09 §8). The pack
+     * holds one emblem per league id, or one per family shared by its tiers ("Titan League I" →
+     * `titan`); a family emblem keeps the API's name as alt text, since that carries the tier.
      */
     public function league(?int $id, string $name, ?string $apiIconUrl = null): GameAssetData
     {
         $entry = $id === null ? null : $this->manifest()?->find('league', (string) $id);
+        $alt = $entry->displayName ?? $name;
+        $entry ??= $this->manifest()?->find('league', self::leagueFamily($name));
 
         if ($entry !== null || ! $this->policy->enabled()) {
-            return $this->make(GameAssetKind::League, $entry, $entry->displayName ?? $name, self::initials($name));
+            return $this->make(GameAssetKind::League, $entry, $alt, self::initials($name));
         }
 
         return $this->remote(GameAssetKind::League, $apiIconUrl, $name, self::initials($name));
@@ -115,6 +120,16 @@ class GameAssetResolver
             && ! isset($parts['user'])
             && ! isset($parts['port'])
             && in_array(strtolower($parts['host'] ?? ''), (array) config('assets.remote_hosts'), true);
+    }
+
+    /**
+     * "P.E.K.K.A League 20" → `pekka`, "Titan League I" → `titan`, "Legend League" → `legend`.
+     */
+    private static function leagueFamily(string $name): string
+    {
+        $slug = (string) preg_replace('/-(?:\d+|[ivxlcdm]+)$/', '', Str::slug($name));
+
+        return (string) preg_replace('/-league$/', '', $slug);
     }
 
     private static function initials(string $name): string

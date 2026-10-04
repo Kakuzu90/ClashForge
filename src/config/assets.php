@@ -15,7 +15,8 @@ return [
     // Kill switch: false → our own placeholders everywhere and no game asset is served (18 §2.1 (7)).
     'enabled' => (bool) env('ASSETS_ENABLED', true),
 
-    // Active pack under game/{version}/. Null → placeholders only. Pack 1 shipped in P2-05.
+    // Active pack under game/{version}/. Null → placeholders only. Pack 1 shipped in P2-05, pack 2
+    // (the files over the old 1 MB limit, and league emblems) on 2026-10-04.
     'pack_version' => env('ASSETS_PACK_VERSION'),
 
     // The committed manifest the resolver reads at runtime; {version} is replaced (specs/10 §11.2).
@@ -39,9 +40,10 @@ return [
         'image/webp' => 'webp',
     ],
 
-    // Largest file a pack may contain. Files are never resized (specs/10 §11.4): a bigger one
-    // stays out of the pack until a smaller original is found, and shows the placeholder.
-    'max_bytes' => 1024 * 1024,
+    // Largest file a pack may contain (raised from 1 MB for pack 2). Files are never resized
+    // (specs/10 §11.4): a bigger one stays out of the pack until a smaller original is found, and
+    // shows the placeholder.
+    'max_bytes' => 20 * 1024 * 1024,
 
     // Hosts allowed for URLs the CoC API hands us (clan badges, league icon fallback), https only.
     'remote_hosts' => ['api-assets.clashofclans.com'],

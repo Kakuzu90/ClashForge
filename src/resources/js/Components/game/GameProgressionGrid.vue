@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import GameAsset from '@/Components/game/GameAsset.vue';
+import GameFireRing from '@/Components/game/GameFireRing.vue';
 import { useId } from 'vue';
 
 // One progression grid (specs/18 §6): each unit's asset with a level chip; a maxed unit's chip is
-// gold and says "Max". Order and grouping come from the server (catalogue order, P2-04).
+// gold, says "Max" and burns (GameFireRing). Order and grouping come from the server (P2-04).
 defineProps<{ group: App.Domain.PlayerAccounts.Data.ProgressionGroupData }>();
 
 const headingId = useId();
@@ -28,12 +29,12 @@ function description(unit: App.Domain.PlayerAccounts.Data.ProgressionUnitData): 
             >
                 <span class="sr-only">{{ description(unit) }}</span>
                 <GameAsset aria-hidden="true" :asset="unit.asset" :size="48" />
-                <span
-                    aria-hidden="true"
-                    class="rounded-sm px-1.5 text-xs tabular-nums"
-                    :class="unit.maxed ? 'bg-brand text-fg-on-gold' : 'bg-surface text-fg-secondary'"
-                >
-                    {{ unit.maxed ? 'Max' : `Lv ${unit.level}` }}
+                <span v-if="unit.maxed" aria-hidden="true" class="relative">
+                    <GameFireRing />
+                    <span class="relative grid h-5 w-9 place-items-center rounded-sm bg-brand text-xs text-fg-on-gold">Max</span>
+                </span>
+                <span v-else aria-hidden="true" class="rounded-sm bg-surface px-1.5 text-xs text-fg-secondary tabular-nums">
+                    Lv {{ unit.level }}
                 </span>
             </li>
         </ul>

@@ -35,7 +35,7 @@ class ManifestBuilder
             $assets[] = [
                 'key' => $key,
                 'category' => $category->value ?? ($previous['category'] ?? null),
-                'ref' => $previous['ref'] ?? ($category?->isUnit() === false ? $slug : Str::headline($slug)),
+                'ref' => $previous['ref'] ?? $this->ref($category, $village, $slug),
                 'display_name' => $previous['display_name'] ?? $this->displayName($category, $village, $slug),
                 'village' => $village?->value,
                 'source' => $previous['source'] ?? '',
@@ -67,8 +67,21 @@ class ManifestBuilder
         return $problems;
     }
 
+    /**
+     * A new unit file's ref is its guessed API name ("healing" → "Healing Spell"); names the rule
+     * gets wrong (P.E.K.K.A, L.A.S.S.I) are fixed by hand and kept across runs.
+     */
+    private function ref(?GameAssetCategory $category, ?Village $village, string $slug): string
+    {
+        return $category?->isUnit() === true ? $this->displayName($category, $village, $slug) : $slug;
+    }
+
     private function displayName(?GameAssetCategory $category, ?Village $village, string $slug): string
     {
+        if ($category === GameAssetCategory::Spell) {
+            return Str::headline($slug).' Spell';
+        }
+
         if ($category !== GameAssetCategory::TownHall) {
             return Str::headline($slug);
         }
