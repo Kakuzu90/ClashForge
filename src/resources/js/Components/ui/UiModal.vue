@@ -5,6 +5,8 @@ import { onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 const props = defineProps<{
     title: string;
     description?: string;
+    /** Hide instead of unmounting on close, so images inside stay loaded and decoded for the next open. */
+    keepMounted?: boolean;
 }>();
 
 const open = defineModel<boolean>('open', { default: false });
@@ -37,7 +39,7 @@ onBeforeUnmount(() => open.value && lockScroll(false));
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
         >
-            <div v-if="open" class="fixed inset-0 z-300 flex items-end justify-center bg-scrim sm:items-center sm:p-4" @click.self="close">
+            <div v-if="open || keepMounted" v-show="open" class="fixed inset-0 z-300 flex items-end justify-center bg-scrim sm:items-center sm:p-4" @click.self="close">
                 <Transition
                     appear
                     enter-active-class="transition-transform duration-250 ease-out"

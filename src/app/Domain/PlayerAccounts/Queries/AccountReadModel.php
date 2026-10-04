@@ -4,6 +4,7 @@ namespace App\Domain\PlayerAccounts\Queries;
 
 use App\Domain\Clans\Enums\ClanRole;
 use App\Domain\Clans\Services\ClanReadModel;
+use App\Domain\GameAssets\Enums\Village;
 use App\Domain\GameAssets\Services\GameAssetResolver;
 use App\Domain\PlayerAccounts\Data\AccountClanData;
 use App\Domain\PlayerAccounts\Data\AccountDetailData;
@@ -28,14 +29,23 @@ use Illuminate\Support\Facades\Gate;
 class AccountReadModel
 {
     /**
-     * The stats on the account page, with the column each reads (specs/18 §4).
+     * The stats on the account page, with the column each reads (specs/18 §4, §6).
      */
     private const STATS = [
         'trophies' => 'Trophies',
         'best_trophies' => 'Best trophies',
         'war_stars' => 'War stars',
         'xp_level' => 'XP level',
+        'donations' => 'Troops donated',
+        'donations_received' => 'Troops received',
+        'builder_trophies' => 'Builder Base trophies',
+        'best_builder_trophies' => 'Best Builder Base trophies',
     ];
+
+    /**
+     * The stats snapshots also record, so only these get a delta.
+     */
+    private const SNAPSHOT_STATS = ['trophies', 'best_trophies', 'war_stars', 'xp_level', 'donations'];
 
     public function __construct(
         private readonly PrivacyPolicyResolver $privacy,
@@ -102,20 +112,83 @@ class AccountReadModel
             ->orderByDesc('captured_at')
             ->first();
 
+        $builderLeague = $this->builderLeague($account);
+
         return new AccountDetailData(
             card: $this->card($account, $clanHidden),
             stats: array_map(fn (string $column, string $label): AccountStatData => new AccountStatData(
                 key: $column,
                 label: $label,
-                value: $account->{$column},
-                delta: $account->{$column} === null || $baseline?->{$column} === null ? null : $account->{$column} - $baseline->{$column},
+                value: $this->value($column, $account),
+                delta: $this->delta($column, $account, $baseline),
             ), array_keys(self::STATS), self::STATS),
+            builderLeagueName: $builderLeague['name'] ?? null,
+            builderLeague: $builderLeague === null ? null : $this->assets->league($builderLeague['id'], $builderLeague['name'], null, Village::Builder),
+            builderHall: $account->builder_hall_level === null ? null : $this->assets->townHall($account->builder_hall_level, Village::Builder),
             deltaDays: $days,
             notFound: $account->api_sync_failures >= (int) config('coc.sync.not_found_stale'),
             isOwn: $isOwn,
             canVerify: $viewer !== null && Gate::forUser($viewer)->allows('verify', $account),
             indexable: $account->status === CocAccountStatus::Verified && $owner !== null && $this->privacy->isIndexable($owner),
         );
+    }
+
+    /**
+     * A stat's value; the best Builder Base trophies have no column and come from the stored payload.
+     */
+    private function value(string $column, CocAccount $account): ?int
+    {
+        if ($column === 'best_builder_trophies') {
+            $best = $account->raw_payload['bestBuilderBaseTrophies'] ?? null;
+
+            return is_int($best) ? $best : null;
+        }
+
+        return $account->{$column};
+    }
+
+    /**
+     * The ranked league tier from the stored payload (the API's `leagueTier`, which replaced
+     * `league` for Home Village ranked play), or null; the league columns are the fallback.
+     *
+     * @return array{id: ?int, name: string, icon: ?string}|null
+     */
+    private function leagueTier(CocAccount $account): ?array
+    {
+        $tier = $account->raw_payload['leagueTier'] ?? null;
+
+        if (! is_array($tier) || ! is_string($tier['name'] ?? null) || $tier['name'] === '') {
+            return null;
+        }
+
+        $icon = $tier['iconUrls']['large'] ?? $tier['iconUrls']['small'] ?? null;
+
+        return ['id' => is_int($tier['id'] ?? null) ? $tier['id'] : null, 'name' => $tier['name'], 'icon' => is_string($icon) ? $icon : null];
+    }
+
+    /**
+     * The Builder Base league from the stored payload (no column holds it), or null.
+     *
+     * @return array{id: ?int, name: string}|null
+     */
+    private function builderLeague(CocAccount $account): ?array
+    {
+        $league = $account->raw_payload['builderBaseLeague'] ?? null;
+
+        if (! is_array($league) || ! is_string($league['name'] ?? null) || $league['name'] === '') {
+            return null;
+        }
+
+        return ['id' => is_int($league['id'] ?? null) ? $league['id'] : null, 'name' => $league['name']];
+    }
+
+    private function delta(string $column, CocAccount $account, ?CocAccountSnapshot $baseline): ?int
+    {
+        if (! in_array($column, self::SNAPSHOT_STATS, true) || $account->{$column} === null || $baseline?->{$column} === null) {
+            return null;
+        }
+
+        return (int) $account->{$column} - (int) $baseline->{$column};
     }
 
     /**
@@ -140,6 +213,7 @@ class AccountReadModel
     private function card(CocAccount $account, bool $clanHidden): PlayerCardData
     {
         $synced = $account->api_synced_at;
+        $tier = $this->leagueTier($account);
         $staleAfter = Date::now()->subHours((int) config('coc.display.stale_hours'));
 
         return new PlayerCardData(
@@ -154,8 +228,12 @@ class AccountReadModel
             xpLevel: $account->xp_level,
             trophies: $account->trophies,
             warStars: $account->war_stars,
-            leagueName: $account->league_name,
-            league: $account->league_name === null ? null : $this->assets->league($account->league_id, $account->league_name, $account->league_icon_url),
+            leagueName: $tier['name'] ?? $account->league_name,
+            league: match (true) {
+                $tier !== null => $this->assets->leagueTier($tier['id'], $tier['name'], $tier['icon']),
+                $account->league_name !== null => $this->assets->league($account->league_id, $account->league_name, $account->league_icon_url),
+                default => null,
+            },
             clan: $clanHidden ? null : $this->clan($account),
             clanHidden: $clanHidden,
             featured: $account->is_featured,

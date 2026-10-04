@@ -2,12 +2,15 @@
 
 namespace App\Domain\PlayerAccounts\Data;
 
+use App\Domain\GameAssets\Data\GameAssetData;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
- * The account page `/accounts/{ulid}` without its grids (specs/18 §6). `notFound` is the stale
+ * The account page `/accounts/{ulid}` without its grids (specs/18 §6). `builderHall` heads the
+ * Builder Base tab, as the Town Hall on the card heads the Home Village one; `builderLeague*` is that
+ * tab's ranked data, as `card.league*` is the Home Village's. `notFound` is the stale
  * state after `coc.sync.not_found_stale` 404s in a row (specs/09 §6). `indexable` is for the page
  * meta only.
  */
@@ -21,6 +24,9 @@ class AccountDetailData extends Data
         public PlayerCardData $card,
         #[DataCollectionOf(AccountStatData::class)]
         public array $stats,
+        public ?string $builderLeagueName,
+        public ?GameAssetData $builderLeague,
+        public ?GameAssetData $builderHall,
         public int $deltaDays,
         public bool $notFound,
         public bool $isOwn,

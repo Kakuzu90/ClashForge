@@ -28,7 +28,7 @@ class GameAssetCatalogue
 
     /**
      * Slug → position in one catalogue list (`heroes`, `units`, `spells`, `pets`, `siege-machines`,
-     * `heroes_equipments`). Nested lists (elixir then dark elixir, equipment per hero) are read in
+     * `heroes_equipments`, and the Builder Base `bb_heroes` and `bb_units`). Nested lists (elixir then dark elixir, equipment per hero) are read in
      * order.
      *
      * @return array<string, int>

@@ -1,22 +1,23 @@
 <script setup lang="ts">
-import GamePlayerCard from '@/Components/game/GamePlayerCard.vue';
-import GameProgressionGrid from '@/Components/game/GameProgressionGrid.vue';
+import GameAccountProfile from '@/Components/game/GameAccountProfile.vue';
+import GameVillageBase from '@/Components/game/GameVillageBase.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
-import UiEmptyState from '@/Components/ui/UiEmptyState.vue';
-import UiSkeleton from '@/Components/ui/UiSkeleton.vue';
-import UiStatBlock from '@/Components/ui/UiStatBlock.vue';
+import UiTabs from '@/Components/ui/UiTabs.vue';
 import { formatDuration } from '@/Composables/useDateTime';
 import { usePageProps } from '@/Composables/usePageProps';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { verify } from '@/routes/accounts';
 import { Deferred } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
 
-// The CoC account page (specs/18 §6). Everything renders from stored data, so it works while the
-// game API is down (FR-COC-14); the grids load as a deferred prop behind their skeleton.
+// The CoC account page (specs/18 §6), following the game's profile screen: a Home Village and a
+// Builder Base tab, each with the same profile panel (only the ranked data differs) and its base
+// panel. Everything renders from stored data, so
+// it works while the game API is down (FR-COC-14); the grids load as a deferred prop behind their
+// skeleton.
 const props = defineProps<{
     account: App.Domain.PlayerAccounts.Data.AccountDetailData;
     progression?: App.Domain.PlayerAccounts.Data.ProgressionGroupData[];
@@ -26,13 +27,26 @@ const { cocApi } = usePageProps();
 const card = computed(() => props.account.card);
 const age = computed(() => (card.value.syncedAgeSeconds === null ? null : formatDuration(card.value.syncedAgeSeconds)));
 const deltaLabel = computed(() => `Change over the last ${props.account.deltaDays} days`);
+const builderRanked = computed(() => ({
+    league: props.account.builderLeague,
+    leagueName: props.account.builderLeagueName,
+    trophies: 'builder_trophies',
+    best: 'best_builder_trophies',
+}));
+
+const villages = [
+    { key: 'home', label: 'Home Village' },
+    { key: 'builder', label: 'Builder Base' },
+];
+const village = ref('home');
+const groups = (wanted: App.Domain.GameAssets.Enums.Village) => (props.progression ?? []).filter((g) => g.village === wanted);
 </script>
 
 <template>
-    <div class="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 sm:py-8">
-        <GamePlayerCard :card="card" variant="hero" />
-
-        <div class="flex flex-col gap-3">
+    <div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+        <!-- Each tab shows the name in its own panel, as the game does; this stays the page heading. -->
+        <h1 class="sr-only">{{ card.name }} {{ card.tag }}</h1>
+        <div v-if="cocApi || account.notFound || card.stale || card.status !== 'verified'" class="flex flex-col gap-3">
             <UiAlert v-if="cocApi" kind="warning" title="Game data is temporarily unavailable">
                 {{ age === null ? 'Showing the last saved data.' : `Showing data from ${age} ago.` }}
             </UiAlert>
@@ -62,32 +76,30 @@ const deltaLabel = computed(() => `Change over the last ${props.account.deltaDay
             </UiAlert>
         </div>
 
-        <section aria-labelledby="account-stats">
-            <h2 id="account-stats" class="sr-only">Stats</h2>
-            <dl class="grid grid-cols-2 gap-4 rounded-lg border border-line bg-surface p-4 sm:grid-cols-4">
-                <UiStatBlock
-                    v-for="stat in account.stats"
-                    :key="stat.key"
-                    :label="stat.label"
-                    :value="stat.value"
-                    :delta="stat.delta"
-                    :delta-label="deltaLabel"
-                />
-            </dl>
-        </section>
-
-        <section aria-labelledby="account-progression" class="flex flex-col gap-6">
-            <h2 id="account-progression" class="font-display text-h2 text-fg">Progression</h2>
-            <Deferred data="progression">
-                <template #fallback>
-                    <UiSkeleton variant="media" :lines="2" label="Loading progression" />
-                </template>
-                <template v-if="progression && progression.length > 0">
-                    <GameProgressionGrid v-for="group in progression" :key="group.key" :group="group" />
-                </template>
-                <UiEmptyState v-else title="No unit data yet" body="Units, heroes and spells show here after the next sync." />
-            </Deferred>
-        </section>
+        <UiTabs v-model="village" :tabs="villages" label="Village" variant="pill">
+            <template #home>
+                <div class="flex flex-col gap-6">
+                    <GameAccountProfile :card="card" :stats="account.stats" :delta-label="deltaLabel" />
+                    <Deferred data="progression">
+                        <template #fallback>
+                            <GameVillageBase :hall="card.townHall" :groups="null" :side="['heroes', 'equipment', 'pets']" />
+                        </template>
+                        <GameVillageBase :hall="card.townHall" :groups="groups('home')" :side="['heroes', 'equipment', 'pets']" />
+                    </Deferred>
+                </div>
+            </template>
+            <template #builder>
+                <div class="flex flex-col gap-6">
+                    <GameAccountProfile :card="card" :stats="account.stats" :delta-label="deltaLabel" :ranked="builderRanked" />
+                    <Deferred data="progression">
+                        <template #fallback>
+                            <GameVillageBase :hall="account.builderHall" :groups="null" :side="['builder_heroes']" />
+                        </template>
+                        <GameVillageBase :hall="account.builderHall" :groups="groups('builderBase')" :side="['builder_heroes']" />
+                    </Deferred>
+                </div>
+            </template>
+        </UiTabs>
 
         <footer class="border-t border-line pt-4 text-sm text-fg-muted">
             {{ age === null ? 'Not synced yet.' : `Game data updated ${age} ago.` }}

@@ -15,8 +15,7 @@ return [
     // Kill switch: false → our own placeholders everywhere and no game asset is served (18 §2.1 (7)).
     'enabled' => (bool) env('ASSETS_ENABLED', true),
 
-    // Active pack under game/{version}/. Null → placeholders only. Pack 1 shipped in P2-05, pack 2
-    // (the files over the old 1 MB limit, and league emblems) on 2026-10-04.
+    // Active pack under game/{version}/. Null → placeholders only on 2026-10-04.
     'pack_version' => env('ASSETS_PACK_VERSION'),
 
     // The committed manifest the resolver reads at runtime; {version} is replaced (specs/10 §11.2).
@@ -225,6 +224,29 @@ return [
         'longshot',
         'smasher',
         'logger',
+    ],
+
+    // Builder Base Units in order
+    // Heroes
+    'bb_heroes' => [
+        'battle-machine',
+        'battle-copter',
+    ],
+
+    // Units
+    'bb_units' => [
+        'raged-barbarian',
+        'sneaky-archer',
+        'boxer-giant',
+        'beta-minion',
+        'bomber',
+        'baby-dragon',
+        'cannon-cart',
+        'night-witch',
+        'drop-ship',
+        'power-pekka',
+        'hog-glider',
+        'electrofire-wizard',
     ],
 
     // Excluded units: these should not be display in the unit list.

@@ -30,7 +30,7 @@ class ManifestBuilder
             $previous = $existing[$key] ?? [];
             $slug = pathinfo($key, PATHINFO_FILENAME);
             $category = GameAssetCategory::fromFolder(explode('/', $key)[0]);
-            $village = $category?->hasVillage() ? PackManifest::villageForKey($key) : null;
+            $village = PackManifest::villageFor($category, $key);
 
             $assets[] = [
                 'key' => $key,

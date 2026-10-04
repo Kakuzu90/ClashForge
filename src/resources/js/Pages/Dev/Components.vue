@@ -8,12 +8,14 @@ import AdminSanctionHistory from '@/Components/admin/AdminSanctionHistory.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
 import NotificationItem from '@/Components/notifications/NotificationItem.vue';
 import SettingsAvatarCropper from '@/Components/settings/SettingsAvatarCropper.vue';
+import GameAccountProfile from '@/Components/game/GameAccountProfile.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
 import GameClanChip from '@/Components/game/GameClanChip.vue';
 import GamePlayerCard, { type PlayerCardVariant } from '@/Components/game/GamePlayerCard.vue';
 import GameProgressionGrid from '@/Components/game/GameProgressionGrid.vue';
 import GameThBadge, { type ThBadgeSize } from '@/Components/game/GameThBadge.vue';
 import GameVerifiedBadge from '@/Components/game/GameVerifiedBadge.vue';
+import GameVillageBase from '@/Components/game/GameVillageBase.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiBadge from '@/Components/ui/UiBadge.vue';
@@ -98,15 +100,34 @@ const cardStates: { label: string; card: PlayerCard }[] = [
     { label: 'Stale, clan hidden', card: { ...sampleCard, ulid: '01J0000000000000000000STAL', stale: true, syncedAgeSeconds: 259200, clan: null, clanHidden: true } },
     { label: 'No clan, fields not available', card: { ...sampleCard, ulid: '01J0000000000000000000NULL', clan: null, trophies: null, xpLevel: null, league: null, leagueName: null } },
 ];
+const sampleEquipment: App.Domain.PlayerAccounts.Data.ProgressionUnitData[] = [
+    { name: 'Archer Puppet', asset: loadedAsset, level: 18, maxLevel: 18, maxed: true, locked: false, equipment: [] },
+    { name: 'Giant Arrow', asset: brokenAsset, level: 9, maxLevel: 18, maxed: false, locked: false, equipment: [] },
+];
 const sampleGroup: App.Domain.PlayerAccounts.Data.ProgressionGroupData = {
-    key: 'sample',
+    key: 'heroes',
     label: 'Heroes',
+    village: 'home',
     units: [
-        { name: 'Archer Queen', asset: fallbackAssets[0], level: 95, maxLevel: 95, maxed: true },
-        { name: 'Sample unit', asset: loadedAsset, level: 12, maxLevel: 14, maxed: false },
-        { name: 'Barbarian', asset: brokenAsset, level: 7, maxLevel: null, maxed: false },
+        { name: 'Archer Queen', asset: fallbackAssets[0], level: 95, maxLevel: 95, maxed: true, locked: false, equipment: sampleEquipment },
+        { name: 'Sample unit', asset: loadedAsset, level: 12, maxLevel: 14, maxed: false, locked: false, equipment: [] },
+        { name: 'Barbarian', asset: brokenAsset, level: 7, maxLevel: null, maxed: false, locked: false, equipment: [] },
+        { name: 'Locked unit', asset: loadedAsset, level: 0, maxLevel: null, maxed: false, locked: true, equipment: [] },
     ],
 };
+const sampleTroops: App.Domain.PlayerAccounts.Data.ProgressionGroupData = {
+    key: 'troops',
+    label: 'Troops',
+    village: 'home',
+    units: sampleGroup.units.map((unit) => ({ ...unit, equipment: [] })),
+};
+const sampleStats: App.Domain.PlayerAccounts.Data.AccountStatData[] = [
+    { key: 'trophies', label: 'Trophies', value: 5124, delta: 142 },
+    { key: 'best_trophies', label: 'Best trophies', value: 5310, delta: null },
+    { key: 'war_stars', label: 'War stars', value: 1480, delta: 12 },
+    { key: 'donations', label: 'Troops donated', value: 104, delta: null },
+    { key: 'donations_received', label: 'Troops received', value: 0, delta: null },
+];
 const townHalls: SelectOption[] = Array.from({ length: 17 }, (_, i) => ({ value: `th${17 - i}`, label: `Town Hall ${17 - i}` }));
 const categories: SelectOption[] = [
     { value: 'war', label: 'War', hint: 'Built to stop three-star attacks' },
@@ -668,6 +689,15 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                 <h2 id="h-progression" class="font-display text-h1">Progression grid</h2>
                 <div class="mt-4">
                     <GameProgressionGrid :group="sampleGroup" />
+                </div>
+                <h3 class="mt-6 font-display text-h3">Account profile</h3>
+                <div class="mt-3">
+                    <GameAccountProfile :card="sampleCard" :stats="sampleStats" delta-label="Change over the last 7 days" />
+                </div>
+                <h3 class="mt-6 font-display text-h3">Village base, loaded and loading</h3>
+                <div class="mt-3 flex flex-col gap-4">
+                    <GameVillageBase :hall="fallbackAssets[1]" :groups="[sampleGroup, sampleTroops]" :side="['heroes']" />
+                    <GameVillageBase :hall="fallbackAssets[1]" :groups="null" :side="['heroes']" />
                 </div>
             </section>
 

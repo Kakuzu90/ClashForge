@@ -35,6 +35,16 @@ it('parses a valid manifest and finds entries case-insensitively', function () {
         ->and(PackManifest::fromJson($manifest->toJson())->toJson())->toBe($manifest->toJson());
 });
 
+it('keeps Home Village and Builder Base leagues apart', function () {
+    $manifest = PackManifest::fromJson(manifestJson([
+        manifestAsset(['key' => 'leagues/iron.png', 'category' => 'league', 'ref' => 'iron', 'village' => null]),
+        manifestAsset(['key' => 'leagues/builder-base/iron.png', 'category' => 'league', 'ref' => 'iron', 'village' => 'builderBase']),
+    ]));
+
+    expect($manifest->find('league', 'iron')?->key)->toBe('leagues/iron.png')
+        ->and($manifest->find('league', 'iron', Village::Builder)?->key)->toBe('leagues/builder-base/iron.png');
+});
+
 it('rejects invalid manifests with every problem listed', function (string $json, string $problem) {
     try {
         PackManifest::fromJson($json);
@@ -53,7 +63,8 @@ it('rejects invalid manifests with every problem listed', function (string $json
     'unit without village' => [manifestJson([manifestAsset(['village' => null])]), 'troop entries need a village'],
     'village disagrees with the folder' => [manifestJson([manifestAsset(['village' => 'builderBase'])]), 'does not match the folder'],
     'builder base asset marked home' => [manifestJson([manifestAsset(['key' => 'townhalls/builder-base/5.png', 'category' => 'town_hall', 'ref' => '5'])]), 'does not match the folder'],
-    'league in a builder-base folder' => [manifestJson([manifestAsset(['key' => 'leagues/builder-base/1.png', 'category' => 'league', 'ref' => '1', 'village' => null])]), 'leagues are keyed by id'],
+    'builder base league without its village' => [manifestJson([manifestAsset(['key' => 'leagues/builder-base/wood.png', 'category' => 'league', 'ref' => 'wood', 'village' => null])]), "a league's village is builderBase"],
+    'home league marked builder base' => [manifestJson([manifestAsset(['key' => 'leagues/titan.png', 'category' => 'league', 'ref' => 'titan', 'village' => 'builderBase'])]), "a league's village is builderBase"],
     'nested folder' => [manifestJson([manifestAsset(['key' => 'units/extra/barbarian.png'])]), 'key must look like'],
     'bad checksum' => [manifestJson([manifestAsset(['sha256' => 'abc'])]), 'sha256 must be'],
     'missing source' => [manifestJson([manifestAsset(['source' => ''])]), 'source is required'],

@@ -338,6 +338,9 @@ badge: App.Domain.GameAssets.Data.GameAssetData,
 export type AccountDetailData = {
 card: App.Domain.PlayerAccounts.Data.PlayerCardData,
 stats: App.Domain.PlayerAccounts.Data.AccountStatData[],
+builderLeagueName: string | null,
+builderLeague: App.Domain.GameAssets.Data.GameAssetData | null,
+builderHall: App.Domain.GameAssets.Data.GameAssetData | null,
 deltaDays: number,
 notFound: boolean,
 isOwn: boolean,
@@ -407,6 +410,7 @@ syncedAgeSeconds: number | null,
 export type ProgressionGroupData = {
 key: string,
 label: string,
+village: App.Domain.GameAssets.Enums.Village,
 units: App.Domain.PlayerAccounts.Data.ProgressionUnitData[],
 };
 export type ProgressionUnitData = {
@@ -415,6 +419,8 @@ asset: App.Domain.GameAssets.Data.GameAssetData,
 level: number,
 maxLevel: number | null,
 maxed: boolean,
+locked: boolean,
+equipment: App.Domain.PlayerAccounts.Data.ProgressionUnitData[],
 };
 export type VerifyResultData = {
 outcome: App.Domain.PlayerAccounts.Enums.VerifyOutcome,

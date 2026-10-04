@@ -33,6 +33,7 @@
         <env name="AUTH_TIMEBOX_DURATION" value="1000"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <env name="COC_API_DRIVER" value="fake"/>
         <env name="HEALTH_RATE_LIMIT_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>

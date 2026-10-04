@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-export type GameAssetSize = 24 | 32 | 48 | 64;
+export type GameAssetSize = 24 | 32 | 48 | 64 | 128;
 
 // Renders a Clash of Clans asset exactly as resolved by GameAssetResolver (specs/18 §2.3). The image
 // is only ever scaled: no rounding, borders, filters or crops, which would modify it (18 §2.1 (2)).

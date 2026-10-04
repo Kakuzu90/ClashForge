@@ -77,6 +77,9 @@ it('shows a verified account to a guest, rendered from stored data', function ()
             ->where('account.card.stale', false)
             ->where('account.card.syncedAgeSeconds', 720)
             ->where('account.stats.0', ['key' => 'trophies', 'label' => 'Trophies', 'value' => 5124, 'delta' => null])
+            ->where('account.stats', fn ($stats) => collect($stats)->pluck('key')->all() === [
+                'trophies', 'best_trophies', 'war_stars', 'xp_level', 'donations', 'donations_received', 'builder_trophies', 'best_builder_trophies',
+            ])
             ->where('account.isOwn', false)
             ->where('account.canVerify', false)
             ->missing('progression')
@@ -85,14 +88,61 @@ it('shows a verified account to a guest, rendered from stored data', function ()
             ->missing('account.card.userId'));
 });
 
+it('heads the Builder Base tab with the Builder Hall, and leaves it out before one is built', function () {
+    $this->account->update(['builder_hall_level' => 10]);
+    accountPage(null, $this->account)->assertInertia(fn (Assert $page) => $page->where('account.builderHall.alt', 'Builder Hall 10'));
+
+    $this->account->update(['builder_hall_level' => null]);
+    accountPage(null, $this->account)->assertInertia(fn (Assert $page) => $page->where('account.builderHall', null));
+});
+
+it('shows the ranked league tier with the API\'s own tier icon', function () {
+    $icon = 'https://api-assets.clashofclans.com/leaguetiers/125/legend.png';
+    $this->account->update(['raw_payload' => ['leagueTier' => ['id' => 105000035, 'name' => 'Legend II', 'iconUrls' => ['small' => $icon, 'large' => 'https://api-assets.clashofclans.com/leaguetiers/326/legend.png']]]]);
+
+    accountPage(null, $this->account)->assertInertia(fn (Assert $page) => $page
+        ->where('account.card.leagueName', 'Legend II')
+        ->where('account.card.league.url', $icon)
+        ->where('account.card.league.alt', 'Legend II'));
+
+    $this->account->update(['raw_payload' => ['leagueTier' => ['id' => 105000035, 'name' => 'Legend II', 'iconUrls' => ['small' => 'https://evil.test/x.png']]]]);
+
+    accountPage(null, $this->account)->assertInertia(fn (Assert $page) => $page
+        ->where('account.card.leagueName', 'Legend II')
+        ->where('account.card.league.url', fn ($url) => $url === null || ! str_contains($url, 'evil.test')));
+});
+
+it('gives the Builder Base tab its own ranked data from the stored payload', function () {
+    $this->account->update(['raw_payload' => ['bestBuilderBaseTrophies' => 4600, 'builderBaseLeague' => ['id' => 44000035, 'name' => 'Ruby League III']]]);
+
+    accountPage(null, $this->account)->assertInertia(fn (Assert $page) => $page
+        ->where('account.builderLeagueName', 'Ruby League III')
+        ->where('account.builderLeague.alt', 'Ruby League III')
+        ->where('account.stats.7', ['key' => 'best_builder_trophies', 'label' => 'Best Builder Base trophies', 'value' => 4600, 'delta' => null])
+        ->missing('account.rawPayload'));
+
+    $this->account->update(['raw_payload' => null]);
+
+    accountPage(null, $this->account)->assertInertia(fn (Assert $page) => $page
+        ->where('account.builderLeagueName', null)
+        ->where('account.builderLeague', null)
+        ->where('account.stats.7.value', null));
+});
+
 it('loads the grids as a deferred prop', function () {
-    accountGrids(null, $this->account)
+    $response = accountGrids(null, $this->account);
+    $troops = collect($response->json('props.progression'))->firstWhere('key', 'troops');
+
+    expect(collect($troops['units'])->firstWhere('locked', false)['maxed'])->toBeFalse();
+
+    $response
         ->assertOk()
         ->assertJsonPath('props.progression.0.key', 'heroes')
-        ->assertJsonPath('props.progression.0.units.0.name', 'Archer Queen')
-        ->assertJsonPath('props.progression.0.units.0.maxed', true)
-        ->assertJsonPath('props.progression.1.key', 'troops')
-        ->assertJsonPath('props.progression.1.units.0.maxed', false)
+        ->assertJsonPath('props.progression.0.units.0.name', 'Barbarian King')
+        ->assertJsonPath('props.progression.0.units.0.locked', true)
+        ->assertJsonPath('props.progression.0.units.1.name', 'Archer Queen')
+        ->assertJsonPath('props.progression.0.units.1.maxed', true)
+        ->assertJsonPath('props.progression.0.village', 'home')
         ->assertJsonMissingPath('props.account.card.rawPayload');
 });
 

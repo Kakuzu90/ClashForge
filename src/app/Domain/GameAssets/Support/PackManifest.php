@@ -136,6 +136,20 @@ final class PackManifest
     }
 
     /**
+     * The village an entry records. Leagues predate the split: a Home Village league records none,
+     * so packs 1 and 2 stay valid, and only a Builder Base league (in `leagues/builder-base/`) says
+     * `builderBase`.
+     */
+    public static function villageFor(?GameAssetCategory $category, string $key): ?Village
+    {
+        if ($category === GameAssetCategory::League) {
+            return self::villageForKey($key) === Village::Builder ? Village::Builder : null;
+        }
+
+        return $category?->hasVillage() ? self::villageForKey($key) : null;
+    }
+
+    /**
      * @param  array<mixed>  $raw
      * @param  list<string>  $problems
      */
@@ -164,8 +178,8 @@ final class PackManifest
             } elseif ($village !== self::villageForKey($key)) {
                 $problems[] = "{$where}: village {$village->value} does not match the folder (Builder Base assets go in ".self::BUILDER_FOLDER.'/)';
             }
-        } elseif ($category === GameAssetCategory::League && str_contains($key, '/'.self::BUILDER_FOLDER.'/')) {
-            $problems[] = "{$where}: leagues are keyed by id and have no ".self::BUILDER_FOLDER.'/ folder';
+        } elseif ($category === GameAssetCategory::League && $village !== self::villageFor($category, $key)) {
+            $problems[] = "{$where}: a league's village is builderBase in ".self::BUILDER_FOLDER.'/ and empty anywhere else';
         }
 
         foreach (['ref', 'display_name', 'source'] as $field) {
@@ -193,7 +207,7 @@ final class PackManifest
             category: $category,
             ref: (string) $raw['ref'],
             displayName: (string) $raw['display_name'],
-            village: $category->hasVillage() ? $village : null,
+            village: $category->hasVillage() || $category === GameAssetCategory::League ? $village : null,
             source: (string) $raw['source'],
             sha256: (string) $raw['sha256'],
             bytes: (int) $raw['bytes'],

@@ -418,7 +418,10 @@ stored API URL for clan badges. Callers do not know or care which.
   the limit on 2026-10-04 and pack 2 ships them unmodified, with the league emblems (one per
   family, matched by the API's league name when the pack has no emblem for the id). A tile is
   still drawn at 48–64 px, so these files cost far more bandwidth than they show; smaller
-  originals replace them in a later pack when found.
+  originals replace them in a later pack when found. Pack 3 (2026-10-04) swaps in smaller originals
+for some of them and adds the Builder Base league emblems in `leagues/builder-base/`: a Home
+Village league entry records no village (as in packs 1 and 2), a Builder Base one records
+`builderBase`, and the resolver looks them up apart.
 - Served from the same cookieless CDN origin as public media, with the same
   `X-Content-Type-Options: nosniff` and sandbox CSP headers.
 - Long-cached and versioned, so the asset pack contributes effectively nothing to bandwidth cost

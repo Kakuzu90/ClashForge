@@ -39,6 +39,9 @@ Clash of Clans content. On this platform that means:
 2. **Unmodified.** Assets are used as supplied — no recolouring, cropping, compositing, filters,
    outlines, distortion, animation or derivative artwork, unless Supercell expressly permits it.
    Proportional scaling and standard lossless format conversion for delivery are not modifications.
+   *Owner exception (2026-10-04):* a unit the account has not unlocked is shown grayed out
+   (grayscale + reduced opacity) in progression grids, as the game itself shows it. This is the
+   only filter allowed; the owner accepted the Fan Content Policy risk.
 3. **Never in our identity.** Not in the logo, favicon, app icon, navigation chrome, marketing
    pages, social cards, email templates, loading states, empty-state illustrations, achievement
    badges or any component that represents *Clash Commons* rather than *Clash of Clans*.
@@ -413,9 +416,25 @@ an empty state with a link home, copy that never names the reason.
 account menu: Your profile · Settings · Sign out.
 
 ### CoC account detail (`/accounts/{ulid}`)
-PlayerCard hero → verification status banner → stat blocks with deltas → hero/troop/spell/equipment
-progression grids (level chips, maxed indicator) → custom images gallery → bases credited to this
-account → sync status footer ("updated 12 minutes ago" + manual refresh button).
+Follows the game's own profile screen (owner decision 2026-10-04), in our chrome: status banners →
+**Home Village | Builder Base** tabs (pill tabs; no Clan Capital tab) → per tab a profile panel and a
+base panel → custom images gallery → bases credited to this account → sync status footer ("updated
+12 minutes ago" + manual refresh button). The page `h1` is the name and tag, visually hidden, since
+each tab shows the name in its own panel.
+*Profile panel:* the same on both tabs; only the ranked column changes. Three columns on desktop,
+stacked on a phone. Identity (XP level in
+our own twelve-point burst, name, verified/featured badges, tag, clan role); clan (badge, name, clan level, war
+stars won with delta); ranked (Home Village: the API's `leagueTier` with its own tier icon, our
+pack emblem as fallback, trophies with delta, all-time best; Builder Base: Builder Base league, Builder Base trophies with delta, all-time best,
+the last two from the stored API payload). A strip below shows troops donated and received.
+*Base panel:* the hall art (Town Hall or Builder Hall, 128 px) with heroes and pets on the left;
+troops, siege machines and spells on the right (one column on a phone). Each unit is a framed tile
+with its level chip on the bottom-left corner; a maxed chip is gold and burns (§7). Home Village
+catalogue units the account has not unlocked show **locked** in their catalogue place: grayed out,
+with no level chip (the §2.1 owner exception). Builder Base follows its own lists
+(`assets.bb_heroes`, `assets.bb_units`) the same way. Super troops never show, active or not. A hero with equipment is a button that opens a modal with its equipment (owned
+and locked), as tapping the hero does in the game; the modal stays mounted after the first open, so
+the art loads once.
 *Empty (no images):* owner sees an upload dropzone; others see nothing.
 *Loading:* progression grid skeleton.
 *Error (API stale):* amber banner "Game data is temporarily unavailable — showing data from
@@ -423,9 +442,11 @@ account → sync status footer ("updated 12 minutes ago" + manual refresh button
 account's data age; an account that is stale while the API is up gets "This data is out of date"
 instead. Status banners: unverified (owner, with the verify action), under review (the owner gets
 the verify action, which ends the review), suspended (owner), not found in game (P2-04).
-*Grids (P2-04):* a deferred prop. Groups in order: heroes, hero equipment, pets, troops (elixir,
-dark, then any the catalogue does not list, alphabetically), active super troops, siege machines,
-spells, Builder Base (the API's order). Catalogue order is `config/assets.php`, matched by
+*Grids (P2-04):* a deferred prop; each group names its village. Groups in order: heroes (each with
+its equipment), other equipment (any whose hero the account lacks or the catalogue does not list),
+pets, troops (elixir, dark, then any the catalogue does not list, alphabetically; no super troops),
+siege machines, spells, Builder Base heroes and Builder Base troops (`bb_heroes`, `bb_units` order,
+unlisted units last). Catalogue order is `config/assets.php`, matched by
 `GameAssetCatalogue` (API name → slug, `assets.aliases`); super troops and guardians are in
 `assets.excluded_units`. A new pet or siege machine missing from the catalogue sorts with the troops
 until it is added.
@@ -556,7 +577,7 @@ days carry the next unit ("3 h 5 min", "2 d 4 h"), minutes and seconds stand alo
 | Modal / sheet | Fade scrim 150ms; sheet slides up 250ms `--ease-out` | — |
 | Skeleton shimmer | 1.5s linear loop | — |
 | Page transition | None. Inertia swaps pages instantly; a top progress bar shows only after 250 ms | — |
-| Maxed unit chip | Canvas flames around the "Max" chip in progression grids (`GameFireRing`); one shared simulation, paused off screen and in hidden tabs | 30 fps loop |
+| Maxed unit chip | Canvas flames around the gold level chip in progression grids (`GameFireRing`); one shared simulation, paused off screen and in hidden tabs | 30 fps loop |
 
 `@media (prefers-reduced-motion: reduce)` — all transforms and loops are disabled, transitions drop
 to ≤50ms opacity only, count-ups render the final value immediately, shimmer becomes a static

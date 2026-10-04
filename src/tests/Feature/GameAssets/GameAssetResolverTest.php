@@ -54,6 +54,19 @@ it('falls back to the API icon for leagues missing from the pack', function () {
         ->and(resolver()->league(null, 'Unranked')->url)->toBeNull();
 });
 
+it('shows a league tier with the API\'s icon, our emblem when the icon is not allowed, nothing with the kill switch', function () {
+    $icon = 'https://api-assets.clashofclans.com/leaguetiers/125/legend.png';
+
+    expect(resolver()->leagueTier(105000035, 'Legend II', $icon)->url)->toBe($icon)
+        ->and(resolver()->leagueTier(29000022, 'Legend League', 'http://api-assets.clashofclans.com/x.png')->url)->toBe('https://cdn.test/game/1/leagues/29000022.png')
+        ->and(resolver()->leagueTier(105000035, 'Legend II', 'https://evil.test/x.png')->url)->toBeNull()
+        ->and(resolver()->leagueTier(105000035, 'Legend II', null)->alt)->toBe('Legend II');
+
+    config(['assets.enabled' => false]);
+
+    expect(resolver()->leagueTier(105000035, 'Legend II', $icon)->url)->toBeNull();
+});
+
 it('passes clan badges through by size', function () {
     $urls = ['small' => 'https://api-assets.clashofclans.com/badges/70/a.png', 'medium' => 'https://api-assets.clashofclans.com/badges/200/a.png'];
 

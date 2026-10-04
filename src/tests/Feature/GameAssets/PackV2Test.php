@@ -82,3 +82,13 @@ it('lists every packed Home Village unit in the catalogue order config', functio
         }
     }
 });
+
+it('names a Home Village unit by its pack file, for units an account has not unlocked', function () {
+    $resolver = app(GameAssetResolver::class);
+
+    expect($resolver->unitName('lassi'))->toBe('L.A.S.S.I')
+        ->and($resolver->unitName('healing'))->toBe('Healing Spell')
+        ->and($resolver->unitName('metal-pants'))->toBe('Metal Pants')
+        ->and($resolver->unitName('battle-machine'))->toBeNull()
+        ->and($resolver->unitName('not-in-the-pack'))->toBeNull();
+});

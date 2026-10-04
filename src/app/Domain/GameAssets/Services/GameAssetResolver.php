@@ -37,6 +37,21 @@ class GameAssetResolver
     }
 
     /**
+     * The API name of the unit whose pack file is `{slug}` in that village ("lassi" → "L.A.S.S.I"),
+     * for catalogue units an account has not unlocked; null when the pack has no such file.
+     */
+    public function unitName(string $slug, Village $village = Village::Home): ?string
+    {
+        foreach ($this->manifest()?->entries() ?? [] as $key => $entry) {
+            if ($entry->category->isUnit() && $entry->village === $village && pathinfo($key, PATHINFO_FILENAME) === $slug) {
+                return $entry->ref;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * A Town Hall level, or with `Village::Builder` a Builder Hall level.
      */
     public function townHall(int $level, Village $village = Village::Home): GameAssetData
@@ -51,18 +66,33 @@ class GameAssetResolver
      * Our self-hosted emblem when the pack has it, the API's icon otherwise (specs/09 §8). The pack
      * holds one emblem per league id, or one per family shared by its tiers ("Titan League I" →
      * `titan`); a family emblem keeps the API's name as alt text, since that carries the tier.
+     * Builder Base leagues ("Wood League V") live apart, under `Village::Builder`.
      */
-    public function league(?int $id, string $name, ?string $apiIconUrl = null): GameAssetData
+    public function league(?int $id, string $name, ?string $apiIconUrl = null, Village $village = Village::Home): GameAssetData
     {
-        $entry = $id === null ? null : $this->manifest()?->find('league', (string) $id);
+        $in = $village === Village::Builder ? Village::Builder : null;
+        $entry = $id === null ? null : $this->manifest()?->find('league', (string) $id, $in);
         $alt = $entry->displayName ?? $name;
-        $entry ??= $this->manifest()?->find('league', self::leagueFamily($name));
+        $entry ??= $this->manifest()?->find('league', self::leagueFamily($name), $in);
 
         if ($entry !== null || ! $this->policy->enabled()) {
             return $this->make(GameAssetKind::League, $entry, $alt, self::initials($name));
         }
 
         return $this->remote(GameAssetKind::League, $apiIconUrl, $name, self::initials($name));
+    }
+
+    /**
+     * A ranked league tier ("Legend II", the API's `leagueTier`): the tier's own icon from the API,
+     * as the game shows it, when the host is allowed; our pack emblem for its family otherwise.
+     */
+    public function leagueTier(?int $id, string $name, ?string $apiIconUrl): GameAssetData
+    {
+        if ($apiIconUrl !== null && $this->policy->enabled() && self::isAllowedRemote($apiIconUrl)) {
+            return $this->remote(GameAssetKind::League, $apiIconUrl, $name, self::initials($name));
+        }
+
+        return $this->league($id, $name);
     }
 
     /**

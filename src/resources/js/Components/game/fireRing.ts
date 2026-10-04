@@ -4,7 +4,7 @@
 
 // The chip sits in the middle of the canvas; GameFireRing.vue insets the canvas by MARGIN in CSS,
 // so these must match the chip's size there.
-const CHIP_WIDTH = 36;
+const CHIP_WIDTH = 28;
 const CHIP_HEIGHT = 20;
 const MARGIN = 12;
 const WIDTH = CHIP_WIDTH + MARGIN * 2;

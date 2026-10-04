@@ -37,7 +37,15 @@ const detail = (card: Partial<Detail['card']> = {}, rest: Partial<Detail> = {}):
         syncedAgeSeconds: 3600,
         ...card,
     },
-    stats: [{ key: 'trophies', label: 'Trophies', value: 5124, delta: 24 }],
+    stats: [
+        { key: 'trophies', label: 'Trophies', value: 5124, delta: 24 },
+        { key: 'donations', label: 'Troops donated', value: 104, delta: null },
+        { key: 'builder_trophies', label: 'Builder Base trophies', value: 3120, delta: null },
+        { key: 'best_builder_trophies', label: 'Best Builder Base trophies', value: 4600, delta: null },
+    ],
+    builderLeagueName: 'Ruby League III',
+    builderLeague: { kind: 'league', url: null, alt: 'Ruby League III', short: 'RL', width: null, height: null },
+    builderHall: { kind: 'town_hall', url: null, alt: 'Builder Hall 10', short: '10', width: null, height: null },
     deltaDays: 7,
     notFound: false,
     isOwn: false,
@@ -46,10 +54,19 @@ const detail = (card: Partial<Detail['card']> = {}, rest: Partial<Detail> = {}):
     ...rest,
 });
 
-const render = (account: Detail, cocApi: unknown = null) => {
+type Group = App.Domain.PlayerAccounts.Data.ProgressionGroupData;
+
+const group = (key: string, label: string, village: Group['village'], name: string): Group => ({
+    key,
+    label,
+    village,
+    units: [{ name, asset: { kind: 'unit', url: null, alt: name, short: 'U', width: null, height: null }, level: 5, maxLevel: 10, maxed: false, locked: false, equipment: [] }],
+});
+
+const render = (account: Detail, cocApi: unknown = null, progression: Group[] = []) => {
     page.props.cocApi = cocApi;
 
-    return mount(Show, { props: { account, progression: [] }, global: { stubs: { AppLayout: true } } });
+    return mount(Show, { props: { account, progression }, global: { stubs: { AppLayout: true } } });
 };
 
 describe('Accounts/Show', () => {
@@ -79,5 +96,54 @@ describe('Accounts/Show', () => {
 
     it('shows the empty state when there are no grids', () => {
         expect(render(detail()).text()).toContain('No unit data yet');
+    });
+
+    it('opens on the Home Village tab, with the profile and the home grids only', () => {
+        const wrapper = render(detail(), null, [
+            group('heroes', 'Heroes', 'home', 'Archer Queen'),
+            group('troops', 'Troops', 'home', 'Barbarian'),
+            group('builder_troops', 'Troops', 'builderBase', 'Raged Barbarian'),
+        ]);
+        const [home, builder] = wrapper.findAll('[role="tabpanel"]');
+
+        expect(wrapper.findAll('[role="tab"]').map((tab) => [tab.text(), tab.attributes('aria-selected')])).toEqual([
+            ['Home Village', 'true'],
+            ['Builder Base', 'false'],
+        ]);
+        expect(wrapper.text()).not.toContain('Clan Capital');
+        expect(home.text()).toContain('Troops donated');
+        expect(home.text()).toContain('Archer Queen, level 5 of 10');
+        expect(home.text()).not.toContain('Raged Barbarian');
+        expect(builder.text()).toContain('Builder Hall 10');
+        expect(builder.text()).toContain('Raged Barbarian, level 5 of 10');
+    });
+
+    it('switches to the Builder Base tab', async () => {
+        const wrapper = render(detail());
+        await wrapper.findAll('[role="tab"]')[1].trigger('click');
+
+        expect(wrapper.findAll('[role="tab"]')[1].attributes('aria-selected')).toBe('true');
+        expect((wrapper.findAll('[role="tabpanel"]')[1].element as HTMLElement).style.display).toBe('');
+        expect((wrapper.findAll('[role="tabpanel"]')[0].element as HTMLElement).style.display).toBe('none');
+    });
+
+    it('keeps the same profile on the Builder Base tab, with its own ranked data', () => {
+        const [home, builder] = render(detail({ leagueName: 'Legend League', clan: null })).findAll('[role="tabpanel"]');
+
+        for (const panel of [home, builder]) {
+            expect(panel.text()).toContain('Fixture Chief');
+            expect(panel.text()).toContain('War stars won');
+            expect(panel.text()).toContain('Troops donated');
+        }
+        expect(home.text()).toContain('Legend League');
+        expect(home.text()).toContain('5,124');
+        expect(builder.text()).toContain('Ruby League III');
+        expect(builder.text()).toContain('3,120');
+        expect(builder.text()).toContain('4,600');
+        expect(builder.text()).not.toContain('Legend League');
+    });
+
+    it('keeps one page heading whichever tab is open', () => {
+        expect(render(detail()).findAll('h1').map((h) => h.text())).toEqual(['Fixture Chief #2PQ8GRJC']);
     });
 });

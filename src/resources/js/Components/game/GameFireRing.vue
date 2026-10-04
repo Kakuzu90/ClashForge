@@ -34,6 +34,6 @@ onBeforeUnmount(() => {
 
 <template>
     <span aria-hidden="true" class="pointer-events-none absolute -inset-3 mix-blend-screen">
-        <canvas ref="canvas" class="block size-full" width="60" height="44" />
+        <canvas ref="canvas" class="block size-full" width="52" height="44" />
     </span>
 </template>
