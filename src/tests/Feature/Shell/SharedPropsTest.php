@@ -30,7 +30,7 @@ it('shares the staff flags, never the role', function (string $state, bool $mode
     $user = User::factory()->{$state}()->create();
 
     $response = $this->actingAs($user)->get('/');
-    $response->assertInertia(fn (Assert $page) => $page->where('auth.can', ['accessAdmin' => $admin, 'viewReportQueue' => $moderator, 'viewUsers' => $admin, 'viewPlatformStats' => $admin, 'viewAuditLog' => $admin]));
+    $response->assertInertia(fn (Assert $page) => $page->where('auth.can', ['accessAdmin' => $admin, 'viewReportQueue' => $moderator, 'viewUsers' => $admin, 'viewPlatformStats' => $admin, 'viewAuditLog' => $admin, 'resolveDisputes' => $admin]));
 
     expect(json_encode($response->viewData('page')['props']['auth']))->not->toContain('role', $user->role->value === 'user' ? 'moderator' : $user->role->value);
 })->with([

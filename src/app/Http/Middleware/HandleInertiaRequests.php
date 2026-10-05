@@ -74,6 +74,7 @@ class HandleInertiaRequests extends Middleware
                     'viewUsers' => Gate::forUser($user)->allows(StaffAbility::ViewUsers->value),
                     'viewPlatformStats' => Gate::forUser($user)->allows(StaffAbility::ViewPlatformStats->value),
                     'viewAuditLog' => Gate::forUser($user)->allows(StaffAbility::ViewAuditLog->value),
+                    'resolveDisputes' => Gate::forUser($user)->allows(StaffAbility::ResolveDisputes->value),
                 ],
             ),
             flash: [

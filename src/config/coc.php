@@ -118,6 +118,9 @@ return [
         'evidence_max' => 3,
         // Longest statement or note, in characters (specs/07: reason ≤ 1000).
         'text_max' => 1000,
+        // The admin queue's page size, and how many claim rows and snapshots the review page shows.
+        'queue_per_page' => 25,
+        'review_history_limit' => 20,
     ],
 
     // Background sync of verified accounts (specs/09 §6, specs/20 §2–3, §6). Seconds unless named.

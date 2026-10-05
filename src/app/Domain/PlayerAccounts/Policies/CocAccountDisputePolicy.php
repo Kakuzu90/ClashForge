@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * Ownership disputes (specs/13 §5, specs/04 §2). Opening needs what attaching needs; the parties
- * act on their own dispute; only `resolve-disputes` admins decide, and never in their own.
+ * act on their own dispute; only `resolve-disputes` admins review and decide, never their own. A
+ * decision also needs to strictly outrank both parties (specs/04 §2 rule 1, owner decision
+ * 2026-10-05, P2-17): an admin party waits for a super admin.
  */
 class CocAccountDisputePolicy
 {
@@ -38,9 +40,27 @@ class CocAccountDisputePolicy
         return $user->allowsAccountWrites() && $dispute->current_holder_id === $user->id;
     }
 
-    public function decide(User $user, CocAccountDispute $dispute): bool
+    /**
+     * The staff review page: the other party's private evidence and history, so never a party's
+     * (owner decision 2026-10-05, P2-17).
+     */
+    public function review(User $user, CocAccountDispute $dispute): bool
     {
         return Gate::forUser($user)->allows(StaffAbility::ResolveDisputes->value) && ! $this->isParty($user, $dispute);
+    }
+
+    public function decide(User $user, CocAccountDispute $dispute): bool
+    {
+        return $this->review($user, $dispute) && $this->outranksParties($user, $dispute);
+    }
+
+    public function outranksParties(User $user, CocAccountDispute $dispute): bool
+    {
+        $claimant = $dispute->claimant;
+        $holder = $dispute->holder;
+
+        return ($claimant === null || $user->role->outranks($claimant->role))
+            && ($holder === null || $user->role->outranks($holder->role));
     }
 
     private function isParty(User $user, CocAccountDispute $dispute): bool

@@ -12,6 +12,7 @@ import { useVisitError } from '@/Composables/useVisitError';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { home } from '@/routes';
 import { system } from '@/routes/admin';
+import { index as disputesIndex } from '@/routes/admin/disputes';
 import { Deferred, router } from '@inertiajs/vue3';
 
 defineOptions({ layout: AdminLayout });
@@ -23,13 +24,15 @@ type CollectionUsage = App.Domain.Media.Data.MediaCollectionUsageData;
 // while the others render.
 const props = defineProps<{
     platformStats: App.Http.Data.Admin.AdminDashboardPageData['platformStats'];
+    disputes: App.Http.Data.Admin.AdminDashboardPageData['disputes'];
+    pendingDisputes?: App.Domain.PlayerAccounts.Data.PendingDisputesData;
     signups?: App.Domain.Auth.Data.SignupStatsData;
     failedJobs?: App.Domain.Operations.Data.FailedJobsSummaryData;
     storage?: App.Domain.Media.Data.MediaStorageData;
     cocApiHealth?: App.Domain.CocIntegration.Data.CocApiHealthData;
 }>();
 
-const PANELS = ['signups', 'failedJobs', 'storage', 'cocApiHealth'] as const;
+const PANELS = ['pendingDisputes', 'signups', 'failedJobs', 'storage', 'cocApiHealth'] as const;
 
 const API_STATE: Record<App.Domain.CocIntegration.Enums.CocCircuitState, { label: string; tone: 'success' | 'warning' | 'danger' }> = {
     closed: { label: 'Available', tone: 'success' },
@@ -46,7 +49,8 @@ const visitError = useVisitError();
 // The error is one per page, and the next visit clears it everywhere, so a retry reloads every
 // panel still missing rather than the one whose button was pressed.
 function retry() {
-    router.reload({ only: PANELS.filter((panel) => props[panel] === undefined) });
+    const shown = PANELS.filter((panel) => (panel === 'pendingDisputes' ? props.disputes : props.platformStats));
+    router.reload({ only: shown.filter((panel) => props[panel] === undefined) });
 }
 
 const jobColumns: AdminColumn[] = [
@@ -70,12 +74,50 @@ const storageColumns: AdminColumn[] = [
         </div>
 
         <UiEmptyState
-            v-if="!platformStats"
+            v-if="!platformStats && !disputes"
             title="Nothing to review yet"
             body="Open reports and the moderation queue will show here once reporting goes live."
         />
 
         <div v-else class="grid gap-4 lg:grid-cols-2">
+            <AdminPanel v-if="disputes" title="Pending disputes" description="Ownership disputes waiting for an admin decision.">
+                <Deferred data="pendingDisputes">
+                    <template #fallback>
+                        <UiAlert v-if="visitError" kind="danger" title="Pending disputes didn't load">
+                            <p v-if="visitError.requestId">
+                                If it keeps failing, quote request id <span class="font-semibold">{{ visitError.requestId }}</span>.
+                            </p>
+                            <UiButton class="mt-3" variant="secondary" size="sm" @click="retry()">Try again</UiButton>
+                        </UiAlert>
+                        <UiSkeleton v-else label="Loading pending disputes" :lines="3" />
+                    </template>
+
+                    <div v-if="pendingDisputes" class="flex flex-col gap-3">
+                        <p v-if="pendingDisputes.running === 0" class="text-sm text-fg-secondary">No disputes running.</p>
+                        <dl v-else class="grid grid-cols-3 gap-3">
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-sm text-fg-secondary">Waiting for an admin</dt>
+                                <dd class="text-h3 text-fg tabular-nums">{{ formatCount(pendingDisputes.awaitingAdmin) }}</dd>
+                                <dd v-if="pendingDisputes.oldestWaitingSince" class="text-sm text-fg-secondary">
+                                    oldest since <time :datetime="pendingDisputes.oldestWaitingSince">{{ formatDateTime(pendingDisputes.oldestWaitingSince) }}</time>
+                                </dd>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-sm text-fg-secondary">Past the holder's time</dt>
+                                <dd class="text-h3 text-fg tabular-nums">{{ formatCount(pendingDisputes.pastHolderWindow) }}</dd>
+                                <dd class="text-sm text-fg-secondary">sent to admins within the hour</dd>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-sm text-fg-secondary">Running</dt>
+                                <dd class="text-h3 text-fg tabular-nums">{{ formatCount(pendingDisputes.running) }}</dd>
+                            </div>
+                        </dl>
+                        <UiButton class="self-start" variant="secondary" size="sm" :href="disputesIndex().url">Open the dispute queue</UiButton>
+                    </div>
+                </Deferred>
+            </AdminPanel>
+
+            <template v-if="platformStats">
             <AdminPanel title="New sign-ups" description="Accounts created, deleted ones included.">
                 <Deferred data="signups">
                     <template #fallback>
@@ -260,6 +302,7 @@ const storageColumns: AdminColumn[] = [
                     </div>
                 </Deferred>
             </AdminPanel>
+            </template>
         </div>
     </div>
 </template>

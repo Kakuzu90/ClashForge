@@ -2,7 +2,7 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_account.released' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_account.released' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed' | 'coc_dispute.evidence_viewed';
 export type AuditSubject = 'user' | 'coc_account' | 'coc_account_dispute';
 }
 }
@@ -374,10 +374,103 @@ leagueName: string | null,
 stale: boolean,
 fetchedAt: string | null,
 };
+export type DisputeClaimData = {
+username: string,
+methodLabel: string,
+statusLabel: string,
+failureLabel: string | null,
+at: string,
+};
+export type DisputeDecisionOptionData = {
+value: App.Domain.PlayerAccounts.Enums.DisputeDecision,
+label: string,
+available: boolean,
+unavailableReason: string | null,
+};
+export type DisputeEvidenceData = {
+party: string,
+note: string | null,
+images: App.Domain.PlayerAccounts.Data.DisputeEvidenceImageData[],
+at: string,
+opening: boolean,
+};
+export type DisputeEvidenceImageData = {
+ulid: string,
+url: string | null,
+thumbUrl: string | null,
+};
+export type DisputePartyData = {
+ulid: string,
+username: string,
+roleLabel: string,
+statusLabel: string,
+statusTone: string,
+joinedAt: string,
+verifiedAccounts: number,
+deleted: boolean,
+priorDisputes: App.Domain.PlayerAccounts.Data.DisputePriorData[],
+};
+export type DisputePriorData = {
+ulid: string,
+tag: string,
+side: string,
+status: App.Domain.PlayerAccounts.Enums.DisputeStatus,
+statusLabel: string,
+openedAt: string,
+};
+export type DisputeQueueData = {
+entries: App.Domain.PlayerAccounts.Data.DisputeQueueRowData[],
+nextCursor: string | null,
+previousCursor: string | null,
+};
+export type DisputeQueueRowData = {
+ulid: string,
+tag: string,
+claimant: string,
+holder: string | null,
+status: App.Domain.PlayerAccounts.Enums.DisputeStatus,
+statusLabel: string,
+waitingSince: string,
+openedAt: string,
+assignedTo: string | null,
+needsSuperAdmin: boolean,
+};
 export type DisputeResultData = {
 disputeUlid: string | null,
 status: App.Domain.PlayerAccounts.Enums.DisputeStatus | null,
 refusal: App.Domain.PlayerAccounts.Enums.DisputeRefusal | null,
+};
+export type DisputeReviewData = {
+ulid: string,
+tag: string,
+status: App.Domain.PlayerAccounts.Enums.DisputeStatus,
+statusLabel: string,
+active: boolean,
+openedAt: string,
+waitingSince: string,
+escalatedAt: string | null,
+decidedAt: string | null,
+decidedBy: string | null,
+assignedTo: string | null,
+decisionNote: string | null,
+accountName: string,
+accountStatus: App.Domain.PlayerAccounts.Enums.CocAccountStatus,
+accountTownHall: number | null,
+claimant: App.Domain.PlayerAccounts.Data.DisputePartyData,
+holder: App.Domain.PlayerAccounts.Data.DisputePartyData | null,
+evidence: App.Domain.PlayerAccounts.Data.DisputeEvidenceData[],
+claims: App.Domain.PlayerAccounts.Data.DisputeClaimData[],
+snapshots: App.Domain.PlayerAccounts.Data.DisputeSnapshotData[],
+decisions: App.Domain.PlayerAccounts.Data.DisputeDecisionOptionData[],
+blockedReason: string | null,
+noteMax: number,
+};
+export type DisputeSnapshotData = {
+capturedAt: string,
+townHallLevel: number | null,
+clanTag: string | null,
+trophies: number | null,
+changes: string[],
 };
 export type OwnCocAccountData = {
 ulid: string,
@@ -388,6 +481,12 @@ statusLabel: string,
 townHallLevel: number | null,
 featured: boolean,
 canFeature: boolean,
+};
+export type PendingDisputesData = {
+awaitingAdmin: number,
+oldestWaitingSince: string | null,
+pastHolderWindow: number,
+running: number,
 };
 export type PlayerCardData = {
 ulid: string,
@@ -442,6 +541,7 @@ export type ClaimStatus = 'pending' | 'succeeded' | 'failed' | 'rejected' | 'sup
 export type CocAccountStatus = 'unverified' | 'verified' | 'disputed' | 'suspended' | 'released';
 export type DisputeDecision = 'transfer' | 'deny' | 'suspend' | 'ask_claimant' | 'ask_holder';
 export type DisputeParty = 'claimant' | 'holder';
+export type DisputeQueueView = 'active' | 'awaiting_admin' | 'waiting_on_holder' | 'waiting_on_claimant' | 'closed';
 export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
 export type DisputeStatus = 'open' | 'awaiting_admin' | 'awaiting_claimant' | 'awaiting_holder' | 'resolved_transfer' | 'resolved_denied' | 'resolved_suspended' | 'withdrawn' | 'auto_resolved';
 export type ReleaseReason = 'detach' | 'deletion' | 'ban';
@@ -572,6 +672,17 @@ result: App.Domain.PlayerAccounts.Data.VerifyResultData | null,
 namespace Admin {
 export type AdminDashboardPageData = {
 platformStats: boolean,
+disputes: boolean,
+};
+export type AdminDisputeIndexPageData = {
+view: string,
+mine: boolean,
+views: App.Http.Data.Admin.FilterOptionData[],
+};
+export type AdminDisputeShowPageData = {
+dispute: App.Domain.PlayerAccounts.Data.DisputeReviewData,
+claimantSanctions: App.Domain.Moderation.Data.SanctionData[],
+holderSanctions: App.Domain.Moderation.Data.SanctionData[],
 };
 export type AdminUserFiltersData = {
 search: string | null,

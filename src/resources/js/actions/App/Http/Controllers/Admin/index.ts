@@ -2,6 +2,7 @@ import DashboardController from './DashboardController'
 import AuditLogController from './AuditLogController'
 import UserController from './UserController'
 import SystemHealthController from './SystemHealthController'
+import DisputeController from './DisputeController'
 import SanctionController from './SanctionController'
 
 const Admin = {
@@ -9,6 +10,7 @@ const Admin = {
     AuditLogController: Object.assign(AuditLogController, AuditLogController),
     UserController: Object.assign(UserController, UserController),
     SystemHealthController: Object.assign(SystemHealthController, SystemHealthController),
+    DisputeController: Object.assign(DisputeController, DisputeController),
     SanctionController: Object.assign(SanctionController, SanctionController),
 }
 

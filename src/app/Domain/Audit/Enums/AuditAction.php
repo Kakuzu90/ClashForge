@@ -26,6 +26,7 @@ enum AuditAction: string implements HasLabelAndColor
     case CocDisputeInfoRequested = 'coc_dispute.info_requested';
     case CocDisputeEscalated = 'coc_dispute.escalated';
     case CocDisputeClosed = 'coc_dispute.closed';
+    case CocDisputeEvidenceViewed = 'coc_dispute.evidence_viewed';
 
     public function label(): string
     {
@@ -43,6 +44,7 @@ enum AuditAction: string implements HasLabelAndColor
             self::CocDisputeInfoRequested => 'More asked in a dispute',
             self::CocDisputeEscalated => 'Dispute sent to admins',
             self::CocDisputeClosed => 'Ownership dispute closed',
+            self::CocDisputeEvidenceViewed => 'Dispute evidence viewed',
         };
     }
 
@@ -56,7 +58,7 @@ enum AuditAction: string implements HasLabelAndColor
             self::CocAccountVerified => 'state-success',
             self::CocDisputeOpened, self::CocDisputeEscalated => 'state-warning',
             self::CocDisputeResponded, self::CocDisputeInfoRequested => 'state-info',
-            self::CocDisputeClosed => 'text-muted',
+            self::CocDisputeClosed, self::CocDisputeEvidenceViewed => 'text-muted',
         };
     }
 }

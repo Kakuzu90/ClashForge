@@ -75,10 +75,12 @@ it('renders the dashboard for staff', function (string $role) {
         );
 })->with(['admin', 'superAdmin']);
 
-it('gives admins the four panels as separate deferred props', function () {
+it('gives admins the panels as separate deferred props', function () {
     $this->actingAs($this->admin)->get('/admin')
         ->assertInertia(fn (Assert $page) => $page
             ->where('platformStats', true)
+            ->where('disputes', true)
+            ->missing('pendingDisputes')
             ->missing('signups')
             ->missing('failedJobs')
             ->missing('storage')
@@ -86,7 +88,7 @@ it('gives admins the four panels as separate deferred props', function () {
 
     $deferred = $this->actingAs($this->admin)->get('/admin')->viewData('page')['deferredProps'];
 
-    expect($deferred)->toBe(['signups' => ['signups'], 'failedJobs' => ['failedJobs'], 'storage' => ['storage'], 'cocApiHealth' => ['cocApiHealth']]);
+    expect($deferred)->toBe(['pendingDisputes' => ['pendingDisputes'], 'signups' => ['signups'], 'failedJobs' => ['failedJobs'], 'storage' => ['storage'], 'cocApiHealth' => ['cocApiHealth']]);
 });
 
 it('counts sign-ups per window at the edges, deleted and unverified ones included', function () {

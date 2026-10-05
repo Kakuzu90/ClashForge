@@ -35,6 +35,7 @@ type Props = App.Http.Data.Admin.AdminDashboardPageData & {
     failedJobs?: App.Domain.Operations.Data.FailedJobsSummaryData;
     storage?: App.Domain.Media.Data.MediaStorageData;
     cocApiHealth?: App.Domain.CocIntegration.Data.CocApiHealthData;
+    pendingDisputes?: App.Domain.PlayerAccounts.Data.PendingDisputesData;
 };
 
 const cocApiHealth = (overrides: Partial<App.Domain.CocIntegration.Data.CocApiHealthData> = {}): App.Domain.CocIntegration.Data.CocApiHealthData => ({
@@ -84,7 +85,8 @@ const storage: App.Domain.Media.Data.MediaStorageData = {
     quarantinedCount: 1,
 };
 
-const render = (props: Props, loaded: string[] = []) => mount(Dashboard, { props, global: { provide: { loaded } } });
+const render = (props: Omit<Props, 'disputes'> & { disputes?: boolean }, loaded: string[] = []) =>
+    mount(Dashboard, { props: { disputes: false, ...props }, global: { provide: { loaded } } });
 
 function fail(requestId: string) {
     handlers.invalid?.({ detail: { response: { status: 500, headers: { 'x-request-id': requestId } } }, preventDefault: vi.fn() });
@@ -209,5 +211,29 @@ describe('Admin/Dashboard', () => {
         await wrapper.findAll('button').find((button) => button.text() === 'Try again')!.trigger('click');
 
         expect(router.reload).toHaveBeenCalledWith({ only: ['failedJobs', 'storage', 'cocApiHealth'] });
+    });
+
+    it('shows the pending disputes panel to admins who resolve disputes, linking to the queue (P2-17)', () => {
+        const pendingDisputes: App.Domain.PlayerAccounts.Data.PendingDisputesData = {
+            awaitingAdmin: 3,
+            oldestWaitingSince: '2026-10-01T09:00:00+00:00',
+            pastHolderWindow: 1,
+            running: 7,
+        };
+        const wrapper = render({ platformStats: true, disputes: true, pendingDisputes }, ['pendingDisputes']);
+
+        expect(wrapper.text()).toContain('Pending disputes');
+        expect(wrapper.text()).toContain('Waiting for an admin');
+        expect(wrapper.find('a[href="/admin/disputes"]').exists()).toBe(true);
+    });
+
+    it('says when no dispute is running', () => {
+        const pendingDisputes = { awaitingAdmin: 0, oldestWaitingSince: null, pastHolderWindow: 0, running: 0 };
+
+        expect(render({ platformStats: true, disputes: true, pendingDisputes }, ['pendingDisputes']).text()).toContain('No disputes running.');
+    });
+
+    it('leaves the disputes panel out without the ability', () => {
+        expect(render({ platformStats: true }).text()).not.toContain('Pending disputes');
     });
 });

@@ -7,12 +7,14 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Props for Admin/Dashboard. With `platformStats`, the deferred `signups`, `failedJobs` and
- * `storage` panels follow, each in its own request so one failure leaves the others standing.
+ * `storage` panels follow, each in its own request so one failure leaves the others standing. With
+ * `disputes`, the deferred `pendingDisputes` panel.
  */
 #[TypeScript]
 class AdminDashboardPageData extends Data
 {
     public function __construct(
         public bool $platformStats,
+        public bool $disputes,
     ) {}
 }

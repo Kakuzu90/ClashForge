@@ -7,6 +7,7 @@ use App\Domain\Auth\Queries\SignupStatsQuery;
 use App\Domain\CocIntegration\Services\CocApiHealthReport;
 use App\Domain\Media\Queries\MediaStorageQuery;
 use App\Domain\Operations\Queries\FailedJobsQuery;
+use App\Domain\PlayerAccounts\Queries\DisputeAdminQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Data\Admin\AdminDashboardPageData;
 use App\Support\Seo\PageMeta;
@@ -16,18 +17,23 @@ use Inertia\Response;
 
 /**
  * The admin landing page (FR-ADMIN-5). Sign-ups, failed jobs, media storage and the Clash of
- * Clans API are admin and above (`view-platform-stats`); open reports and disputes join with their
- * modules.
+ * Clans API are admin and above (`view-platform-stats`); pending disputes need `resolve-disputes`
+ * (P2-17); open reports join with P3-06.
  * Nothing here is cached (specs/21 §3).
  */
 class DashboardController extends Controller
 {
-    public function __invoke(SignupStatsQuery $signups, FailedJobsQuery $failedJobs, MediaStorageQuery $storage, CocApiHealthReport $cocApi): Response
+    public function __invoke(SignupStatsQuery $signups, FailedJobsQuery $failedJobs, MediaStorageQuery $storage, CocApiHealthReport $cocApi, DisputeAdminQuery $pendingDisputes): Response
     {
         Gate::authorize(StaffAbility::AccessAdmin->value);
 
         $platformStats = Gate::allows(StaffAbility::ViewPlatformStats->value);
-        $props = (new AdminDashboardPageData(platformStats: $platformStats))->toArray();
+        $disputes = Gate::allows(StaffAbility::ResolveDisputes->value);
+        $props = (new AdminDashboardPageData(platformStats: $platformStats, disputes: $disputes))->toArray();
+
+        if ($disputes) {
+            $props['pendingDisputes'] = Inertia::defer(fn (): array => $pendingDisputes->pending()->toArray(), 'pendingDisputes');
+        }
 
         if ($platformStats) {
             $props['signups'] = Inertia::defer(fn (): array => $signups->stats()->toArray(), 'signups');

@@ -1,8 +1,9 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
 import users from './users'
+import disputes from './disputes'
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
-* @see app/Http/Controllers/Admin/DashboardController.php:25
+* @see app/Http/Controllers/Admin/DashboardController.php:26
 * @route '/admin'
 */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -17,7 +18,7 @@ dashboard.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
-* @see app/Http/Controllers/Admin/DashboardController.php:25
+* @see app/Http/Controllers/Admin/DashboardController.php:26
 * @route '/admin'
 */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -26,7 +27,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
-* @see app/Http/Controllers/Admin/DashboardController.php:25
+* @see app/Http/Controllers/Admin/DashboardController.php:26
 * @route '/admin'
 */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -36,7 +37,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
-* @see app/Http/Controllers/Admin/DashboardController.php:25
+* @see app/Http/Controllers/Admin/DashboardController.php:26
 * @route '/admin'
 */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -137,6 +138,7 @@ const admin = {
     audit: Object.assign(audit, audit),
     users: Object.assign(users, users),
     system: Object.assign(system, system),
+    disputes: Object.assign(disputes, disputes),
 }
 
 export default admin

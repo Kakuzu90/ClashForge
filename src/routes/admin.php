@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DisputeController;
 use App\Http\Controllers\Admin\SanctionController;
 use App\Http\Controllers\Admin\SystemHealthController;
 use App\Http\Controllers\Admin\UserController;
@@ -15,11 +16,15 @@ Route::middleware(['auth', 'account.active', 'can:access-admin'])->prefix('admin
     Route::get('/users', [UserController::class, 'index'])->middleware('throttle:admin-search')->name('users.index');
     Route::get('/users/{ulid}', [UserController::class, 'show'])->whereUlid('ulid')->name('users.show');
     Route::get('/system', SystemHealthController::class)->name('system');
+    // Ownership disputes (P2-17): the controllers authorize `resolve-disputes` and the parties.
+    Route::get('/disputes', [DisputeController::class, 'index'])->middleware('throttle:admin-search')->name('disputes.index');
+    Route::get('/disputes/{ulid}', [DisputeController::class, 'show'])->whereUlid('ulid')->name('disputes.show');
 
     // FR-ADMIN-3. `account.active` above blocks suspended, banned and pending-deletion staff.
     Route::middleware('throttle:global-write')->whereUlid('ulid')->group(function (): void {
         Route::post('/users/{ulid}/suspension', [SanctionController::class, 'suspend'])->name('users.suspension.store');
         Route::post('/users/{ulid}/ban', [SanctionController::class, 'ban'])->name('users.ban.store');
         Route::delete('/users/{ulid}/sanction', [SanctionController::class, 'lift'])->name('users.sanction.destroy');
+        Route::post('/disputes/{ulid}/decision', [DisputeController::class, 'decide'])->name('disputes.decision.store');
     });
 });

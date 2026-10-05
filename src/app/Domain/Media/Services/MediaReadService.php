@@ -47,6 +47,29 @@ class MediaReadService
     }
 
     /**
+     * The same, for media another module holds by ULID (dispute evidence), keyed by ULID.
+     *
+     * @param  list<string>  $ulids
+     * @return array<string, string>
+     */
+    public function readyVariantUrlsByUlid(array $ulids, VariantName $variant): array
+    {
+        if ($ulids === []) {
+            return [];
+        }
+
+        $ids = Media::query()->whereIn('ulid', $ulids)->pluck('ulid', 'id')->all();
+        $urls = $this->readyVariantUrls(array_map('intval', array_keys($ids)), $variant);
+
+        $byUlid = [];
+        foreach ($urls as $id => $url) {
+            $byUlid[(string) $ids[$id]] = $url;
+        }
+
+        return $byUlid;
+    }
+
+    /**
      * The renditions of `ready` media, keyed by variant name; empty for anything else.
      *
      * @return array<string, MediaVariantData>
