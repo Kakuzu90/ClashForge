@@ -97,8 +97,9 @@ it('heads the Builder Base tab with the Builder Hall, and leaves it out before o
 });
 
 it('shows the ranked league tier with the API\'s own tier icon', function () {
-    $icon = 'https://api-assets.clashofclans.com/leaguetiers/125/legend.png';
-    $this->account->update(['raw_payload' => ['leagueTier' => ['id' => 105000035, 'name' => 'Legend II', 'iconUrls' => ['small' => $icon, 'large' => 'https://api-assets.clashofclans.com/leaguetiers/326/legend.png']]]]);
+    // The large icon when the API sends one (fae1e19), the small one otherwise.
+    $icon = 'https://api-assets.clashofclans.com/leaguetiers/326/legend.png';
+    $this->account->update(['raw_payload' => ['leagueTier' => ['id' => 105000035, 'name' => 'Legend II', 'iconUrls' => ['small' => 'https://api-assets.clashofclans.com/leaguetiers/125/legend.png', 'large' => $icon]]]]);
 
     accountPage(null, $this->account)->assertInertia(fn (Assert $page) => $page
         ->where('account.card.leagueName', 'Legend II')

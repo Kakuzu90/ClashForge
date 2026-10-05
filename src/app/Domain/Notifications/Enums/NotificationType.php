@@ -27,6 +27,7 @@ enum NotificationType: string implements HasLabelAndColor
     case CocAccountVerified = 'coc_account_verified';
     case CocAccountTakenOver = 'coc_account_taken_over';
     case CocAccountNotFound = 'coc_account_not_found';
+    case CocAccountReleased = 'coc_account_released';
 
     public function label(): string
     {
@@ -41,6 +42,7 @@ enum NotificationType: string implements HasLabelAndColor
             self::CocAccountVerified => 'Account verified',
             self::CocAccountTakenOver => 'Account taken over',
             self::CocAccountNotFound => 'Account not found',
+            self::CocAccountReleased => 'Account removed',
         };
     }
 
@@ -50,6 +52,7 @@ enum NotificationType: string implements HasLabelAndColor
             self::AccountSuspended, self::AccountBanned, self::MediaProcessingFailed, self::CocAccountTakenOver => 'state-danger',
             self::PasswordChanged, self::NewDeviceSignIn, self::CocAccountNotFound => 'state-warning',
             self::EmailVerified, self::SanctionEnded, self::CocAccountVerified => 'state-success',
+            self::CocAccountReleased => 'state-info',
         };
     }
 
@@ -57,7 +60,7 @@ enum NotificationType: string implements HasLabelAndColor
     {
         return match ($this) {
             self::MediaProcessingFailed => NotificationCategory::Bases,
-            self::CocAccountVerified, self::CocAccountTakenOver, self::CocAccountNotFound => NotificationCategory::Ownership,
+            self::CocAccountVerified, self::CocAccountTakenOver, self::CocAccountNotFound, self::CocAccountReleased => NotificationCategory::Ownership,
             default => NotificationCategory::Security,
         };
     }
@@ -121,6 +124,12 @@ enum NotificationType: string implements HasLabelAndColor
             self::CocAccountNotFound => new RenderedNotificationData(
                 title: "We can't find one of your accounts",
                 body: 'Clash of Clans no longer finds '.self::cocAccount($params, 'one of your accounts').'. It may have been renamed or deleted in game. It stays verified on your Clash Commons account, and we keep checking.',
+                url: null,
+            ),
+            // specs/16 §2 "Tag released". The removed account has no page for its former owner any more.
+            self::CocAccountReleased => new RenderedNotificationData(
+                title: 'An account was removed from your profile',
+                body: ucfirst(self::cocAccount($params, 'one of your Clash of Clans accounts')).' is no longer on your Clash Commons account. Anyone with its in-game API token can verify it now.',
                 url: null,
             ),
         };

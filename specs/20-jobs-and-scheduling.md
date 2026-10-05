@@ -35,6 +35,7 @@ for a full temp volume does not.
 | Job | Trigger | Notes |
 |---|---|---|
 | `SyncCocAccountJob` | Scheduler (tiered) or manual refresh fallback | `ShouldBeUnique` 60s on account id. Writes a snapshot only on change. Updates `sync_states` tier and `next_due_at` |
+| `RestoreFeaturedAccountJob` | After commit, when the featured fallback found every candidate row locked by another transaction (P2-14) | `ShouldBeUnique` 60s on user id. Locks the user's holding rows, then the user, and gives the earliest-verified one the flag; a no-op if the user has one |
 | `SyncClanJob` | Scheduler, or on `CocAccountVerified` for a new clan | `ShouldBeUnique` on clan id |
 | `VerifyAccountOwnershipJob` | Fallback when synchronous verification times out | Never stores the token; re-verification is the user's action, so this exists only for the rare timeout path |
 | `RefreshStaticReferenceDataJob` | Weekly | Leagues, locations |

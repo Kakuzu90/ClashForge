@@ -8,6 +8,7 @@ use App\Domain\Notifications\Services\EmailDeliveryService;
 use App\Domain\Notifications\Services\Notifier;
 use App\Domain\PlayerAccounts\Enums\VerificationMethod;
 use App\Domain\PlayerAccounts\Events\CocAccountOwnershipTransferred;
+use App\Domain\PlayerAccounts\Events\CocAccountReleased;
 use App\Domain\PlayerAccounts\Events\CocAccountVerified;
 use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Notifications\CocAccountTakenOverNotification;
@@ -20,6 +21,7 @@ use Illuminate\Events\Dispatcher;
  * email that follows their preferences and the daily cap. The previous holder of a superseded tag
  * gets the takeover notice, whose email is always sent. When two tokens arrive seconds apart, both
  * users hear about it (specs/13 §9), so a notice reports the event even if the row changed since.
+ * A released tag gets an in-app notice to the user who held it (specs/16 §2 "Tag released").
  */
 class SendOwnershipNotice implements ShouldQueue
 {
@@ -64,6 +66,19 @@ class SendOwnershipNotice implements ShouldQueue
         $previous->notify(new CocAccountTakenOverNotification(['tag' => $account->tag, 'method' => $event->method->value]));
     }
 
+    public function handleReleased(CocAccountReleased $event): void
+    {
+        $account = CocAccount::query()->find($event->accountId);
+        $owner = User::query()->find($event->userId);
+
+        if ($account === null || $owner === null) {
+            return;
+        }
+
+        // No account link: the row is no longer theirs.
+        $this->notifier->send($owner, new InAppMessageData(NotificationType::CocAccountReleased, ['tag' => $account->tag, 'name' => $account->ign]));
+    }
+
     /**
      * The tag, in-game name and the account page's ulid only: never who verified it (specs/16 §4).
      *
@@ -82,6 +97,7 @@ class SendOwnershipNotice implements ShouldQueue
         return [
             CocAccountVerified::class => 'handleVerified',
             CocAccountOwnershipTransferred::class => 'handleTransferred',
+            CocAccountReleased::class => 'handleReleased',
         ];
     }
 }

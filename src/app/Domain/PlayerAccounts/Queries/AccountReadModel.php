@@ -67,7 +67,7 @@ class AccountReadModel
             ->where('status', '!=', CocAccountStatus::Released)
             ->orderByDesc('is_featured')->orderByDesc('id')
             ->get()
-            ->map($this->data(...))
+            ->map(fn (CocAccount $account): OwnCocAccountData => $this->data($user, $account))
             ->all());
     }
 
@@ -75,10 +75,10 @@ class AccountReadModel
     {
         $account = CocAccount::query()->where('ulid', $ulid)->where('user_id', $user->id)->first();
 
-        return $account === null ? null : $this->data($account);
+        return $account === null ? null : $this->data($user, $account);
     }
 
-    private function data(CocAccount $account): OwnCocAccountData
+    private function data(User $user, CocAccount $account): OwnCocAccountData
     {
         return new OwnCocAccountData(
             ulid: $account->ulid,
@@ -88,6 +88,7 @@ class AccountReadModel
             statusLabel: $account->status->label(),
             townHallLevel: $account->th_level,
             featured: $account->is_featured,
+            canFeature: ! $account->is_featured && Gate::forUser($user)->allows('feature', $account),
         );
     }
 
@@ -129,6 +130,8 @@ class AccountReadModel
             notFound: $account->api_sync_failures >= (int) config('coc.sync.not_found_stale'),
             isOwn: $isOwn,
             canVerify: $viewer !== null && Gate::forUser($viewer)->allows('verify', $account),
+            canDetach: $viewer !== null && Gate::forUser($viewer)->allows('detach', $account),
+            canFeature: $viewer !== null && ! $account->is_featured && Gate::forUser($viewer)->allows('feature', $account),
             indexable: $account->status === CocAccountStatus::Verified && $owner !== null && $this->privacy->isIndexable($owner),
         );
     }

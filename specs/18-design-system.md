@@ -419,7 +419,8 @@ account menu: Your profile · Settings · Sign out.
 Follows the game's own profile screen (owner decision 2026-10-04), in our chrome: status banners →
 **Home Village | Builder Base** tabs (pill tabs; no Clan Capital tab) → per tab a profile panel and a
 base panel → custom images gallery → bases credited to this account → sync status footer ("updated
-12 minutes ago" + manual refresh button). The page `h1` is the name and tag, visually hidden, since
+12 minutes ago" + manual refresh button; for the owner, "Make featured" and "Remove account", which
+opens a dialog that explains the tag becomes claimable and takes the current password, P2-14). The page `h1` is the name and tag, visually hidden, since
 each tab shows the name in its own panel.
 *Profile panel:* the same on both tabs; only the ranked column changes. Three columns on desktop,
 stacked on a phone. Identity (XP level in
@@ -457,7 +458,7 @@ instructions with an illustrated, original step-by-step and a paste field; (3) s
 a RewardToast and a "set as featured" prompt. As built (P2-11, owner decisions 2026-10-02): the
 token steps are numbered text until original illustrations exist; the RewardToast shows on the
 first verified account only; step 3 says "This is now your featured account" when it became
-featured, and the switch prompt joins with P2-14. A user who may not attach (email not
+featured; otherwise it offers "Make this your featured account" (P2-14). A user who may not attach (email not
 confirmed) sees why on step 1 instead of the form.
 *Error states:* tag not found · already verified by someone else (conflict card with both the token
 path and the dispute path) · invalid token (with "tokens expire in a few minutes — copy a fresh

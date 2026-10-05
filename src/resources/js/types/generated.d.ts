@@ -2,7 +2,7 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_account.released' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed';
 export type AuditSubject = 'user' | 'coc_account' | 'coc_account_dispute';
 }
 }
@@ -270,7 +270,7 @@ actionLabel: string | null,
 }
 namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
-export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over' | 'coc_account_not_found';
+export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over' | 'coc_account_not_found' | 'coc_account_released';
 export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
 }
 }
@@ -345,6 +345,8 @@ deltaDays: number,
 notFound: boolean,
 isOwn: boolean,
 canVerify: boolean,
+canDetach: boolean,
+canFeature: boolean,
 indexable: boolean,
 };
 export type AccountStatData = {
@@ -385,6 +387,7 @@ status: App.Domain.PlayerAccounts.Enums.CocAccountStatus,
 statusLabel: string,
 townHallLevel: number | null,
 featured: boolean,
+canFeature: boolean,
 };
 export type PlayerCardData = {
 ulid: string,
@@ -441,6 +444,7 @@ export type DisputeDecision = 'transfer' | 'deny' | 'suspend' | 'ask_claimant' |
 export type DisputeParty = 'claimant' | 'holder';
 export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
 export type DisputeStatus = 'open' | 'awaiting_admin' | 'awaiting_claimant' | 'awaiting_holder' | 'resolved_transfer' | 'resolved_denied' | 'resolved_suspended' | 'withdrawn' | 'auto_resolved';
+export type ReleaseReason = 'detach';
 export type SnapshotSource = 'scheduled' | 'manual' | 'verification';
 export type SyncOutcome = 'changed' | 'unchanged' | 'not_found' | 'failed' | 'postponed' | 'skipped';
 export type VerificationMethod = 'api_token' | 'admin';

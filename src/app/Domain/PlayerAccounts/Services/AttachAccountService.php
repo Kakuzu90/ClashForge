@@ -35,7 +35,7 @@ use Illuminate\Support\Facades\Gate;
 class AttachAccountService
 {
     /** A row in one of these statuses holds the tag (specs/13 §2). */
-    public const HOLDING = [CocAccountStatus::Verified, CocAccountStatus::Disputed];
+    public const HOLDING = CocAccountStatus::HOLDING;
 
     public function __construct(
         private readonly PlayerLookup $players,

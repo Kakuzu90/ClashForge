@@ -103,7 +103,9 @@
   releases their row (`user_id` null), and the claimant then reuses it.
   A released row is reused by the next user who attaches the tag, so its history continues.
 - One featured account per user is `coc_accounts.is_featured` (partial unique); `users` holds no
-  pointer to it.
+  pointer to it. The user picks it (P2-14); when it is detached, superseded, transferred or
+  suspended, their earliest-verified remaining `verified` / `disputed` row takes the flag
+  ([13 §6](13-claiming-workflow.md)).
 
 ### 3.2 `base_layouts` ↔ `users` and `coc_accounts` — authorship vs credit
 

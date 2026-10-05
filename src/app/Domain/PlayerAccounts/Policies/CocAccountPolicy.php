@@ -57,4 +57,26 @@ class CocAccountPolicy
             && $account->user_id === $user->id
             && in_array($account->status, [CocAccountStatus::Unverified, CocAccountStatus::Disputed], true);
     }
+
+    /**
+     * Detach (specs/13 §6): the owner's `unverified` or `verified` row. A `disputed` row is given
+     * up through its dispute, where release is the voluntary transfer (specs/13 §5 3c), and a
+     * `suspended` one stays with staff (owner decision 2026-10-05, P2-14).
+     */
+    public function detach(User $user, CocAccount $account): bool
+    {
+        return $user->allowsAccountWrites()
+            && $account->user_id === $user->id
+            && in_array($account->status, [CocAccountStatus::Unverified, CocAccountStatus::Verified], true);
+    }
+
+    /**
+     * The featured account (FR-COC-12) is one the user holds: `verified` or `disputed`.
+     */
+    public function feature(User $user, CocAccount $account): bool
+    {
+        return $user->allowsAccountWrites()
+            && $account->user_id === $user->id
+            && in_array($account->status, [CocAccountStatus::Verified, CocAccountStatus::Disputed], true);
+    }
 }

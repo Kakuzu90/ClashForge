@@ -28,6 +28,7 @@ use App\Domain\PlayerAccounts\Support\AccountRows;
 use App\Domain\PlayerAccounts\Support\ClaimLimits;
 use App\Domain\PlayerAccounts\Support\ClaimRecorder;
 use App\Domain\PlayerAccounts\Support\DisputeLedger;
+use App\Domain\PlayerAccounts\Support\FeaturedAccount;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -42,7 +43,8 @@ use SensitiveParameter;
  * tag, so two valid tokens seconds apart are serialised and the later one wins (specs/13 §9):
  *
  * - another user's holding row drops to `unverified` and keeps its owner, who can verify again;
- *   it loses its featured flag (owner decision 2026-10-02);
+ *   it loses its featured flag (owner decision 2026-10-02), which moves to their earliest-verified
+ *   remaining account (owner decision 2026-10-05, P2-14);
  * - this row becomes `verified` by `api_token`, and the user's featured account if they have none;
  * - claim rows, both users' verified counts and one `audit_logs` entry are written with it.
  *
@@ -219,6 +221,7 @@ class VerifyOwnershipService
             $this->recount($user->id);
             foreach ($superseded as $row) {
                 if ($row->user_id !== null) {
+                    FeaturedAccount::fallback($row->user_id);
                     $this->recount($row->user_id);
                 }
             }

@@ -162,6 +162,7 @@ require __DIR__.'/web/accounts.php';
 | `/accounts/{ulid}` | CoC account detail |
 | `/accounts/attach` | attach flow, step 1 (`?tag=` prefills; POST `…/preview`, `/accounts/attach`, `…/verify-tag`) |
 | `/accounts/{ulid}/verify` `/accounts/{ulid}/verified` | attach flow steps 2 and 3, the owner's row only (POST `…/verify` sends the token) |
+| `DELETE /accounts/{ulid}` · `PUT /accounts/{ulid}/featured` | detach (current password inline, `password-confirm` limiter) and make featured, the owner's row only (P2-14) |
 | `/bases` `/bases/th{n}` `/bases/{category}` `/bases/th{n}/{category}` | discovery |
 | `/bases/{slug}` | base detail (`{ulid}-{title-slug}`) |
 | `/bases/{slug}/copy` | server-side copy-click redirect |

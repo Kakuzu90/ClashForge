@@ -11,8 +11,9 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  * The account page `/accounts/{ulid}` without its grids (specs/18 §6). `builderHall` heads the
  * Builder Base tab, as the Town Hall on the card heads the Home Village one; `builderLeague*` is that
  * tab's ranked data, as `card.league*` is the Home Village's. `notFound` is the stale
- * state after `coc.sync.not_found_stale` 404s in a row (specs/09 §6). `indexable` is for the page
- * meta only.
+ * state after `coc.sync.not_found_stale` 404s in a row (specs/09 §6). `canDetach` and `canFeature`
+ * are the owner's actions (P2-14); `canFeature` is false once it is featured. `indexable` is for the
+ * page meta only.
  */
 #[TypeScript]
 class AccountDetailData extends Data
@@ -31,6 +32,8 @@ class AccountDetailData extends Data
         public bool $notFound,
         public bool $isOwn,
         public bool $canVerify,
+        public bool $canDetach,
+        public bool $canFeature,
         public bool $indexable,
     ) {}
 }

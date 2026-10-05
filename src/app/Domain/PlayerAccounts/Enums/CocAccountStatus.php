@@ -18,6 +18,9 @@ enum CocAccountStatus: string implements HasLabelAndColor
     case Suspended = 'suspended';
     case Released = 'released';
 
+    /** A row in one of these statuses holds the tag (specs/13 §2) and counts as verified. */
+    public const HOLDING = [self::Verified, self::Disputed];
+
     public function label(): string
     {
         return match ($this) {

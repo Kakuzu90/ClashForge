@@ -27,7 +27,7 @@ it("lists the owner's rows, featured first, without released ones", function () 
 
     $this->actingAs($this->owner)->get('/u/chief')->assertInertia(fn (Assert $page) => $page
         ->has('ownAccounts', 2)
-        ->where('ownAccounts.0', ['ulid' => $featured->ulid, 'tag' => '#GRJ0P8UV', 'name' => 'Main', 'status' => 'verified', 'statusLabel' => 'Verified', 'townHallLevel' => $featured->th_level, 'featured' => true])
+        ->where('ownAccounts.0', ['ulid' => $featured->ulid, 'tag' => '#GRJ0P8UV', 'name' => 'Main', 'status' => 'verified', 'statusLabel' => 'Verified', 'townHallLevel' => $featured->th_level, 'featured' => true, 'canFeature' => false])
         ->where('ownAccounts.1.ulid', $older->ulid)
         ->where('ownAccounts.1.status', 'unverified'));
 });

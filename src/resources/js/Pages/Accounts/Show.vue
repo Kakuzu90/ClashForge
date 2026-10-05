@@ -3,12 +3,15 @@ import GameAccountProfile from '@/Components/game/GameAccountProfile.vue';
 import GameVillageBase from '@/Components/game/GameVillageBase.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
+import UiInput from '@/Components/ui/UiInput.vue';
+import UiModal from '@/Components/ui/UiModal.vue';
 import UiTabs from '@/Components/ui/UiTabs.vue';
 import { formatDuration } from '@/Composables/useDateTime';
+import { focusFirstError } from '@/Composables/useFirstErrorFocus';
 import { usePageProps } from '@/Composables/usePageProps';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { verify } from '@/routes/accounts';
-import { Deferred } from '@inertiajs/vue3';
+import { destroy, featured, verify } from '@/routes/accounts';
+import { Deferred, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
@@ -40,6 +43,27 @@ const villages = [
 ];
 const village = ref('home');
 const groups = (wanted: App.Domain.GameAssets.Enums.Village) => (props.progression ?? []).filter((g) => g.village === wanted);
+
+// The owner's actions (P2-14). The server decides who may: these only follow its flags.
+const featureForm = useForm({});
+function makeFeatured() {
+    featureForm.put(featured(card.value.ulid).url, { preserveScroll: true });
+}
+
+const removing = ref(false);
+const removeWarning = computed(() => {
+    const badge = card.value.status === 'verified' ? ' and loses its verified badge' : '';
+
+    return `${card.value.tag} will no longer be on your Clash Commons account${badge}. Anyone with its in-game API token can verify it, you included. Its game history stays.`;
+});
+const removeForm = useForm({ current_password: '' });
+const removeEl = ref<HTMLFormElement | null>(null);
+function remove() {
+    removeForm.delete(destroy(card.value.ulid).url, {
+        onFinish: () => removeForm.reset('current_password'),
+        onError: () => focusFirstError(removeEl.value),
+    });
+}
 </script>
 
 <template>
@@ -101,8 +125,33 @@ const groups = (wanted: App.Domain.GameAssets.Enums.Village) => (props.progressi
             </template>
         </UiTabs>
 
-        <footer class="border-t border-line pt-4 text-sm text-fg-muted">
-            {{ age === null ? 'Not synced yet.' : `Game data updated ${age} ago.` }}
+        <footer class="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm text-fg-muted">{{ age === null ? 'Not synced yet.' : `Game data updated ${age} ago.` }}</p>
+            <div v-if="account.canFeature || account.canDetach" class="flex flex-col gap-2 sm:flex-row">
+                <UiButton v-if="account.canFeature" size="sm" variant="secondary" :loading="featureForm.processing" @click="makeFeatured">
+                    Make featured
+                </UiButton>
+                <UiButton v-if="account.canDetach" size="sm" variant="ghost" @click="removing = true">Remove account</UiButton>
+            </div>
         </footer>
+
+        <UiModal v-if="account.canDetach" v-model:open="removing" title="Remove this account?">
+            <form ref="removeEl" class="flex flex-col gap-4" novalidate @submit.prevent="remove">
+                <p class="text-body text-fg-secondary">{{ removeWarning }}</p>
+                <UiInput
+                    v-model="removeForm.current_password"
+                    label="Current password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                    :error="removeForm.errors.current_password"
+                    :disabled="removeForm.processing"
+                />
+                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <UiButton variant="secondary" :disabled="removeForm.processing" @click="removing = false">Cancel</UiButton>
+                    <UiButton type="submit" variant="danger" :loading="removeForm.processing">Remove account</UiButton>
+                </div>
+            </form>
+        </UiModal>
     </div>
 </template>

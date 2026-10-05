@@ -71,6 +71,7 @@ describe('verification while the API is down (specs/13 §9)', () => {
         statusLabel: 'Unverified',
         townHallLevel: 16,
         featured: false,
+        canFeature: false,
     };
 
     it('pauses the token step with a message and sends nothing', async () => {

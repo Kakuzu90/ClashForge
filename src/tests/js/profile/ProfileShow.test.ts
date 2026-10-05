@@ -92,6 +92,7 @@ describe('Profile/Show', () => {
             statusLabel: 'Verified',
             townHallLevel: 16,
             featured: true,
+            canFeature: false,
             ...overrides,
         });
         const wrapper = mount(Show, {

@@ -30,6 +30,7 @@ use App\Domain\PlayerAccounts\Models\CocAccountDispute;
 use App\Domain\PlayerAccounts\Support\AccountRows;
 use App\Domain\PlayerAccounts\Support\ClaimRecorder;
 use App\Domain\PlayerAccounts\Support\DisputeLedger;
+use App\Domain\PlayerAccounts\Support\FeaturedAccount;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -220,6 +221,7 @@ class DisputeService
                 'from_user_id' => $holder->id,
                 'to_user_id' => $dispute->claimant_id,
             ]);
+            FeaturedAccount::fallback($holder->id);
             $this->recount([$holder->id, $dispute->claimant_id]);
             CocAccountVerified::dispatch($granted['account']->id, $dispute->claimant_id, $granted['claim']);
 
@@ -337,6 +339,9 @@ class DisputeService
             'to_user_id' => $dispute->claimant_id,
             'coc_account_id' => $granted['account']->id,
         ]);
+        if ($dispute->current_holder_id !== null) {
+            FeaturedAccount::fallback($dispute->current_holder_id);
+        }
         $this->recount(array_values(array_filter([$dispute->current_holder_id, $dispute->claimant_id])));
 
         CocAccountVerified::dispatch($granted['account']->id, $dispute->claimant_id, $granted['claim']);
@@ -377,6 +382,7 @@ class DisputeService
             'coc_account_id' => $dispute->coc_account_id,
         ]);
         if ($dispute->current_holder_id !== null) {
+            FeaturedAccount::fallback($dispute->current_holder_id);
             $this->recount([$dispute->current_holder_id]);
         }
 

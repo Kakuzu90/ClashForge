@@ -1,15 +1,40 @@
 import Show from '@/Pages/Accounts/Show.vue';
-import { mount } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
-import { h } from 'vue';
+import { flushPromises, mount } from '@vue/test-utils';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { h, reactive } from 'vue';
 
 const page = vi.hoisted(() => ({ props: { auth: { user: null, can: {} }, cocApi: null as unknown }, url: '/accounts/x' }));
+const sent = vi.hoisted(() => ({ visits: [] as { method: string; url: string; data: Record<string, unknown> }[], errors: {} as Record<string, string>, processing: false }));
 
 vi.mock('@inertiajs/vue3', () => ({
     Link: { props: ['href'], setup: (props: { href: string }, { slots }: { slots: { default?: () => unknown } }) => () => h('a', { href: props.href }, slots.default?.() as never) },
     Deferred: { props: ['data'], setup: (_: unknown, { slots }: { slots: { default?: () => unknown } }) => () => slots.default?.() },
     usePage: () => page,
+    useForm: (initial: Record<string, unknown>) => {
+        const form = reactive({
+            ...initial,
+            processing: sent.processing,
+            errors: {} as Record<string, string>,
+            reset: (...fields: string[]) => fields.forEach((field) => ((form as Record<string, unknown>)[field] = initial[field])),
+        });
+        const visit = (method: string) => (url: string, options: { onFinish?: () => void; onError?: () => void } = {}) => {
+            sent.visits.push({ method, url, data: Object.fromEntries(Object.keys(initial).map((key) => [key, (form as Record<string, unknown>)[key]])) });
+            form.errors = { ...sent.errors };
+            if (Object.keys(sent.errors).length > 0) {
+                options.onError?.();
+            }
+            options.onFinish?.();
+        };
+        return Object.assign(form, { put: visit('put'), delete: visit('delete') });
+    },
 }));
+
+afterEach(() => {
+    sent.visits.length = 0;
+    sent.errors = {};
+    sent.processing = false;
+    document.body.innerHTML = '';
+});
 
 type Detail = App.Domain.PlayerAccounts.Data.AccountDetailData;
 
@@ -50,6 +75,8 @@ const detail = (card: Partial<Detail['card']> = {}, rest: Partial<Detail> = {}):
     notFound: false,
     isOwn: false,
     canVerify: false,
+    canDetach: false,
+    canFeature: false,
     indexable: true,
     ...rest,
 });
@@ -66,7 +93,7 @@ const group = (key: string, label: string, village: Group['village'], name: stri
 const render = (account: Detail, cocApi: unknown = null, progression: Group[] = []) => {
     page.props.cocApi = cocApi;
 
-    return mount(Show, { props: { account, progression }, global: { stubs: { AppLayout: true } } });
+    return mount(Show, { props: { account, progression }, attachTo: document.body, global: { stubs: { AppLayout: true } } });
 };
 
 describe('Accounts/Show', () => {
@@ -145,5 +172,74 @@ describe('Accounts/Show', () => {
 
     it('keeps one page heading whichever tab is open', () => {
         expect(render(detail()).findAll('h1').map((h) => h.text())).toEqual(['Fixture Chief #2PQ8GRJC']);
+    });
+    it('shows the owner actions only from the server flags (P2-14)', () => {
+        expect(render(detail()).text()).not.toContain('Remove account');
+        expect(render(detail()).text()).not.toContain('Make featured');
+
+        const text = render(detail({}, { isOwn: true, canDetach: true, canFeature: true })).text();
+        expect(text).toContain('Make featured');
+        expect(text).toContain('Remove account');
+    });
+
+    it('makes the account featured', async () => {
+        const wrapper = render(detail({}, { isOwn: true, canFeature: true }));
+        await wrapper.findAll('button').find((b) => b.text() === 'Make featured')!.trigger('click');
+
+        expect(sent.visits).toEqual([{ method: 'put', url: '/accounts/01J0000000000000000000CARD/featured', data: {} }]);
+    });
+
+    it('asks for the password before removing, and says what happens to the tag', async () => {
+        const wrapper = render(detail({}, { isOwn: true, canDetach: true }));
+        expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+
+        await wrapper.findAll('button').find((b) => b.text() === 'Remove account')!.trigger('click');
+        const dialog = document.body.querySelector('[role="dialog"]') as HTMLElement;
+        expect(dialog.textContent).toContain('Remove this account?');
+        expect(dialog.textContent).toContain('#2PQ8GRJC will no longer be on your Clash Commons account and loses its verified badge.');
+        expect(dialog.textContent).toContain('Anyone with its in-game API token can verify it');
+
+        const input = dialog.querySelector('input[type="password"]') as HTMLInputElement;
+        input.value = 'secret-password';
+        input.dispatchEvent(new Event('input'));
+        await flushPromises();
+        (dialog.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+        await flushPromises();
+
+        expect(sent.visits).toEqual([{ method: 'delete', url: '/accounts/01J0000000000000000000CARD', data: { current_password: 'secret-password' } }]);
+        expect(input.value).toBe('');
+    });
+
+    it('keeps the dialog open with the error on a wrong password', async () => {
+        sent.errors = { current_password: 'That is not your current password.' };
+        const wrapper = render(detail({ status: 'unverified', statusLabel: 'Unverified' }, { isOwn: true, canDetach: true }));
+        await wrapper.findAll('button').find((b) => b.text() === 'Remove account')!.trigger('click');
+        const dialog = document.body.querySelector('[role="dialog"]') as HTMLElement;
+        expect(dialog.textContent).not.toContain('verified badge');
+
+        (dialog.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+        await flushPromises();
+
+        expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain('That is not your current password.');
+    });
+    it('disables the dialog while removing and the featured button while it saves', async () => {
+        sent.processing = true;
+        const wrapper = render(detail({}, { isOwn: true, canDetach: true, canFeature: true }));
+        expect(wrapper.findAll('button').find((b) => b.text().includes('Make featured'))!.attributes('disabled')).toBeDefined();
+
+        await wrapper.findAll('button').find((b) => b.text() === 'Remove account')!.trigger('click');
+        const dialog = document.body.querySelector('[role="dialog"]') as HTMLElement;
+        expect((dialog.querySelector('input[type="password"]') as HTMLInputElement).disabled).toBe(true);
+        expect((dialog.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('shows the wait when password guesses are throttled', async () => {
+        sent.errors = { current_password: 'Too many attempts. Try again in 60 seconds.' };
+        const wrapper = render(detail({}, { isOwn: true, canDetach: true }));
+        await wrapper.findAll('button').find((b) => b.text() === 'Remove account')!.trigger('click');
+        (document.body.querySelector('[role="dialog"] form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+        await flushPromises();
+
+        expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain('Too many attempts. Try again in 60 seconds.');
     });
 });

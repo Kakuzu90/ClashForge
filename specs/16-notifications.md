@@ -41,7 +41,7 @@ longer available", with no link.
 | | Dispute decision | I + E | — | immediate |
 | | Re-verification requested | I + E | — | immediate |
 | | Account not found for 3 syncs | I (P2-09; once, on the sync that makes the account stale; names the tag and in-game name; says it stays verified) | — | immediate |
-| | Tag released | I | — | immediate |
+| | Tag released | I (P2-14 for detach; names the tag and in-game name, no link; deletion and ban join with P2-24, a deleted account gets none) | — | immediate |
 | **Bases** | Comment on your base | I + E (opt) | `base:{id}:comments` | batched 5 min |
 | | Reply to your comment | I + E (opt) | `comment:{id}:replies` | batched 5 min |
 | | Like milestone (10, 50, 100, 500, 1000) | I | `base:{id}:likes` | batched hourly |

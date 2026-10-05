@@ -170,6 +170,110 @@ verified.head = (args: { ulid: string | number } | [ulid: string | number ] | st
 })
 
 /**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::destroy
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:18
+* @route '/accounts/{ulid}'
+*/
+export const destroy = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+destroy.definition = {
+    methods: ["delete"],
+    url: '/accounts/{ulid}',
+} satisfies RouteDefinition<["delete"]>
+
+/**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::destroy
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:18
+* @route '/accounts/{ulid}'
+*/
+destroy.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { ulid: args }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            ulid: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        ulid: args.ulid,
+    }
+
+    return destroy.definition.url
+            .replace('{ulid}', parsedArgs.ulid.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::destroy
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:18
+* @route '/accounts/{ulid}'
+*/
+destroy.delete = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+/**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::featured
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:27
+* @route '/accounts/{ulid}/featured'
+*/
+export const featured = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+    url: featured.url(args, options),
+    method: 'put',
+})
+
+featured.definition = {
+    methods: ["put"],
+    url: '/accounts/{ulid}/featured',
+} satisfies RouteDefinition<["put"]>
+
+/**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::featured
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:27
+* @route '/accounts/{ulid}/featured'
+*/
+featured.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { ulid: args }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            ulid: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        ulid: args.ulid,
+    }
+
+    return featured.definition.url
+            .replace('{ulid}', parsedArgs.ulid.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::featured
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:27
+* @route '/accounts/{ulid}/featured'
+*/
+featured.put = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+    url: featured.url(args, options),
+    method: 'put',
+})
+
+/**
 * @see \App\Http\Controllers\Accounts\AccountController::show
 * @see app/Http/Controllers/Accounts/AccountController.php:22
 * @route '/accounts/{ulid}'
@@ -235,6 +339,8 @@ const accounts = {
     attach: Object.assign(attach, attachE7dcd8),
     verify: Object.assign(verify, verify8ef1b2),
     verified: Object.assign(verified, verified),
+    destroy: Object.assign(destroy, destroy),
+    featured: Object.assign(featured, featured),
     show: Object.assign(show, show),
 }
 

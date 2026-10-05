@@ -81,8 +81,9 @@ attempt counts). On `ok`:
    holder, in id order, so two verifications by one user, or two crossing supersedes, serialise.
 2. If another row now holds the tag (`verified` or `disputed`):
    - demote it to `unverified`; it keeps its `user_id`, so the previous holder still sees it and can
-     verify again, and it loses its featured flag; mark that holder's own `pending` claim rows
-     `superseded` (owner decision 2026-10-02, P2-02);
+     verify again, and it loses its featured flag, which moves to their earliest-verified remaining
+     `verified` / `disputed` account (owner decision 2026-10-05, P2-14); mark that holder's own
+     `pending` claim rows `superseded` (owner decision 2026-10-02, P2-02);
    - after commit, notify the previous holder, in-app and by an email that is always sent (§8):
      *"Someone verified #TAG with an in-game API token, so it is no longer verified on your Clash
      Commons account. If that was not you, someone else can get into your game account: secure it
@@ -211,9 +212,19 @@ claim (the claimant can still verify later with a token).
 ## 6. Detach, release and reclaim
 
 **User detaches an account:**
-- Requires password re-confirmation (sensitive action).
-- `coc_accounts.user_id → null`, `status='released'`, featured flag cleared, `verified_accounts_count`
-  decremented, snapshots retained, `audit_logs` written.
+- Requires password re-confirmation (sensitive action): the current password typed in the dialog,
+  sharing the `password-confirm` limiter (P2-14).
+- Only the owner's `unverified` or `verified` rows: a `disputed` row is given up through its dispute
+  (§5 3c), and a `suspended` row stays with staff (owner decision 2026-10-05, P2-14).
+- `coc_accounts.user_id → null`, `status='released'`, `verified_at` and `verification_method`
+  cleared, featured flag cleared, `verified_accounts_count` recounted, the user's own `pending`
+  claim rows for it `superseded`, snapshots retained, `audit_logs` written (`coc_account.released`,
+  with the reason).
+- The featured flag moves to the user's earliest-verified remaining `verified` / `disputed` account,
+  as after a supersede, a dispute transfer, a holder's release or a suspension (owner decision
+  2026-10-05, P2-14). A candidate row another transaction holds is skipped; if that leaves none,
+  `RestoreFeaturedAccountJob` sets it after commit.
+- After commit `CocAccountReleased`; the user gets the in-app "Tag released" notice (§8).
 - Bases credited to that account keep their `user_id` (authorship) and lose the credit link.
 - If the user (or anyone) attaches the tag later, the **latest released row is reused** (matched on
   `tag_normalized` + `released`) so snapshot history is continuous.
