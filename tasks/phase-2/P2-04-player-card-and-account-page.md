@@ -2,7 +2,7 @@
 id: P2-04
 title: Build the PlayerCard and the CoC account page with progression grids
 phase: 2
-status: review
+status: done
 depends_on: [P2-02, P2-13, P0-06]
 ---
 
