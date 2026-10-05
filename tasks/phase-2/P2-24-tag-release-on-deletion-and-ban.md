@@ -2,7 +2,7 @@
 id: P2-24
 title: Release CoC tags when an account is deleted or stays banned, and hold deletion during a dispute
 phase: 2
-status: todo
+status: done
 depends_on: [P2-14, P1-11, P1-14, P2-03]
 ---
 
@@ -49,3 +49,22 @@ Resolved by the owner, 2026-10-05 (all as recommended); specs synced at implemen
 3. **Notify earlier disputants of a fraud ban's released tag (13 §9)?** No such notification type is in specs/16. Recommended: leave it out for now, and add a row to P2-18 (dispute notifications) if wanted.
 
 Split from P2-14 on 2026-10-05.
+
+### Decisions and divergences (implement, 2026-10-05)
+1. Seam: `Auth\Contracts\DeletionHold` (`reasonFor`, tag `HOLD_TAG`) and `DeletionStep` (`lock`, `run`, tag `STEP_TAG`). PlayerAccounts tags `AccountDeletionHooks` with both in its provider; Auth resolves them with `app()->tagged()`. An arch test keeps Auth off `App\Domain\PlayerAccounts`. synced → specs/05 §2, specs/08 §6.
+2. `DeletionStep::lock()` runs first in the anonymisation transaction, before the account row is locked, because other modules lock their rows first and the account after. Both `anonymise` and the never-verified `purgeUnverified` call it, and both run the steps. Holds apply to self-deletion only: an unconfirmed email cannot open a dispute. synced → specs/08 §6.
+3. A `suspended` row is not released on deletion or ban. It stays as staff left it, so deleting the account is not a way out of a suspension. On deletion, `unverified`, `verified` and `disputed` rows are released (`disputed` cannot be there while the hold works). After a ban, only `unverified` and `verified` rows are released. A `disputed` row waits for its dispute (13 §9) and is released on a later pass. synced → specs/13 §6, specs/08 §6.
+4. The deletion notice is skipped by the listener (`reason = deletion`); the account's notifications go with it. The audit actor is `console` for deletion and `scheduler` for the ban release. synced → specs/16 §2, specs/13 §6.
+5. Danger zone (23 §1): signing in cancels a deletion, so a pending user never sees the Danger zone. The hold is shown before the request instead: `DangerZonePageData.holds` lists the reasons in a "Deletion would wait" notice, and the form stays. The confirmation on the sign-in page says the dispute holds it. synced → specs/23 §1, specs/18 §6 (Danger zone).
+6. `coc:release-banned-tags` runs inline (`BannedTagRelease`), like the other daily sweeps; there is no `ReleaseBannedUserTagsJob`. Users come from Moderation's new `Services\BanLookup` (`bannedSince(cutoff)`, `isBannedSince(user, cutoff)`; active ban, `starts_at` ≤ cutoff), streamed by cursor. Each user runs in one transaction: their rows, then the user, then the ban and the status are re-checked. synced → specs/20 §2–3, specs/05 §2 (Moderation surface).
+7. `ReleaseReason` gains `deletion` and `ban`. Config: `coc.accounts.ban_release_days` (30). synced → specs/05 §2, specs/13 §6.
+8. A dispute cannot be opened against a holder whose deletion is pending (refused as `not_held`), so nobody can push a deletion back (security review finding 1). synced → specs/13 §5, §6, specs/23 §1.
+
+### Review fixes (verify, 2026-10-05)
+- antislop audit-036: no findings.
+- Spec (low): the hold alert's "You can still request it now." showed for accounts that may not request. It now shows under `canRequestDeletion` only, with a Vitest.
+- Spec (low): the Danger zone now says connected Clash of Clans accounts are released and claimable.
+- Spec (low): tests added for the never-verified purge releasing tags, a hold while a dispute is `awaiting_admin`, and a held user cancelling by signing in.
+- Spec (trivial): the two release-status lists are named `ON_DELETION` / `ON_BAN`, each pointing at the other. The Vitest spacing is fixed by Prettier.
+- Security (low): a dispute opened after the deletion request could postpone erasure indefinitely. `DisputeService::open` now refuses it; tested.
+- Security (low, existing code, not fixed): `SanctionService` refuses to ban a `pending_deletion` account, so someone expecting a ban can ask for deletion first and leave no ban or evasion record. This needs an owner decision (specs/12 §6) → follow-up task "Decide how bans and pending deletion interact".

@@ -97,7 +97,7 @@ for a full temp volume does not.
 | `moderation:expire-sanctions` (command, runs inline) | Every 15 min | Ends expired restrictions/suspensions, notifies once; only picks accounts whose status is still set |
 | `EscalateAgingCasesJob` | Hourly | Raises priority on SLA-breaching cases, alerts staff |
 | `DetectAnomaliesJob` | Nightly | Mass-reporting rings, review rings, interaction spikes, ban-evasion candidates |
-| `ReleaseBannedUserTagsJob` | Nightly | Releases tags 30 days after a ban |
+| `coc:release-banned-tags` (command, runs inline) | Daily 04:15 | Releases tags 30 days after the active ban started (`coc.accounts.ban_release_days`), one transaction per user with the ban re-checked under the lock (P2-24, [13 §6](13-claiming-workflow.md)) |
 
 ### Platform (`low`)
 

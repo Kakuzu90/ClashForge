@@ -145,6 +145,7 @@ previous owner attached the tag and left the platform).
      - evidence: up to 3 images (private media), plus free text
      - one open dispute per claimant per tag
      - rate-limited: 2 open disputes per user at a time
+     - refused as "not held" while the holder's account deletion is pending (P2-24, §6)
 2. Dispute created (status=open); coc_accounts.status = 'disputed'
    Current holder is notified and has 7 days to respond.
 3. Holder response options:
@@ -233,9 +234,18 @@ claim (the claimant can still verify later with a token).
 are prohibited but account *handovers* within families and clans happen, and the token is the truth.
 
 **On ban:** the user's tags move to `released` after 30 days (delay so an overturned appeal can
-restore them), with an audit entry.
+restore them), with an audit entry. As built (P2-24): `coc:release-banned-tags` (daily 04:15, inline)
+counts `coc.accounts.ban_release_days` (30) from the start of the active ban, so a lifted ban never
+releases and a second ban starts the wait again; it re-checks the ban under the user's lock. It
+releases `unverified` and `verified` rows and sends the in-app "Tag released" notice; a `disputed`
+row waits for its dispute (§9) and goes on a later pass; a `suspended` row stays with staff.
 
-**On account deletion:** tags are released immediately at the end of the 30-day deletion window.
+**On account deletion:** tags are released immediately at the end of the 30-day deletion window,
+inside the anonymisation transaction (P2-24): every row of the user except a `suspended` one, which
+stays with staff so deleting the account is no way out of a suspension. No notice: the account's
+notifications go with it. A running dispute with the user on either side holds the deletion
+([23 §1](23-edge-cases.md)), and a dispute cannot be opened against a holder whose deletion is
+pending: their tag is about to be released anyway.
 
 ## 7. Re-verification
 

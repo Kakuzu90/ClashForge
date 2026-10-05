@@ -66,7 +66,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | P2-21 | Snapshot compaction (specs/07 `coc_account_snapshots` retention: all for 90 days, then one per account per day, then one per week after a year; due before January 2027) (split from P2-09) | todo | P2-09 | |
 | P2-22 | Profile v2: PlayerCards on profiles (the own Accounts tab replaces P2-11's plain list; others see connected verified accounts per `show_coc_accounts` / `show_clan`), featured PlayerCard hero, verified badge in the cover band, war stars across accounts stat (FR-PROFILE-4/5, specs/18 §6 profile) (split from P2-04) | todo | P2-04, P1-04 | |
 | P2-23 | Account images (FR-COC-11): up to 5 per account, ≤5 MB, through the media pipeline; gallery and owner dropzone on the account page (specs/18 §6) (split from P2-04) | todo | P2-04, P0-05 | |
-| P2-24 | Tag release on deletion and ban: release a deleted account's tags at the end of the deletion window, and a banned owner's after 30 days (`coc:release-banned-tags`) (from P2-02 security review); hold an account deletion while a dispute involves the user (specs/23 §1, from P2-03) (split from P2-14) | todo | P2-14, P1-11, P1-14, P2-03 | tasks/phase-2/P2-24-tag-release-on-deletion-and-ban.md |
+| P2-24 | Tag release on deletion and ban: release a deleted account's tags at the end of the deletion window, and a banned owner's after 30 days (`coc:release-banned-tags`) (from P2-02 security review); hold an account deletion while a dispute involves the user (specs/23 §1, from P2-03) (split from P2-14) | done | P2-14, P1-11, P1-14, P2-03 | tasks/phase-2/P2-24-tag-release-on-deletion-and-ban.md |
 
 ## Phase 3 — Bases + moderation (MVP)
 

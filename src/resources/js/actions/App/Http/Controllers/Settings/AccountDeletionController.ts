@@ -45,7 +45,7 @@ edit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Settings\AccountDeletionController::destroy
-* @see app/Http/Controllers/Settings/AccountDeletionController.php:31
+* @see app/Http/Controllers/Settings/AccountDeletionController.php:32
 * @route '/settings/danger-zone'
 */
 export const destroy = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -60,7 +60,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\AccountDeletionController::destroy
-* @see app/Http/Controllers/Settings/AccountDeletionController.php:31
+* @see app/Http/Controllers/Settings/AccountDeletionController.php:32
 * @route '/settings/danger-zone'
 */
 destroy.url = (options?: RouteQueryOptions) => {
@@ -69,7 +69,7 @@ destroy.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\AccountDeletionController::destroy
-* @see app/Http/Controllers/Settings/AccountDeletionController.php:31
+* @see app/Http/Controllers/Settings/AccountDeletionController.php:32
 * @route '/settings/danger-zone'
 */
 destroy.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({

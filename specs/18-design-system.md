@@ -510,7 +510,9 @@ Left sub-nav (Profile · Privacy · Accounts · Security · Notifications · Dan
 dense forms. Danger zone is visually separated with a red border and requires password confirmation.
 *Danger zone:* `/settings/danger-zone`, a plain red-bordered section in the settings layout.
 Explains hiding the profile, signing out every device, the 30-day cancellation window, permanent
-username reservation and retained moderation/audit records. A native checkbox confirms the
+username reservation, the release of connected Clash of Clans accounts (P2-24) and retained
+moderation/audit records. When something would hold the deletion (an open ownership dispute), an
+info alert "Deletion would wait" lists why above the form (P2-24). A native checkbox confirms the
 consequences; an inline current-password field and the danger button request deletion without
 leaving the form for password confirmation. Password errors appear inline; the field clears after
 each request and is disabled while submitting. Suspended accounts see the explanation

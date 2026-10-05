@@ -444,7 +444,7 @@ export type DisputeDecision = 'transfer' | 'deny' | 'suspend' | 'ask_claimant' |
 export type DisputeParty = 'claimant' | 'holder';
 export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
 export type DisputeStatus = 'open' | 'awaiting_admin' | 'awaiting_claimant' | 'awaiting_holder' | 'resolved_transfer' | 'resolved_denied' | 'resolved_suspended' | 'withdrawn' | 'auto_resolved';
-export type ReleaseReason = 'detach';
+export type ReleaseReason = 'detach' | 'deletion' | 'ban';
 export type SnapshotSource = 'scheduled' | 'manual' | 'verification';
 export type SyncOutcome = 'changed' | 'unchanged' | 'not_found' | 'failed' | 'postponed' | 'skipped';
 export type VerificationMethod = 'api_token' | 'admin';
@@ -715,6 +715,7 @@ namespace Settings {
 export type DangerZonePageData = {
 graceDays: number,
 canRequestDeletion: boolean,
+holds: string[],
 };
 export type EmailChangeConfirmPageData = {
 outcome: string,

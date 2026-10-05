@@ -44,6 +44,12 @@ foreach ($modules as $module) {
     }
 }
 
+// PlayerAccounts depends on Auth, so Auth's deletion pipeline reaches it only through the tagged
+// DeletionHold / DeletionStep contracts (P2-24).
+arch('Auth does not reference PlayerAccounts')
+    ->expect('App\\Domain\\Auth')
+    ->not->toUse('App\\Domain\\PlayerAccounts');
+
 arch('the domain never depends on the HTTP layer')
     ->expect('App\Domain')
     ->not->toUse('App\Http');

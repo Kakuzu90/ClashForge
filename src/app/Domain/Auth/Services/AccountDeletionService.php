@@ -7,6 +7,8 @@ use App\Domain\Audit\Data\AuditEntryData;
 use App\Domain\Audit\Enums\AuditAction;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Audit\Services\AuditLogger;
+use App\Domain\Auth\Contracts\DeletionHold;
+use App\Domain\Auth\Contracts\DeletionStep;
 use App\Domain\Auth\Enums\UserStatus;
 use App\Domain\Auth\Models\UsernameHistory;
 use App\Domain\Media\Services\MediaLifecycleService;
@@ -81,9 +83,18 @@ class AccountDeletionService
     public function anonymise(int $userId): bool
     {
         return DB::transaction(function () use ($userId): bool {
+            $this->lockSteps($userId);
             // Re-check after locking: a sign-in may have cancelled since the batch selected it.
             $account = $this->due()->whereKey($userId)->lockForUpdate()->first();
             if ($account === null) {
+                return false;
+            }
+
+            // Held until what involves the account is settled (specs/23 §1); the account stays
+            // pending and the next nightly pass tries again.
+            if (($reasons = $this->holds($userId)) !== []) {
+                Log::info('auth.deletion_held', ['user' => $account->ulid, 'holds' => count($reasons)]);
+
                 return false;
             }
 
@@ -93,9 +104,29 @@ class AccountDeletionService
         });
     }
 
+    /**
+     * Why this account's deletion would wait, for the Danger zone (specs/23 §1). Empty when
+     * nothing holds it.
+     *
+     * @return list<string>
+     */
+    public function holds(int $userId): array
+    {
+        $reasons = [];
+        foreach (app()->tagged(DeletionHold::HOLD_TAG) as $hold) {
+            /** @var DeletionHold $hold */
+            if (($reason = $hold->reasonFor($userId)) !== null) {
+                $reasons[] = $reason;
+            }
+        }
+
+        return $reasons;
+    }
+
     public function purgeUnverified(int $userId): bool
     {
         return DB::transaction(function () use ($userId): bool {
+            $this->lockSteps($userId);
             $account = User::query()->whereKey($userId)->lockForUpdate()->first();
             if ($account === null || ! Gate::forUser(null)->allows('expireUnverified', $account)) {
                 return false;
@@ -110,6 +141,9 @@ class AccountDeletionService
     private function anonymiseLocked(User $account, string $command): void
     {
         $previousStatus = $account->status;
+        foreach ($this->steps() as $step) {
+            $step->run($account->id);
+        }
         UsernameHistory::query()->create([
             'user_id' => $account->id, 'username' => $account->username,
             'released_at' => Date::now(), 'reserved_forever' => true,
@@ -140,6 +174,24 @@ class AccountDeletionService
             after: ['status' => UserStatus::Banned->value],
             context: ['command' => $command],
         ));
+    }
+
+    private function lockSteps(int $userId): void
+    {
+        foreach ($this->steps() as $step) {
+            $step->lock($userId);
+        }
+    }
+
+    /**
+     * Other modules' parts of the anonymisation (specs/08 §6), tagged in their providers.
+     *
+     * @return iterable<DeletionStep>
+     */
+    private function steps(): iterable
+    {
+        /** @var iterable<DeletionStep> */
+        return app()->tagged(DeletionStep::STEP_TAG);
     }
 
     /** @return Builder<User> */

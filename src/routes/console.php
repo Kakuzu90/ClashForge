@@ -115,6 +115,14 @@ Schedule::command('auth:process-unverified')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'auth:process-unverified']));
 
+// Daily at 04:15 (specs/20 §3), after the 04:00 anonymisation: banned owners' tags after 30 days.
+Schedule::command('coc:release-banned-tags')
+    ->dailyAt('04:15')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'coc:release-banned-tags']));
+
 Schedule::command('media:reconcile-storage')
     ->weeklyOn(0, '05:00')
     ->withoutOverlapping()

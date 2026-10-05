@@ -73,9 +73,13 @@ class DisputeService
             $rows = CocAccount::query()->where('tag_normalized', $tag->bare())->orderBy('id')->lockForUpdate()->get();
             $held = $rows->first(fn (CocAccount $row): bool => in_array($row->status, AttachAccountService::HOLDING, true));
 
+            // A holder leaving the platform gives the tag up at the end of the window (specs/13 §6); a
+            // dispute opened meanwhile would only hold their deletion back (P2-24), so it reads as unheld.
+            $leaving = $held?->user_id !== null && User::query()->whereKey($held->user_id)->where('status', UserStatus::PendingDeletion)->exists();
+
             $refusal = match (true) {
                 $rows->contains(fn (CocAccount $row): bool => $row->status === CocAccountStatus::Suspended) => DisputeRefusal::TagSuspended,
-                $held === null || $held->user_id === null => DisputeRefusal::NotHeld,
+                $held === null || $held->user_id === null || $leaving => DisputeRefusal::NotHeld,
                 $held->user_id === $claimant->id => DisputeRefusal::OwnAccount,
                 $held->status === CocAccountStatus::Disputed => DisputeRefusal::AlreadyDisputed,
                 default => null,

@@ -19,7 +19,7 @@ Grouped by domain. Each has a defined behaviour; anything marked **decide** is a
 | A deleted account's original username is requested again | Permanently blocked via `username_history.reserved_forever`; the old profile URL returns 404 |
 | User signs in after requesting deletion | Only a fresh sign-in cancels; requesting deletion ended all sessions and remember-me. Restore any still-effective sanction, otherwise active; suspended accounts cannot request self-deletion |
 | Sign-in cancellation races the anonymisation pipeline | Serialize on the account; re-check the pending request before anonymising, so a completed cancellation cannot be overwritten |
-| User requests deletion while a dispute or an open order involves them | Deletion queued but held until those resolve; the user is told why and can cancel |
+| User requests deletion while a dispute or an open order involves them | Deletion queued but held until those resolve; the user is told why and can cancel. As built for disputes (P2-24): signing in cancels a deletion, so the Danger zone says why before the request ("Deletion would wait"), and the sign-in page's confirmation repeats it; a dispute with the user as claimant or holder (`open` or `awaiting_*`) holds the nightly anonymisation. A dispute cannot be opened against a holder once their deletion is pending |
 | Session hijack suspected (IP/UA changes drastically) | Not auto-invalidated (mobile networks change IPs constantly); a new-device email is sent and the session is listed for manual revocation |
 | Staff member loses 2FA device | Recovery codes only. No support-driven bypass — the role can be re-granted by a super admin after re-enrolment |
 

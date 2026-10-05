@@ -6,6 +6,7 @@ use App\Domain\Notifications\Data\InAppMessageData;
 use App\Domain\Notifications\Enums\NotificationType;
 use App\Domain\Notifications\Services\EmailDeliveryService;
 use App\Domain\Notifications\Services\Notifier;
+use App\Domain\PlayerAccounts\Enums\ReleaseReason;
 use App\Domain\PlayerAccounts\Enums\VerificationMethod;
 use App\Domain\PlayerAccounts\Events\CocAccountOwnershipTransferred;
 use App\Domain\PlayerAccounts\Events\CocAccountReleased;
@@ -68,6 +69,11 @@ class SendOwnershipNotice implements ShouldQueue
 
     public function handleReleased(CocAccountReleased $event): void
     {
+        // A deleted account's notifications went with it; there is no one to tell.
+        if ($event->reason === ReleaseReason::Deletion) {
+            return;
+        }
+
         $account = CocAccount::query()->find($event->accountId);
         $owner = User::query()->find($event->userId);
 

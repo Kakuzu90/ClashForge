@@ -179,7 +179,7 @@ remember-me; a fresh sign-in cancels it while preserving any still-effective san
 | `privacy_settings`, `user_stats` | rows retained with privacy defaults and zero counters |
 | `sessions`, `password_reset_tokens` | deleted for the account; reset-token lookup uses the original email before hashing |
 | `notifications`, `notification_preferences`, `notification_email_deliveries` | account's rows deleted; preference and delivery cleanup join in P1-15 |
-| `coc_accounts` | `user_id` nulled, `status='released'`, snapshots retained, tag reclaimable |
+| `coc_accounts` | `user_id` nulled, `status='released'`, snapshots retained, tag reclaimable; a `suspended` row stays as staff left it ([13 §6](13-claiming-workflow.md), P2-24) |
 | `base_layouts` | deleted (cascade), media swept |
 | `base_comments` | body replaced with a tombstone, row retained so threads stay readable |
 | `base_likes`, `bookmarks` | deleted |
@@ -196,7 +196,13 @@ notifications cannot recreate cleared rows. Media deletion is queued only after 
 owned media is claimed, including unattached and processing uploads, with quarantine retained.
 Phase 1 cleanup, tombstone schema exceptions and permanent original-username reservation were
 approved by the owner, 2026-10-01 (P1-11). Later modules extend the pipeline with their rows above
-and the dispute/order holds in [23 §1](23-edge-cases.md).
+and the dispute/order holds in [23 §1](23-edge-cases.md), through two Auth contracts tagged in their
+own providers (P2-24): `DeletionHold::reasonFor()` holds the anonymisation and says why, and
+`DeletionStep` has `lock()`, run first in the transaction before the account row is locked (other
+modules lock their rows, then the account), and `run()`, before Auth anonymises the row. Both the
+self-deletion and the never-verified purge run the steps; holds apply to self-deletion. A held
+account stays `pending_deletion` and is tried again each night. PlayerAccounts is the first
+participant: a running dispute holds, and the step releases the user's tags.
 
 P1-16 uses the same anonymisation cleanup for never-verified ordinary users at registration age
 30 days, after a day-27 final warning (or at least three days after a late warning is queued).

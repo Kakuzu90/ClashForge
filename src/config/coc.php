@@ -96,6 +96,9 @@ return [
         'anomaly_accounts' => 20,
         // A flagged user is flagged again at most this often while above the threshold.
         'anomaly_reflag_hours' => 24,
+        // Days a ban runs before the owner's tags are released, so an overturned ban can restore
+        // them (specs/13 §6).
+        'ban_release_days' => 30,
     ],
 
     // Ownership disputes (specs/13 §5 guardrails).

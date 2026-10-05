@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiCheckbox from '@/Components/ui/UiCheckbox.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
@@ -12,7 +13,7 @@ import { ref } from 'vue';
 defineOptions({ layout: [AppLayout, SettingsLayout] });
 
 type Props = App.Http.Data.Settings.DangerZonePageData;
-defineProps<{ graceDays: Props['graceDays']; canRequestDeletion: Props['canRequestDeletion'] }>();
+defineProps<{ graceDays: Props['graceDays']; canRequestDeletion: Props['canRequestDeletion']; holds: Props['holds'] }>();
 
 const form = useForm({ current_password: '', confirmation: false });
 const formEl = ref<HTMLFormElement | null>(null);
@@ -34,9 +35,15 @@ function submit() {
             </p>
             <p class="text-body text-fg-secondary">
                 After {{ graceDays }} days, your profile, avatar and notifications will be removed and your account anonymised. Your username stays
-                reserved. Moderation and audit records are kept. Registering again will not restore your data.
+                reserved. Your Clash of Clans accounts are released, and anyone with an account's in-game API token can verify it. Moderation and
+                audit records are kept. Registering again will not restore your data.
             </p>
         </div>
+
+        <UiAlert v-if="holds.length > 0" kind="info" title="Deletion would wait">
+            <p v-for="hold in holds" :key="hold">{{ hold }}</p>
+            <p v-if="canRequestDeletion">You can still request it now.</p>
+        </UiAlert>
 
         <form v-if="canRequestDeletion" ref="formEl" class="flex flex-col gap-4" novalidate @submit.prevent="submit">
             <UiInput
