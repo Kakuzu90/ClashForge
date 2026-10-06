@@ -64,7 +64,9 @@ watch(url, () => (menuOpen.value = false));
                     Back to site
                 </Link>
             </nav>
-            <div class="flex min-w-0 flex-1 flex-col md:overflow-y-auto">
+            <!-- scroll-region: Inertia resets this column on each visit and restores it on back, as it does the window.
+                 relative: absolutely placed descendants (sr-only captions) stay inside it instead of stretching the page. -->
+            <div scroll-region class="relative flex min-w-0 flex-1 flex-col md:overflow-y-auto">
                 <main id="main" tabindex="-1" class="gutter-x min-w-0 flex-1 py-4">
                     <CocApiBanner class="mb-4" />
                     <slot />

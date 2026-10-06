@@ -87,7 +87,10 @@ const columns: AdminColumn[] = [
 
         <AdminFilterBar label="Filter disputes" :busy="navigating" :can-clear="hasFilters" @apply="visit(query())" @clear="clear">
             <UiSelect v-model="fields.view" label="Show" :options="views" />
-            <UiCheckbox v-model="fields.mine" label="Assigned to me" />
+            <!-- Level with the select's control, below its label. -->
+            <div class="flex items-center sm:h-10 sm:self-end">
+                <UiCheckbox v-model="fields.mine" label="Assigned to me" />
+            </div>
         </AdminFilterBar>
 
         <UiAlert v-if="visitError?.throttled" kind="warning" title="Too many searches in a minute">
