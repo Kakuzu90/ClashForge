@@ -117,7 +117,7 @@ unhealthySince: string | null,
 namespace Enums {
 export type CocCircuitReason = 'failures' | 'maintenance';
 export type CocCircuitState = 'closed' | 'open' | 'half_open';
-export type CocFailureReason = 'throttled' | 'maintenance' | 'server_error' | 'timeout' | 'no_healthy_key' | 'malformed' | 'circuit_open';
+export type CocFailureReason = 'throttled' | 'maintenance' | 'server_error' | 'timeout' | 'no_healthy_key' | 'malformed' | 'circuit_open' | 'deadline';
 export type CocLookupStatus = 'found' | 'not_found' | 'unavailable';
 export type CocPriority = 'interactive' | 'background';
 export type SyncResourceType = 'coc_account' | 'clan';
@@ -363,6 +363,8 @@ isOwn: boolean,
 canVerify: boolean,
 canDetach: boolean,
 canFeature: boolean,
+canRefresh: boolean,
+refreshWaitSeconds: number,
 indexable: boolean,
 disputeUlid: string | null,
 };
@@ -590,6 +592,7 @@ export type DisputeQueueView = 'active' | 'awaiting_admin' | 'waiting_on_holder'
 export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'too_many_today' | 'too_many_tags' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
 export type DisputeStatus = 'open' | 'awaiting_admin' | 'awaiting_claimant' | 'awaiting_holder' | 'resolved_transfer' | 'resolved_denied' | 'resolved_suspended' | 'withdrawn' | 'auto_resolved';
 export type PartyDisputeOutcome = 'transferred_to_you' | 'released_to_you' | 'transferred_away' | 'released_by_you' | 'denied' | 'denied_token' | 'kept' | 'kept_token' | 'suspended' | 'withdrawn_by_you' | 'withdrawn' | 'withdrawn_inactive' | 'verified_by_token';
+export type RefreshOutcome = 'updated' | 'background' | 'not_found' | 'unavailable' | 'cooling_down' | 'too_many_refreshes';
 export type ReleaseReason = 'detach' | 'deletion' | 'ban';
 export type SnapshotSource = 'scheduled' | 'manual' | 'verification';
 export type SyncOutcome = 'changed' | 'unchanged' | 'not_found' | 'failed' | 'postponed' | 'skipped';

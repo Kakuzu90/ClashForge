@@ -171,7 +171,7 @@ verified.head = (args: { ulid: string | number } | [ulid: string | number ] | st
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountOwnershipController::destroy
-* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:18
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:19
 * @route '/accounts/{ulid}'
 */
 export const destroy = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -186,7 +186,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountOwnershipController::destroy
-* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:18
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:19
 * @route '/accounts/{ulid}'
 */
 destroy.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -213,7 +213,7 @@ destroy.url = (args: { ulid: string | number } | [ulid: string | number ] | stri
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountOwnershipController::destroy
-* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:18
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:19
 * @route '/accounts/{ulid}'
 */
 destroy.delete = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -223,7 +223,7 @@ destroy.delete = (args: { ulid: string | number } | [ulid: string | number ] | s
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountOwnershipController::featured
-* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:27
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:28
 * @route '/accounts/{ulid}/featured'
 */
 export const featured = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -238,7 +238,7 @@ featured.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountOwnershipController::featured
-* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:27
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:28
 * @route '/accounts/{ulid}/featured'
 */
 featured.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -265,7 +265,7 @@ featured.url = (args: { ulid: string | number } | [ulid: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountOwnershipController::featured
-* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:27
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:28
 * @route '/accounts/{ulid}/featured'
 */
 featured.put = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -274,8 +274,60 @@ featured.put = (args: { ulid: string | number } | [ulid: string | number ] | str
 })
 
 /**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::refresh
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:35
+* @route '/accounts/{ulid}/refresh'
+*/
+export const refresh = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: refresh.url(args, options),
+    method: 'post',
+})
+
+refresh.definition = {
+    methods: ["post"],
+    url: '/accounts/{ulid}/refresh',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::refresh
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:35
+* @route '/accounts/{ulid}/refresh'
+*/
+refresh.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { ulid: args }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            ulid: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        ulid: args.ulid,
+    }
+
+    return refresh.definition.url
+            .replace('{ulid}', parsedArgs.ulid.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Accounts\AccountOwnershipController::refresh
+* @see app/Http/Controllers/Accounts/AccountOwnershipController.php:35
+* @route '/accounts/{ulid}/refresh'
+*/
+refresh.post = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: refresh.url(args, options),
+    method: 'post',
+})
+
+/**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:22
+* @see app/Http/Controllers/Accounts/AccountController.php:24
 * @route '/accounts/{ulid}'
 */
 export const show = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -290,7 +342,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:22
+* @see app/Http/Controllers/Accounts/AccountController.php:24
 * @route '/accounts/{ulid}'
 */
 show.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -317,7 +369,7 @@ show.url = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:22
+* @see app/Http/Controllers/Accounts/AccountController.php:24
 * @route '/accounts/{ulid}'
 */
 show.get = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -327,7 +379,7 @@ show.get = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:22
+* @see app/Http/Controllers/Accounts/AccountController.php:24
 * @route '/accounts/{ulid}'
 */
 show.head = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -341,6 +393,7 @@ const accounts = {
     verified: Object.assign(verified, verified),
     destroy: Object.assign(destroy, destroy),
     featured: Object.assign(featured, featured),
+    refresh: Object.assign(refresh, refresh),
     show: Object.assign(show, show),
 }
 

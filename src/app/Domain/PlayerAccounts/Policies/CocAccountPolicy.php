@@ -71,6 +71,18 @@ class CocAccountPolicy
     }
 
     /**
+     * Manual refresh (FR-COC-9, P2-20): the owner's row while it is theirs to use: `unverified`
+     * (synced by hand only, specs/09 §6), `verified` or `disputed`. Not `suspended`, which stays
+     * with staff, and not `released`.
+     */
+    public function refresh(User $user, CocAccount $account): bool
+    {
+        return $user->allowsAccountWrites()
+            && $account->user_id === $user->id
+            && in_array($account->status, [CocAccountStatus::Unverified, CocAccountStatus::Verified, CocAccountStatus::Disputed], true);
+    }
+
+    /**
      * The featured account (FR-COC-12) is one the user holds: `verified` or `disputed`.
      */
     public function feature(User $user, CocAccount $account): bool

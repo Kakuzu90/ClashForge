@@ -141,6 +141,32 @@ class SyncSchedule
     }
 
     /**
+     * Moves a resource up to a faster tier at once, e.g. a CoC account someone just viewed (P2-20):
+     * it is next due one `$tier` interval after its last success, now at the earliest, and never
+     * later than it already was. Left alone: a frozen or stopped resource, one backing off after a
+     * failure, one due within `$claimSeconds` (claimed, its job maybe still queued), and one with
+     * no row, which is not synced in the background at all.
+     */
+    public function promote(SyncResourceType $type, int $id, SyncTier $tier, int $claimSeconds): void
+    {
+        DB::transaction(function () use ($type, $id, $tier, $claimSeconds): void {
+            $row = SyncState::query()->where('resource_type', $type)->where('resource_id', $id)->lockForUpdate()->first();
+
+            if ($row === null || $row->next_due_at === null || $row->tier === SyncTier::Frozen || $row->consecutive_failures > 0
+                || $row->next_due_at->lte(Date::now()->addSeconds($claimSeconds))
+                || $row->tier->intervalSeconds() <= $tier->intervalSeconds()) {
+                return;
+            }
+
+            $now = CarbonImmutable::instance(Date::now());
+            $due = $row->last_success_at?->addSeconds($tier->intervalSeconds()) ?? $now;
+            $due = $due->max($now)->min($row->next_due_at);
+
+            $row->fill(['tier' => $tier, 'next_due_at' => $due])->save();
+        });
+    }
+
+    /**
      * Not the resource's fault (the API is down, or our budget or keys ran out): try again later
      * without counting a failure.
      */

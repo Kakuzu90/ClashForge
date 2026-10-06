@@ -36,7 +36,7 @@ final class CachedCocApiClient implements CocApiClient
         private readonly CocRequestLog $log,
     ) {}
 
-    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerData
+    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false, ?int $timeout = null): PlayerData
     {
         $ttl = $priority === CocPriority::Background ? 'coc.cache.player_sync_ttl' : 'coc.cache.player_ttl';
 
@@ -49,7 +49,7 @@ final class CachedCocApiClient implements CocApiClient
             ttl: (int) config($ttl),
             key: CocCacheKeys::player($tag),
             lastKey: CocCacheKeys::playerLast($tag),
-            call: fn (): PlayerData => $this->inner->player($tag, $priority, $fresh),
+            call: fn (): PlayerData => $this->inner->player($tag, $priority, $fresh, $timeout),
             map: fn (Payload $p, CarbonImmutable $at, bool $stale): PlayerData => $this->mapper->player($p, $at, $stale),
         );
     }

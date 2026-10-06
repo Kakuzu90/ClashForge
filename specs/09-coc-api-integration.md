@@ -81,7 +81,7 @@ requests per second per key, with throttling responses under sustained load. We 
 | Background yield | The sync scheduler sizes its batch from the background budget left this minute | `CocApiStatus::backgroundBudgetRemaining()` |
 | Over budget | No call and no sleep: the call fails as `throttled` with the wait as `retryAfter` | background jobs `release()` |
 | 429 handling | Same `throttled` failure with the API's `Retry-After`; never counted by the circuit breaker | job `backoff()` |
-| Request log | One `coc_api_requests` row per outbound request (both requests of a key swap, health probes as `locations`) and per cache hit (`was_cached`; 404 for a cached miss). `error_code` is the API's `reason` or `timeout`; a failed insert is logged and never fails the call | pruned at 7 days |
+| Request log | One `coc_api_requests` row per outbound request (both requests of a key swap, health probes as `locations`) and per cache hit (`was_cached`; 404 for a cached miss). `error_code` is the API's `reason`, `timeout`, or `deadline` (a manual refresh's own time limit, P2-20); a failed insert is logged and never fails the call | pruned at 7 days |
 
 Background sync jobs use `Job::release()` rather than blocking sleeps, so a throttled worker frees
 the process for other queues.
@@ -130,8 +130,15 @@ trusted data and not worth the budget. Disputed accounts keep syncing (the holde
 tag, [13 §2](13-claiming-workflow.md)); suspended and released ones stop.
 
 Since P2-09 (owner decisions, 2026-10-02): "owner active" is the later of the last password
-sign-in and the newest session's last request (`UserActivityReader`); "viewed in the last 24 h"
-joins with P2-20, a throttled `last_viewed_at` write on the account page (P2-04 kept the page read-only). Intervals are `coc.sync.tiers`. Frozen
+sign-in and the newest session's last request (`UserActivityReader`). "Viewed in the last 24 h"
+(`coc.sync.hot_viewed_hours`, P2-20, owner decision 2026-10-06) counts signed-in views only: the
+page is public and indexed, and crawlers would keep every account hot. `AccountViewRecorder`
+writes `coc_accounts.last_viewed_at` at most once per `coc.sync.view_record_seconds` (1 h) per
+account, without touching `updated_at`, and each viewer records at most
+`coc.sync.views_per_viewer_per_hour` (30) accounts, so one scripted login cannot keep every account
+hot. `SyncSchedule::promote` moves a warm or cold account to hot at once: next due one hot interval
+after its last success, now at the earliest, never later than before; frozen, stopped,
+backing-off and claimed rows (due within `claim_seconds`) are left as they are. Intervals are `coc.sync.tiers`. Frozen
 retries every 7 days and, after `coc.sync.frozen_max_attempts` (4) failed retries, stops
 (`next_due_at` null); System Health counts it as "stopped syncing" and a later success revives
 it. `sync_states` belongs to CocIntegration behind `SyncSchedule`; the account module picks the
@@ -170,6 +177,22 @@ Rate-limited to 1 per 10 minutes per account (FR-COC-9), executed **synchronousl
 timeout so the user sees the result; on timeout it falls back to dispatching a job and showing
 "refreshing in the background".
 
+Since P2-20 (owner decisions, 2026-10-06): `AccountRefreshService` lets the owner refresh their
+`unverified`, `verified` or `disputed` row (`CocAccountPolicy::refresh`) with `fresh: true`,
+interactive priority and `timeout: coc.sync.manual_timeout` (3 s for the whole call, the 403 key
+swap included, also capping the connect time). Running out of it (cURL's timeout) is a `deadline`
+failure: our choice to stop waiting, so the breaker and the API panel never count it, and
+`SyncCocAccountJob` takes over with `source: manual`. Any other connection failure stays a
+`timeout`, so a real outage still reaches the breaker. A fresh answer is
+stored like a sync's (`AccountSyncService::apply`), with a `manual` snapshot on a progression
+change and the schedule restarted. An unverified row gets its data and `api_synced_at` only: no
+snapshot, no schedule, no 404 count. The cooldown (`coc.sync.manual_cooldown`, the `coc-refresh`
+limit) and a per-user cap across all accounts (`coc.sync.manual_per_hour`, 20, so holding many
+rows never multiplies a user's API spend) are counted before the call, so parallel clicks reach the
+API once, and given back whenever nothing was stored (circuit open, maintenance, throttled, no
+healthy key, 5xx, malformed, or an error on our side): an outage never locks the owner out. The button stays disabled, with a message, while the `cocApi`
+banner is set.
+
 ## 7. Failure handling
 
 | Failure | HTTP | Behaviour |
@@ -186,7 +209,8 @@ timeout so the user sees the result; on timeout it falls back to dispatching a j
 ### Circuit breaker
 - Opens after 10 consecutive failures or a >50% error rate over 2 minutes (min 20 samples, counted
   in 10 s cache buckets). Failures are 5xx, timeout, malformed and maintenance; a 404 is an answer,
-  and 429 and 403 belong to the budget and the key pool, so none of them count.
+  429 and 403 belong to the budget and the key pool, and a manual refresh's `deadline` is ours
+  (P2-20), so none of them count.
 - While open: no outbound calls; calls fail as `circuit_open` (or `maintenance`) with the wait;
   everything serves from cache/snapshots; a site banner appears. Once the open period (60 s) ends,
   the first real call to win `coc:circuit:probe` (an atomic `Cache::add`) is the half-open probe:
@@ -231,7 +255,8 @@ from ours: the player's top-level `role` is `clan.role`; a clan's `members` is `
 **Use-case results.** `PlayerLookup`, `ClanLookup` and `TokenVerifier` never throw for an API
 problem: they return `PlayerLookupResult` / `ClanLookupResult` (`found` / `not_found` /
 `unavailable`) or a `TokenVerificationResult`, with a `CocFailureReason` (`throttled`,
-`maintenance`, `server_error`, `timeout`, `no_healthy_key`, `malformed`) and `retryAfter` when
+`maintenance`, `server_error`, `timeout`, `no_healthy_key`, `malformed`, `circuit_open`, and
+`deadline` for a caller's own time limit) and `retryAfter` when
 unavailable. The client's exceptions stay inside the module.
 
 **Asset URLs in responses:** `clan.badgeUrls` is stored verbatim as a URL and rendered unmodified —
@@ -294,7 +319,7 @@ log{malformed_body_bytes}, fake{fixtures_path,valid_token}, request_log{retentio
 cache{player_ttl,player_sync_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
 rate{global_per_second,global_per_minute,per_key_per_second,interactive_share},
 circuit{consecutive_failures,error_rate,window,min_samples,bucket_seconds,probe_interval,max_open_seconds},
-sync{tiers{hot,warm,cold,frozen}, hot_active_days, warm_active_days, batch_size, queue, claim_seconds, backoff_base, not_found_stale, frozen_after, frozen_max_attempts, success_window_minutes, success_alert}, display{stale_hours, delta_days}, key_rotation{enabled, portal_email, portal_password}
+sync{tiers{hot,warm,cold,frozen}, hot_active_days, warm_active_days, hot_viewed_hours, view_record_seconds, views_per_viewer_per_hour, manual_timeout, manual_cooldown, manual_per_hour, batch_size, queue, claim_seconds, backoff_base, not_found_stale, frozen_after, frozen_max_attempts, success_window_minutes, success_alert}, display{stale_hours, delta_days}, key_rotation{enabled, portal_email, portal_password}
 ```
 
 Every value is environment-overridable. No magic numbers anywhere else in the codebase.

@@ -13,7 +13,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  * log over the last `windowHours`. `calls` are requests that left for the API; cache hits are
  * counted apart. A failure is what the breaker counts (specs/09 §7): a timeout or a 5xx, maintenance
  * included; 403 and 429 belong to the key pool and the budget, and a 404 is an answer. A malformed
- * 200 is logged as a 200, so it is not counted here. `failureRate` is null with no calls.
+ * 200 is logged as a 200, and a manual refresh's own `deadline`
+ * is ours, so neither is counted here. `failureRate` is null with no calls.
  * The sync fields are account syncs over `syncWindowMinutes` (specs/20 §6: flagged under
  * `syncAlert`), `syncSuccessRate` null with no attempts; `syncStopped` counts accounts frozen and out
  * of retries.

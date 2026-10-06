@@ -36,10 +36,10 @@ final class HttpCocApiClient implements CocApiClient
         private readonly CocRequestLog $log,
     ) {}
 
-    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerData
+    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false, ?int $timeout = null): PlayerData
     {
         $endpoint = 'players';
-        $response = $this->call($endpoint, $tag, 'GET', '/players/'.$tag->urlEncoded());
+        $response = $this->call($endpoint, $tag, 'GET', '/players/'.$tag->urlEncoded(), timeout: $timeout);
 
         return $this->read($endpoint, $response, $tag, fn (Payload $p): PlayerData => $this->mapper->player($p, Date::now()));
     }
@@ -90,12 +90,15 @@ final class HttpCocApiClient implements CocApiClient
 
     /**
      * Sends with the next healthy key; on a 403 the key leaves the rotation and the call is retried
-     * once with another (specs/09 §7).
+     * once with another (specs/09 §7). A caller's `timeout` covers the whole call, the key swap
+     * included; running out of it is a `Deadline` failure rather than a `Timeout`: the caller chose
+     * to stop waiting (P2-20).
      *
      * @param  array<string, mixed>  $body
      */
-    private function call(string $endpoint, CocTag $tag, string $method, string $path, array $body = []): Response
+    private function call(string $endpoint, CocTag $tag, string $method, string $path, array $body = [], ?int $timeout = null): Response
     {
+        $ends = $timeout === null ? null : hrtime(true) + $timeout * 1_000_000_000;
         $tried = [];
 
         while (count($tried) < 2) {
@@ -105,12 +108,19 @@ final class HttpCocApiClient implements CocApiClient
                 break;
             }
 
-            try {
-                $response = $this->request($endpoint, $tag, $key, $method, $path, $body);
-            } catch (ConnectionException) {
-                Log::warning('coc.request_failed', ['endpoint' => $endpoint, 'reason' => CocFailureReason::Timeout->value, 'key' => $key->id]);
+            $left = $ends === null ? null : ($ends - hrtime(true)) / 1_000_000_000;
 
-                throw new CocApiFailure(CocFailureReason::Timeout, detail: $endpoint);
+            if ($left !== null && $left <= 0) {
+                throw new CocApiFailure(CocFailureReason::Deadline, detail: $endpoint);
+            }
+
+            try {
+                $response = $this->request($endpoint, $tag, $key, $method, $path, $body, $left);
+            } catch (ConnectionException $e) {
+                $reason = self::connectionFailure($e, $left !== null);
+                Log::warning('coc.request_failed', ['endpoint' => $endpoint, 'reason' => $reason->value, 'key' => $key->id]);
+
+                throw new CocApiFailure($reason, detail: $endpoint);
             }
 
             if ($response->status() !== 403) {
@@ -133,20 +143,21 @@ final class HttpCocApiClient implements CocApiClient
      *
      * @throws ConnectionException
      */
-    private function request(string $endpoint, ?CocTag $tag, CocApiKey $key, string $method, string $path, array $data): Response
+    private function request(string $endpoint, ?CocTag $tag, CocApiKey $key, string $method, string $path, array $data, ?float $timeout = null): Response
     {
+        $connect = (int) config('coc.timeouts.connect');
         $pending = Http::baseUrl((string) config('coc.base_url'))
             ->withToken($key->token())
             ->acceptJson()
-            ->connectTimeout((int) config('coc.timeouts.connect'))
-            ->timeout((int) config('coc.timeouts.total'));
+            ->connectTimeout($timeout === null ? $connect : min($connect, $timeout))
+            ->timeout($timeout ?? (int) config('coc.timeouts.total'));
 
         $started = hrtime(true);
 
         try {
             $response = $method === 'GET' ? $pending->get($path, $data) : $pending->post($path, $data);
         } catch (ConnectionException $e) {
-            $this->log->record($endpoint, $tag, null, $this->elapsedMs($started), errorCode: CocFailureReason::Timeout->value);
+            $this->log->record($endpoint, $tag, null, $this->elapsedMs($started), errorCode: self::connectionFailure($e, $timeout !== null)->value);
 
             throw $e;
         }
@@ -154,6 +165,15 @@ final class HttpCocApiClient implements CocApiClient
         $this->log->record($endpoint, $tag, $response->status(), $this->elapsedMs($started), errorCode: $response->successful() ? null : $this->apiReason($response));
 
         return $response;
+    }
+
+    /**
+     * A caller's own time limit running out is a `Deadline`; anything else that left no answer
+     * (refused, DNS, TLS, or our usual limits) is a `Timeout`, which the breaker counts.
+     */
+    private static function connectionFailure(ConnectionException $e, bool $callerLimit): CocFailureReason
+    {
+        return $callerLimit && str_contains($e->getMessage(), 'cURL error 28') ? CocFailureReason::Deadline : CocFailureReason::Timeout;
     }
 
     private function elapsedMs(int|float $started): int

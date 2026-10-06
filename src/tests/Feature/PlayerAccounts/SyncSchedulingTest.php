@@ -3,6 +3,7 @@
 use App\Domain\CocIntegration\Enums\SyncResourceType;
 use App\Domain\CocIntegration\Models\SyncState;
 use App\Domain\CocIntegration\Services\CocApiStatus;
+use App\Domain\PlayerAccounts\Enums\SnapshotSource;
 use App\Domain\PlayerAccounts\Enums\SyncOutcome;
 use App\Domain\PlayerAccounts\Jobs\SyncCocAccountJob;
 use App\Domain\PlayerAccounts\Services\AccountSyncService;
@@ -109,7 +110,7 @@ it('is unique per account and never overlaps itself', function () {
 });
 
 it('runs the sync service for its account', function () {
-    $this->mock(AccountSyncService::class)->shouldReceive('sync')->once()->with(42)->andReturn(SyncOutcome::Unchanged);
+    $this->mock(AccountSyncService::class)->shouldReceive('sync')->once()->with(42, SnapshotSource::Scheduled)->andReturn(SyncOutcome::Unchanged);
 
     (new SyncCocAccountJob(42))->handle(app(AccountSyncService::class));
 });

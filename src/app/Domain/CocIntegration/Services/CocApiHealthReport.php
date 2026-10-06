@@ -5,6 +5,7 @@ namespace App\Domain\CocIntegration\Services;
 use App\Domain\CocIntegration\Data\CocApiHealthData;
 use App\Domain\CocIntegration\Data\CocKeyData;
 use App\Domain\CocIntegration\Data\CocKeyStatusData;
+use App\Domain\CocIntegration\Enums\CocFailureReason;
 use App\Domain\CocIntegration\Enums\SyncResourceType;
 use App\Domain\CocIntegration\Models\CocApiRequest;
 use Illuminate\Database\Eloquent\Builder;
@@ -88,7 +89,9 @@ class CocApiHealthReport
      */
     private function failures(Builder $query): Builder
     {
+        // A manual refresh that ran out of its own time limit is not the API failing (P2-20).
         return $query->where('was_cached', false)
-            ->where(fn (Builder $q) => $q->whereNull('status_code')->orWhere('status_code', '>=', 500));
+            ->where(fn (Builder $q) => $q->whereNull('status_code')->orWhere('status_code', '>=', 500))
+            ->where(fn (Builder $q) => $q->whereNull('error_code')->orWhere('error_code', '!=', CocFailureReason::Deadline->value));
     }
 }

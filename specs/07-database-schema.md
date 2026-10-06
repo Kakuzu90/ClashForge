@@ -176,6 +176,7 @@ A CoC player tag attached to a website user. The central trust object of the pla
 | raw_payload | jsonb null | last full API response, for debugging and new-field backfill |
 | api_synced_at | timestamptz null | freshness for the "last updated" label |
 | api_sync_failures | smallint default 0 | consecutive 404s from the sync; at `coc.sync.not_found_stale` (3) the account shows as `stale` and its owner is told once. Other API failures back off through `sync_states` and leave it alone (P2-09) |
+| last_viewed_at | timestamptz null | last signed-in view of the account page, written at most hourly; within `coc.sync.hot_viewed_hours` (24) the account syncs on the hot tier ([09 §6](09-coc-api-integration.md), P2-20) |
 | is_featured | bool default false | one per user, enforced by partial unique |
 | images_count | smallint default 0 | quota guard (max 5) |
 | created_at / updated_at | timestamptz | no `deleted_at`: ownership history is never deleted ([13 §1](13-claiming-workflow.md)) |
@@ -712,7 +713,7 @@ Rolling log of outbound API calls for rate-limit accounting and incident forensi
 
 `id`, `endpoint (varchar 60)`, `tag (varchar 16) null`, `status_code null` (a timeout has no
 response), `duration_ms`, `was_cached (bool)`, `error_code (varchar 64) null` (the API's `reason`, or
-`timeout`), `created_at`. One row per outbound request and per cache hit.
+`timeout`, or `deadline` when a manual refresh's own time limit ran out, P2-20), `created_at`. One row per outbound request and per cache hit.
 **Indexes:** `(created_at)`, `(endpoint, created_at)`, `(status_code, created_at)`.
 
 ### `sync_states` [M]

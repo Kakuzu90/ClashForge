@@ -13,8 +13,9 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  * tab's ranked data, as `card.league*` is the Home Village's. `notFound` is the stale
  * state after `coc.sync.not_found_stale` 404s in a row (specs/09 §6). `canDetach` and `canFeature`
  * are the owner's actions (P2-14); `canFeature` is false once it is featured. `disputeUlid` is the
- * running dispute over the owner's own `disputed` row, for their link to it (P2-16). `indexable` is
- * for the page meta only.
+ * running dispute over the owner's own `disputed` row, for their link to it (P2-16). `canRefresh` is
+ * the owner's manual refresh and `refreshWaitSeconds` its cooldown, 0 when free (P2-20).
+ * `indexable` is for the page meta only.
  */
 #[TypeScript]
 class AccountDetailData extends Data
@@ -35,6 +36,8 @@ class AccountDetailData extends Data
         public bool $canVerify,
         public bool $canDetach,
         public bool $canFeature,
+        public bool $canRefresh,
+        public int $refreshWaitSeconds,
         public bool $indexable,
         public ?string $disputeUlid = null,
     ) {}

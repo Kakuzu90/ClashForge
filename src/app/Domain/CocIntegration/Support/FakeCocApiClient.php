@@ -114,7 +114,7 @@ final class FakeCocApiClient implements CocApiClient
         return $this->calls;
     }
 
-    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerData
+    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false, ?int $timeout = null): PlayerData
     {
         $this->record('players', $tag);
 

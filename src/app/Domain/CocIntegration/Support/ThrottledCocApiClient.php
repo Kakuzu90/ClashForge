@@ -28,9 +28,9 @@ final class ThrottledCocApiClient implements CocApiClient
         private readonly RateBudget $budget,
     ) {}
 
-    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerData
+    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false, ?int $timeout = null): PlayerData
     {
-        return $this->guard($priority, fn (): PlayerData => $this->inner->player($tag, $priority, $fresh));
+        return $this->guard($priority, fn (): PlayerData => $this->inner->player($tag, $priority, $fresh, $timeout));
     }
 
     public function clan(ClanTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): ClanData

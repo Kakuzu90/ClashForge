@@ -143,6 +143,18 @@ return [
         // Owner activity windows: active within `hot_active_days` is hot, within `warm_active_days` warm.
         'hot_active_days' => 7,
         'warm_active_days' => 30,
+        // An account a signed-in user viewed within this many hours is hot too. A view is written at
+        // most once per `view_record_seconds` per account, and each viewer records at most
+        // `views_per_viewer_per_hour` accounts (P2-20).
+        'hot_viewed_hours' => 24,
+        'view_record_seconds' => 3600,
+        'views_per_viewer_per_hour' => 30,
+        // Manual refresh (FR-COC-9): the owner waits at most `manual_timeout` seconds for the API,
+        // then the job takes over; one refresh per account per `manual_cooldown` seconds, and at
+        // most `manual_per_hour` refreshes per user across all their accounts.
+        'manual_timeout' => 3,
+        'manual_cooldown' => 600,
+        'manual_per_hour' => 20,
         // Most jobs one `coc:sync-accounts` run dispatches; the background budget may allow fewer.
         'batch_size' => (int) env('COC_SYNC_BATCH', 100),
         'queue' => 'sync',

@@ -17,6 +17,7 @@ use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Models\CocAccountDispute;
 use App\Domain\PlayerAccounts\Models\CocAccountSnapshot;
 use App\Domain\PlayerAccounts\Support\ProgressionGrid;
+use App\Domain\PlayerAccounts\Support\RefreshCooldown;
 use App\Domain\Users\Services\PrivacyPolicyResolver;
 use App\Models\User;
 use Illuminate\Support\Facades\Date;
@@ -115,6 +116,7 @@ class AccountReadModel
             ->first();
 
         $builderLeague = $this->builderLeague($account);
+        $canRefresh = $viewer !== null && Gate::forUser($viewer)->allows('refresh', $account);
 
         return new AccountDetailData(
             card: $this->card($account, $clanHidden),
@@ -133,6 +135,8 @@ class AccountReadModel
             canVerify: $viewer !== null && Gate::forUser($viewer)->allows('verify', $account),
             canDetach: $viewer !== null && Gate::forUser($viewer)->allows('detach', $account),
             canFeature: $viewer !== null && ! $account->is_featured && Gate::forUser($viewer)->allows('feature', $account),
+            canRefresh: $canRefresh,
+            refreshWaitSeconds: $canRefresh ? RefreshCooldown::wait($viewer->id, $account->id) : 0,
             indexable: $account->status === CocAccountStatus::Verified && $owner !== null && $this->privacy->isIndexable($owner),
             disputeUlid: $isOwn && $account->status === CocAccountStatus::Disputed
                 ? CocAccountDispute::query()->active()->where('coc_account_id', $account->id)->where('current_holder_id', $viewer->id)->value('ulid')

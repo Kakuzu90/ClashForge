@@ -16,6 +16,8 @@ use SensitiveParameter;
  * The only way to the Clash of Clans API (specs/09 §1). Other modules call PlayerLookup,
  * ClanLookup and TokenVerifier, which turn these exceptions into results. `priority` decides the
  * rate budget and whether the cache is read; `fresh` skips the cache read (manual refresh).
+ * `timeout` (seconds) replaces the total time limit for this one call; running out of it is a
+ * `Deadline` failure, which the breaker does not count (P2-20).
  */
 interface CocApiClient
 {
@@ -23,7 +25,7 @@ interface CocApiClient
      * @throws TagNotFound
      * @throws CocApiFailure
      */
-    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerData;
+    public function player(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false, ?int $timeout = null): PlayerData;
 
     /**
      * @throws TagNotFound

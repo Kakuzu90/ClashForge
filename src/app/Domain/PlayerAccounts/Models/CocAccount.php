@@ -54,6 +54,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<string, mixed>|null $raw_payload
  * @property CarbonImmutable|null $api_synced_at
  * @property int $api_sync_failures
+ * @property CarbonImmutable|null $last_viewed_at
  * @property bool $is_featured
  * @property int $images_count
  * @property CarbonImmutable $created_at
@@ -165,6 +166,7 @@ class CocAccount extends Model
             'raw_payload' => 'array',
             'api_synced_at' => 'immutable_datetime',
             'api_sync_failures' => 'integer',
+            'last_viewed_at' => 'immutable_datetime',
             'is_featured' => 'boolean',
             'images_count' => 'integer',
             'created_at' => 'immutable_datetime',

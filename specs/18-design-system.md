@@ -419,7 +419,11 @@ account menu: Your profile · Settings · Sign out.
 Follows the game's own profile screen (owner decision 2026-10-04), in our chrome: status banners →
 **Home Village | Builder Base** tabs (pill tabs; no Clan Capital tab) → per tab a profile panel and a
 base panel → custom images gallery → bases credited to this account → sync status footer ("updated
-12 minutes ago" + manual refresh button; for the owner, "Make featured" and "Remove account", which
+12 minutes ago" for everyone; for the owner, a secondary "Refresh" button (P2-20: it spins while
+refreshing; during the 10-minute cooldown and while the game API banner is up it is disabled, with
+the minutes left or "Refresh is paused while the game API is unavailable." under the age; the
+outcome is a flash: "Game data updated.", finishing in the background, tag not found, API
+unavailable), "Make featured" and "Remove account", which
 opens a dialog that explains the tag becomes claimable and takes the current password, P2-14). The page `h1` is the name and tag, visually hidden, since
 each tab shows the name in its own panel.
 *Profile panel:* the same on both tabs; only the ranked column changes. Three columns on desktop,

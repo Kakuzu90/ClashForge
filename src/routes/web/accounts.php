@@ -22,6 +22,8 @@ Route::middleware(['auth', 'account.active'])->prefix('accounts')->name('account
         // Detach and featured (P2-14). The password is typed inline; guesses share `password-confirm`.
         Route::delete('/{ulid}', [AccountOwnershipController::class, 'destroy'])->where('ulid', '[0-9A-Za-z]{26}')->middleware('throttle:password-confirm')->name('destroy');
         Route::put('/{ulid}/featured', [AccountOwnershipController::class, 'feature'])->where('ulid', '[0-9A-Za-z]{26}')->name('featured');
+        // Manual refresh (P2-20): the service keeps the per-account `coc-refresh` cooldown.
+        Route::post('/{ulid}/refresh', [AccountOwnershipController::class, 'refresh'])->where('ulid', '[0-9A-Za-z]{26}')->name('refresh');
     });
 });
 

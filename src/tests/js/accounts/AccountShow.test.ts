@@ -25,11 +25,12 @@ vi.mock('@inertiajs/vue3', () => ({
             }
             options.onFinish?.();
         };
-        return Object.assign(form, { put: visit('put'), delete: visit('delete') });
+        return Object.assign(form, { put: visit('put'), post: visit('post'), delete: visit('delete') });
     },
 }));
 
 afterEach(() => {
+    vi.useRealTimers();
     sent.visits.length = 0;
     sent.errors = {};
     sent.processing = false;
@@ -77,6 +78,8 @@ const detail = (card: Partial<Detail['card']> = {}, rest: Partial<Detail> = {}):
     canVerify: false,
     canDetach: false,
     canFeature: false,
+    canRefresh: false,
+    refreshWaitSeconds: 0,
     indexable: true,
     disputeUlid: null,
     ...rest,
@@ -242,5 +245,55 @@ describe('Accounts/Show', () => {
         await flushPromises();
 
         expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain('Too many attempts. Try again in 60 seconds.');
+    });
+
+    describe('manual refresh (P2-20)', () => {
+        const refreshButton = (wrapper: ReturnType<typeof render>) => wrapper.findAll('button').find((b) => b.text().startsWith('Refresh'));
+
+        it('shows the button to the owner only, from the server flag', () => {
+            expect(refreshButton(render(detail()))).toBeUndefined();
+            expect(refreshButton(render(detail({}, { isOwn: true, canRefresh: true })))).toBeDefined();
+        });
+
+        it('refreshes the account', async () => {
+            const wrapper = render(detail({}, { isOwn: true, canRefresh: true }));
+            await refreshButton(wrapper)!.trigger('click');
+
+            expect(sent.visits).toEqual([{ method: 'post', url: '/accounts/01J0000000000000000000CARD/refresh', data: {} }]);
+        });
+
+        it('is busy while refreshing', () => {
+            sent.processing = true;
+            const button = refreshButton(render(detail({}, { isOwn: true, canRefresh: true })))!;
+
+            expect(button.attributes('disabled')).toBeDefined();
+            expect(button.attributes('aria-busy')).toBe('true');
+        });
+
+        it('counts the cooldown down and comes back on when it ends', async () => {
+            vi.useFakeTimers();
+            const wrapper = render(detail({}, { isOwn: true, canRefresh: true, refreshWaitSeconds: 61 }));
+            expect(refreshButton(wrapper)!.attributes('disabled')).toBeDefined();
+            expect(wrapper.text()).toContain('You can refresh again in 2 minutes.');
+            expect(refreshButton(wrapper)!.attributes('aria-describedby')).toBe('refresh-note');
+
+            vi.advanceTimersByTime(2000);
+            await flushPromises();
+            expect(wrapper.text()).toContain('You can refresh again in 1 minute.');
+
+            vi.advanceTimersByTime(60000);
+            await flushPromises();
+            expect(refreshButton(wrapper)!.attributes('disabled')).toBeUndefined();
+            expect(wrapper.text()).not.toContain('You can refresh again');
+        });
+
+        it('is paused while the game API is down', async () => {
+            const wrapper = render(detail({}, { isOwn: true, canRefresh: true }), { reason: 'maintenance' });
+            await refreshButton(wrapper)!.trigger('click');
+
+            expect(refreshButton(wrapper)!.attributes('disabled')).toBeDefined();
+            expect(wrapper.text()).toContain('Refresh is paused while the game API is unavailable.');
+            expect(sent.visits).toEqual([]);
+        });
     });
 });

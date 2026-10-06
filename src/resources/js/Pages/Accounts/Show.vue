@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { refreshHint, refreshState } from '@/Components/accounts/refreshControl';
 import GameAccountProfile from '@/Components/game/GameAccountProfile.vue';
 import GameVillageBase from '@/Components/game/GameVillageBase.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
@@ -10,10 +11,10 @@ import { formatDuration } from '@/Composables/useDateTime';
 import { focusFirstError } from '@/Composables/useFirstErrorFocus';
 import { usePageProps } from '@/Composables/usePageProps';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { destroy, featured, verify } from '@/routes/accounts';
+import { destroy, featured, refresh, verify } from '@/routes/accounts';
 import { show as disputeShow } from '@/routes/disputes';
 import { Deferred, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -49,6 +50,28 @@ const groups = (wanted: App.Domain.GameAssets.Enums.Village) => (props.progressi
 const featureForm = useForm({});
 function makeFeatured() {
     featureForm.put(featured(card.value.ulid).url, { preserveScroll: true });
+}
+
+// Manual refresh (P2-20): the cooldown counts down here between visits; the server checks it again.
+const refreshForm = useForm({});
+const refreshWait = ref(props.account.refreshWaitSeconds);
+watch(
+    () => props.account.refreshWaitSeconds,
+    (seconds) => (refreshWait.value = seconds),
+);
+let countdown: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+    countdown = setInterval(() => {
+        if (refreshWait.value > 0) {
+            refreshWait.value -= 1;
+        }
+    }, 1000);
+});
+onBeforeUnmount(() => clearInterval(countdown));
+const refreshStatus = computed(() => refreshState({ processing: refreshForm.processing, apiDown: cocApi.value !== null, waitSeconds: refreshWait.value }));
+const refreshNote = computed(() => refreshHint(refreshStatus.value, refreshWait.value));
+function refreshAccount() {
+    refreshForm.post(refresh(card.value.ulid).url, { preserveScroll: true });
 }
 
 const removing = ref(false);
@@ -128,8 +151,22 @@ function remove() {
         </UiTabs>
 
         <footer class="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-sm text-fg-muted">{{ age === null ? 'Not synced yet.' : `Game data updated ${age} ago.` }}</p>
-            <div v-if="account.canFeature || account.canDetach" class="flex flex-col gap-2 sm:flex-row">
+            <div class="flex flex-col gap-1">
+                <p class="text-sm text-fg-muted">{{ age === null ? 'Not synced yet.' : `Game data updated ${age} ago.` }}</p>
+                <p v-if="account.canRefresh && refreshNote" id="refresh-note" class="text-sm text-fg-muted">{{ refreshNote }}</p>
+            </div>
+            <div v-if="account.canRefresh || account.canFeature || account.canDetach" class="flex flex-col gap-2 sm:flex-row">
+                <UiButton
+                    v-if="account.canRefresh"
+                    size="sm"
+                    variant="secondary"
+                    :loading="refreshStatus === 'refreshing'"
+                    :disabled="refreshStatus !== 'idle'"
+                    :aria-describedby="refreshNote ? 'refresh-note' : undefined"
+                    @click="refreshAccount"
+                >
+                    Refresh
+                </UiButton>
                 <UiButton v-if="account.canFeature" size="sm" variant="secondary" :loading="featureForm.processing" @click="makeFeatured">
                     Make featured
                 </UiButton>

@@ -14,16 +14,17 @@ use Illuminate\Support\Facades\Log;
 /**
  * Fetches a player for other modules (specs/09 §1). Never throws for an API problem: the caller
  * gets the last good answer marked stale, or `unavailable`, and degrades (specs/09 §5, §7).
- * Sync jobs pass `Background`; a manual refresh passes `fresh: true` to skip the cache read.
+ * Sync jobs pass `Background`; a manual refresh passes `fresh: true` to skip the cache read and
+ * its own `timeout` (P2-20).
  */
 class PlayerLookup
 {
     public function __construct(private readonly CocApiClient $client) {}
 
-    public function find(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false): PlayerLookupResult
+    public function find(PlayerTag $tag, CocPriority $priority = CocPriority::Interactive, bool $fresh = false, ?int $timeout = null): PlayerLookupResult
     {
         try {
-            return new PlayerLookupResult($tag, CocLookupStatus::Found, $this->client->player($tag, $priority, $fresh));
+            return new PlayerLookupResult($tag, CocLookupStatus::Found, $this->client->player($tag, $priority, $fresh, $timeout));
         } catch (TagNotFound) {
             // Our normaliser accepted it and the API did not: logged to tune the normaliser (specs/23 §2).
             Log::info('coc.tag_not_found', ['kind' => 'player', 'tag' => $tag->value]);

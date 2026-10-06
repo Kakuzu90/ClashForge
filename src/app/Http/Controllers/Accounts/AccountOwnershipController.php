@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Accounts;
 
 use App\Domain\PlayerAccounts\Services\AccountOwnershipService;
+use App\Domain\PlayerAccounts\Services\AccountRefreshService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Accounts\DetachAccountRequest;
 use App\Models\User;
@@ -10,8 +11,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
- * The owner's actions on their account page (specs/13 §6, FR-COC-12/13): detach, and make it the
- * featured account. Another user's ulid is a 404.
+ * The owner's actions on their account page (specs/13 §6, FR-COC-12/13): detach, make it the
+ * featured account, and refresh its game data (FR-COC-9, P2-20). Another user's ulid is a 404.
  */
 class AccountOwnershipController extends Controller
 {
@@ -29,6 +30,13 @@ class AccountOwnershipController extends Controller
         $ownership->feature($this->user($request), $ulid);
 
         return back()->with('success', 'This is now your featured account.');
+    }
+
+    public function refresh(Request $request, string $ulid, AccountRefreshService $refresh): RedirectResponse
+    {
+        $result = $refresh->refresh($this->user($request), $ulid);
+
+        return back()->with($result->outcome->succeeded() ? 'success' : 'error', $result->message());
     }
 
     private function user(Request $request): User
