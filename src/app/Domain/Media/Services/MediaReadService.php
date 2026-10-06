@@ -2,6 +2,7 @@
 
 namespace App\Domain\Media\Services;
 
+use App\Domain\Media\Data\AttachedMediaData;
 use App\Domain\Media\Data\MediaVariantData;
 use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Enums\MediaStatus;
@@ -75,6 +76,37 @@ class MediaReadService
         }
 
         return $byUlid;
+    }
+
+    /**
+     * Everything attached to `$parent` in `$collection`, in position order, with the renditions of
+     * the `ready` ones; media being deleted is left out (account images, P2-23).
+     *
+     * @return list<AttachedMediaData>
+     */
+    public function attachedTo(Model $parent, MediaCollection $collection): array
+    {
+        return array_values(Media::query()
+            ->where('attachable_type', $parent->getMorphClass())
+            ->where('attachable_id', $parent->getKey())
+            ->where('collection', $collection)
+            ->where('status', '!=', MediaStatus::Deleting)
+            ->with('variants')
+            ->orderBy('position')->orderBy('id')
+            ->get()
+            ->map(fn (Media $media): AttachedMediaData => new AttachedMediaData(
+                ulid: $media->ulid,
+                status: $media->status,
+                variants: $media->status !== MediaStatus::Ready ? [] : $media->variants
+                    ->mapWithKeys(fn (MediaVariant $variant): array => [$variant->variant->value => new MediaVariantData(
+                        name: $variant->variant,
+                        url: $this->urls->url($variant->path, $media->visibility),
+                        width: $variant->width,
+                        height: $variant->height,
+                    )])
+                    ->all(),
+            ))
+            ->all());
     }
 
     /**

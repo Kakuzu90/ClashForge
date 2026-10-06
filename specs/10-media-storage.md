@@ -151,11 +151,15 @@ named `media` in `config/filesystems.php`; `media.disk` is the disk name, not th
 ### Attachment
 Attachment happens when the parent form is submitted (publish base, save account images), inside the
 parent's transaction:
-- assert every media id belongs to the user, is in the right collection, and is `ready` or
-  `processing`, and is not already attached to another parent (moving it would change that
+- assert every media id belongs to the user, is in the right collection, and is `ready`,
+  `processing` or `uploaded` (completed, its job queued but not started; P2-23), and is not already attached to another parent (moving it would change that
   record, e.g. the evidence of a decided dispute; P2-03);
 - assert the parent's quota (≤2 screenshots, ≤1 video, ≤5 account images, 1 avatar);
 - set `attachable_type/id`, clear `expires_at`, set `position`.
+
+`MediaAttachmentService::detachFrom()` takes one item or every item of a collection off a parent
+(an account's images, P2-23): each is released as below, except quarantined media, which is only
+unlinked so it stays for review and stops counting against the parent.
 
 Media a parent stops using (a replaced or removed avatar) is released by
 `MediaAttachmentService::release()`: claimed as `deleting` and deleted by `DeleteMediaObjectsJob`
@@ -270,7 +274,7 @@ correct for ≤60 s clips), multiple resolutions, subtitles, GIF output.
 | Scope | Limit | Enforced |
 |---|---|---|
 | Avatar | 1, ≤2 MB | On attach (replaces the previous, which is deleted after commit, §3 "Attachment") |
-| CoC account images | 5 per account, ≤5 MB each | `coc_accounts.images_count` checked in the attach transaction |
+| CoC account images | 5 per account (`coc.images.max`), ≤5 MB each | `coc_accounts.images_count` checked under the account's row lock in the attach transaction; adds and removals share the `coc-account-images` limiter (`coc.images.writes_per_hour`) (P2-23) |
 | Base screenshots | 2 per base, ≤5 MB each | attach transaction |
 | Base video | 1 per base, ≤100 MB, ≤60 s | attach transaction |
 | Report evidence | 3 per report, ≤5 MB each | attach transaction |

@@ -7,8 +7,13 @@ use App\Domain\Clans\Enums\ClanRole;
 use App\Domain\Clans\Services\ClanReadModel;
 use App\Domain\GameAssets\Enums\Village;
 use App\Domain\GameAssets\Services\GameAssetResolver;
+use App\Domain\Media\Enums\MediaCollection;
+use App\Domain\Media\Enums\MediaStatus;
+use App\Domain\Media\Enums\VariantName;
+use App\Domain\Media\Services\MediaReadService;
 use App\Domain\PlayerAccounts\Data\AccountClanData;
 use App\Domain\PlayerAccounts\Data\AccountDetailData;
+use App\Domain\PlayerAccounts\Data\AccountImageData;
 use App\Domain\PlayerAccounts\Data\AccountStatData;
 use App\Domain\PlayerAccounts\Data\OwnCocAccountData;
 use App\Domain\PlayerAccounts\Data\PlayerCardData;
@@ -56,6 +61,7 @@ class AccountReadModel
         private readonly ClanReadModel $clans,
         private readonly GameAssetResolver $assets,
         private readonly ProgressionGrid $grid,
+        private readonly MediaReadService $media,
     ) {}
 
     /**
@@ -161,10 +167,42 @@ class AccountReadModel
             canRefresh: $canRefresh,
             refreshWaitSeconds: $canRefresh ? RefreshCooldown::wait($viewer->id, $account->id) : 0,
             indexable: $account->status === CocAccountStatus::Verified && $owner !== null && $this->privacy->isIndexable($owner),
+            images: $this->images($account, $isOwn),
+            canManageImages: $viewer !== null && Gate::forUser($viewer)->allows('manageImages', $account),
+            imagesMax: (int) config('coc.images.max'),
             disputeUlid: $isOwn && $account->status === CocAccountStatus::Disputed
                 ? CocAccountDispute::query()->active()->where('coc_account_id', $account->id)->where('current_holder_id', $viewer->id)->value('ulid')
                 : null,
         );
+    }
+
+    /**
+     * The custom images: ready ones for everyone, and the owner's own still processing or failed.
+     *
+     * @return list<AccountImageData>
+     */
+    private function images(CocAccount $account, bool $isOwn): array
+    {
+        if ($account->images_count === 0) {
+            return [];
+        }
+
+        $images = [];
+        foreach ($this->media->attachedTo($account, MediaCollection::AccountImage) as $item) {
+            $ready = $item->status === MediaStatus::Ready;
+            if (! $ready && ! $isOwn) {
+                continue;
+            }
+            $images[] = new AccountImageData(
+                ulid: $item->ulid,
+                card: $item->variants[VariantName::Card->value] ?? null,
+                full: $item->variants[VariantName::Full->value] ?? null,
+                processing: in_array($item->status, [MediaStatus::Processing, MediaStatus::Uploaded, MediaStatus::Pending], true),
+                failed: in_array($item->status, [MediaStatus::Failed, MediaStatus::Quarantined], true),
+            );
+        }
+
+        return $images;
     }
 
     /**

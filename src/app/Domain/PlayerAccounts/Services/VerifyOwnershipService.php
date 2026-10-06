@@ -24,6 +24,7 @@ use App\Domain\PlayerAccounts\Events\CocAccountVerified;
 use App\Domain\PlayerAccounts\Exceptions\TagSuspended;
 use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Models\CocAccountClaim;
+use App\Domain\PlayerAccounts\Support\AccountImages;
 use App\Domain\PlayerAccounts\Support\AccountRows;
 use App\Domain\PlayerAccounts\Support\ClaimLimits;
 use App\Domain\PlayerAccounts\Support\ClaimRecorder;
@@ -63,6 +64,7 @@ class VerifyOwnershipService
         private readonly PlayerLookup $players,
         private readonly AccountRows $rows,
         private readonly DisputeLedger $disputes,
+        private readonly AccountImages $images,
     ) {}
 
     /**
@@ -191,6 +193,7 @@ class VerifyOwnershipService
 
             $superseded = [];
             foreach ($holders as $row) {
+                $this->images->releaseAll($row);
                 $row->forceFill([
                     'status' => CocAccountStatus::Unverified,
                     'verified_at' => null,

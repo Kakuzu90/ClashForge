@@ -268,7 +268,7 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 | **Badge** | verified (gold check), featured (purple star), role (mod/admin), rarity | — |
 | **Avatar** | 24/32/48/64/96/128, with verified ring | image, initials fallback, loading |
 | **Card** | flat, raised, interactive (hover lift), feature | default, hover, focus-within (interactive only), selected |
-| **Modal / Sheet** | centered modal (desktop), bottom sheet (mobile) | open, closing; focus-trapped |
+| **Modal / Sheet** | centered modal (desktop), bottom sheet (mobile); `wide` for an image viewer (P2-23) | open, closing; focus-trapped |
 | **Toast** | info, success, danger, **reward** (gold, animated) | enter, idle, exit; the server's `flash.success` / `flash.error` after a save or redirect arrive as success / danger toasts from the layout's toaster (`useFlashToasts`), so forms show no inline "Saved." (2026-10-02) |
 | **Tooltip** | top/bottom/left/right | — |
 | **Dropdown menu** | — | keyboard navigable (WAI-ARIA menu button: Enter/Space/Down opens on the first item, Up on the last; arrows, Home, End move; Escape closes and returns focus; Tab and an outside click close) |
@@ -455,6 +455,14 @@ with no level chip (the §2.1 owner exception). Builder Base follows its own lis
 (`assets.bb_heroes`, `assets.bb_units`) the same way. Super troops never show, active or not. A hero with equipment is a button that opens a modal with its equipment (owned
 and locked), as tapping the hero does in the game; the modal stays mounted after the first open, so
 the art loads once.
+*Images (P2-23):* below the village tabs: "Images" with, for the owner, "{n} of 5 images". Tiles
+are 4:3 cover crops of the `card` variant, 2 columns on a phone, 4 from `md`; each opens a wide
+`UiModal` viewer with the `full` image, Previous / Next and the arrow keys, wrapping round. The
+owner also sees processing tiles (skeleton; the page reloads the account every 4 s, at most 15
+times), failed ones ("This image could not be used."), a Remove button on each (with a confirm),
+the upload queue (`uploads/UploadQueueItem`, shared with dispute evidence) and an "Add images"
+area that gives way to "This account has the most images it can have." at the limit. Others see
+ready images only.
 *Empty (no images):* owner sees an upload dropzone; others see nothing.
 *Loading:* progression grid skeleton.
 *Error (API stale):* amber banner "Game data is temporarily unavailable — showing data from

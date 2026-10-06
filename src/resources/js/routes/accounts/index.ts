@@ -1,6 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
 import attachE7dcd8 from './attach'
 import verify8ef1b2 from './verify'
+import images from './images'
 /**
 * @see \App\Http\Controllers\Accounts\AttachController::attach
 * @see app/Http/Controllers/Accounts/AttachController.php:33
@@ -327,7 +328,7 @@ refresh.post = (args: { ulid: string | number } | [ulid: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:24
+* @see app/Http/Controllers/Accounts/AccountController.php:26
 * @route '/accounts/{ulid}'
 */
 export const show = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -342,7 +343,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:24
+* @see app/Http/Controllers/Accounts/AccountController.php:26
 * @route '/accounts/{ulid}'
 */
 show.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -369,7 +370,7 @@ show.url = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:24
+* @see app/Http/Controllers/Accounts/AccountController.php:26
 * @route '/accounts/{ulid}'
 */
 show.get = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -379,7 +380,7 @@ show.get = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:24
+* @see app/Http/Controllers/Accounts/AccountController.php:26
 * @route '/accounts/{ulid}'
 */
 show.head = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -394,6 +395,7 @@ const accounts = {
     destroy: Object.assign(destroy, destroy),
     featured: Object.assign(featured, featured),
     refresh: Object.assign(refresh, refresh),
+    images: Object.assign(images, images),
     show: Object.assign(show, show),
 }
 

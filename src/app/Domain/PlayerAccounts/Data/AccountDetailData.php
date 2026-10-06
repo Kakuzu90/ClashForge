@@ -15,6 +15,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  * are the owner's actions (P2-14); `canFeature` is false once it is featured. `disputeUlid` is the
  * running dispute over the owner's own `disputed` row, for their link to it (P2-16). `canRefresh` is
  * the owner's manual refresh and `refreshWaitSeconds` its cooldown, 0 when free (P2-20).
+ * `images` are the custom images (FR-COC-11): ready ones for everyone, plus the owner's processing
+ * and failed ones; `canManageImages` and `imagesMax` drive the owner's upload area (P2-23).
  * `indexable` is for the page meta only.
  */
 #[TypeScript]
@@ -22,6 +24,7 @@ class AccountDetailData extends Data
 {
     /**
      * @param  list<AccountStatData>  $stats
+     * @param  list<AccountImageData>  $images
      */
     public function __construct(
         public PlayerCardData $card,
@@ -39,6 +42,10 @@ class AccountDetailData extends Data
         public bool $canRefresh,
         public int $refreshWaitSeconds,
         public bool $indexable,
+        #[DataCollectionOf(AccountImageData::class)]
+        public array $images = [],
+        public bool $canManageImages = false,
+        public int $imagesMax = 0,
         public ?string $disputeUlid = null,
     ) {}
 }

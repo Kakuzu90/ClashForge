@@ -270,6 +270,10 @@ claim (the claimant can still verify later with a token).
   as after a supersede, a dispute transfer, a holder's release or a suspension (owner decision
   2026-10-05, P2-14). A candidate row another transaction holds is skipped; if that leaves none,
   `RestoreFeaturedAccountJob` sets it after commit.
+- The account's custom images are deleted (after commit) and `images_count` zeroed, here and
+  whenever a row stops being its holder's: a token supersede, a dispute release or admin
+  transfer, and the deletion and ban releases. They are the previous holder's uploads, and a
+  released row is reused by the next attacher (owner decision 2026-10-06, P2-23).
 - After commit `CocAccountReleased`; the user gets the in-app "Tag released" notice (§8).
 - Bases credited to that account keep their `user_id` (authorship) and lose the credit link.
 - If the user (or anyone) attaches the tag later, the **latest released row is reused** (matched on

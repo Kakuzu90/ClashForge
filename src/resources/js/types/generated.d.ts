@@ -366,7 +366,17 @@ canFeature: boolean,
 canRefresh: boolean,
 refreshWaitSeconds: number,
 indexable: boolean,
+images: App.Domain.PlayerAccounts.Data.AccountImageData[],
+canManageImages: boolean,
+imagesMax: number,
 disputeUlid: string | null,
+};
+export type AccountImageData = {
+ulid: string,
+card: App.Domain.Media.Data.MediaVariantData | null,
+full: App.Domain.Media.Data.MediaVariantData | null,
+processing: boolean,
+failed: boolean,
 };
 export type AccountStatData = {
 key: string,

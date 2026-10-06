@@ -36,7 +36,9 @@ class MediaAttachmentService
             throw ValidationException::withMessages([$field => 'This upload was made for something else. Upload the file again.']);
         }
 
-        if (! in_array($media->status, [MediaStatus::Ready, MediaStatus::Processing], true)) {
+        // `uploaded` is a completed upload whose processing job is queued but not started yet; it is
+        // as usable as one being processed (account images attach right after completing, P2-23).
+        if (! in_array($media->status, [MediaStatus::Ready, MediaStatus::Processing, MediaStatus::Uploaded], true)) {
             throw ValidationException::withMessages([$field => 'This upload is not ready to use. Upload the file again.']);
         }
 
@@ -54,6 +56,33 @@ class MediaAttachmentService
         ])->save();
 
         return $media->id;
+    }
+
+    /**
+     * Takes media off `$parent` (one item by ULID, or every item in `$collection`) and returns how
+     * many came off. Each is released as below; quarantined media is only unlinked, so it stays for
+     * review but no longer counts against the parent (account images, P2-23).
+     */
+    public function detachFrom(Model $parent, MediaCollection $collection, ?string $ulid = null): int
+    {
+        $media = Media::query()
+            ->where('attachable_type', $parent->getMorphClass())
+            ->where('attachable_id', $parent->getKey())
+            ->where('collection', $collection)
+            ->where('status', '!=', MediaStatus::Deleting)
+            ->when($ulid !== null, fn ($query) => $query->where('ulid', $ulid))
+            ->lockForUpdate()
+            ->get(['id', 'status']);
+
+        foreach ($media as $item) {
+            if ($item->status === MediaStatus::Quarantined) {
+                Media::query()->whereKey($item->id)->update(['attachable_type' => null, 'attachable_id' => null]);
+            } else {
+                $this->release($item->id);
+            }
+        }
+
+        return $media->count();
     }
 
     /**

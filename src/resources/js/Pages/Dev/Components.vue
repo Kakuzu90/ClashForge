@@ -8,6 +8,7 @@ import AdminSanctionHistory from '@/Components/admin/AdminSanctionHistory.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
 import NotificationItem from '@/Components/notifications/NotificationItem.vue';
 import SettingsAvatarCropper from '@/Components/settings/SettingsAvatarCropper.vue';
+import AccountImageGallery from '@/Components/accounts/AccountImageGallery.vue';
 import GameAccountProfile from '@/Components/game/GameAccountProfile.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
 import GameClanChip from '@/Components/game/GameClanChip.vue';
@@ -141,6 +142,38 @@ const sampleTroops: App.Domain.PlayerAccounts.Data.ProgressionGroupData = {
     village: 'home',
     units: sampleGroup.units.map((unit) => ({ ...unit, equipment: [] })),
 };
+// Account images (P2-23): ready, processing and failed, for the owner and for a visitor.
+const galleryVariant = (name: App.Domain.Media.Enums.VariantName, width: number) => ({ name, url: sampleImage, width, height: width });
+const galleryImage = (n: number): App.Domain.PlayerAccounts.Data.AccountImageData => ({
+    ulid: `01J00000000000000000000IM${n}`,
+    card: galleryVariant('card', 800),
+    full: galleryVariant('full', 1600),
+    processing: false,
+    failed: false,
+});
+const sampleImageUpload: App.Domain.Media.Data.UploadCollectionData = {
+    value: 'account_image',
+    label: 'Account image',
+    maxBytes: 5 * 1024 * 1024,
+    accept: 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp',
+    typesLabel: 'JPEG, PNG or WebP',
+};
+const galleryStates = [
+    {
+        label: 'Owner: ready, processing and failed',
+        owner: true,
+        images: [
+            galleryImage(1),
+            galleryImage(2),
+            { ulid: '01J00000000000000000000IM3', card: null, full: null, processing: true, failed: false },
+            { ulid: '01J00000000000000000000IM4', card: null, full: null, processing: false, failed: true },
+        ],
+    },
+    { label: 'Owner: full (5 of 5)', owner: true, images: [1, 2, 3, 4, 5].map(galleryImage) },
+    { label: 'Owner: empty', owner: true, images: [] },
+    { label: 'Visitor', owner: false, images: [galleryImage(1), galleryImage(2), galleryImage(3)] },
+];
+
 const sampleStats: App.Domain.PlayerAccounts.Data.AccountStatData[] = [
     { key: 'trophies', label: 'Trophies', value: 5124, delta: 142 },
     { key: 'best_trophies', label: 'Best trophies', value: 5310, delta: null },
@@ -286,6 +319,7 @@ const sections = [
     'Town Hall badges',
     'Player cards',
     'Progression grid',
+    'Account images',
     'Empty state',
     'Notifications',
     'Admin',
@@ -733,6 +767,21 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                 <div class="mt-3 flex flex-col gap-4">
                     <GameVillageBase :hall="fallbackAssets[1]" :groups="[sampleGroup, sampleTroops]" :side="['heroes']" />
                     <GameVillageBase :hall="fallbackAssets[1]" :groups="null" :side="['heroes']" />
+                </div>
+            </section>
+
+            <section :id="anchor('Account images')" aria-labelledby="h-account-images" class="flex flex-col gap-6">
+                <h2 id="h-account-images" class="font-display text-h1">Account images</h2>
+                <div v-for="state in galleryStates" :key="state.label" class="flex flex-col gap-2">
+                    <span class="text-xs text-fg-muted uppercase">{{ state.label }}</span>
+                    <AccountImageGallery
+                        account-ulid="01J0000000000000000000CARD"
+                        account-name="Fixture Chief"
+                        :images="state.images"
+                        :can-manage="state.owner"
+                        :max="5"
+                        :upload="state.owner ? sampleImageUpload : null"
+                    />
                 </div>
             </section>
 

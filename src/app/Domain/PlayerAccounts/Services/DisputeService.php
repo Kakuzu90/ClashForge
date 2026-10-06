@@ -29,6 +29,7 @@ use App\Domain\PlayerAccounts\Events\CocAccountOwnershipTransferred;
 use App\Domain\PlayerAccounts\Events\CocAccountVerified;
 use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Models\CocAccountDispute;
+use App\Domain\PlayerAccounts\Support\AccountImages;
 use App\Domain\PlayerAccounts\Support\AccountRows;
 use App\Domain\PlayerAccounts\Support\ClaimLimits;
 use App\Domain\PlayerAccounts\Support\ClaimRecorder;
@@ -63,6 +64,7 @@ class DisputeService
         private readonly ModerationActionLog $moderation,
         private readonly PasswordConfirmationService $passwords,
         private readonly ClaimLimits $limits,
+        private readonly AccountImages $images,
     ) {}
 
     /**
@@ -225,6 +227,7 @@ class DisputeService
                 return DisputeResultData::refused(DisputeRefusal::ClaimantUnavailable, $dispute->ulid);
             }
 
+            $this->images->releaseAll($held);
             $held->forceFill([
                 'user_id' => null,
                 'status' => CocAccountStatus::Released,
@@ -388,6 +391,9 @@ class DisputeService
     private function transfer(User $admin, CocAccountDispute $dispute, ?CocAccount $held, string $note): DisputeResultData
     {
         // The holder keeps their row, unverified, as after a token takeover (specs/13 §3.1).
+        if ($held !== null) {
+            $this->images->releaseAll($held);
+        }
         $held?->forceFill(['status' => CocAccountStatus::Unverified, 'verified_at' => null, 'verification_method' => null, 'is_featured' => false])->save();
 
         $source = $held ?? $dispute->account()->firstOrFail();

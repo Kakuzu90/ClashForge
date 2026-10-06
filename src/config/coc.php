@@ -101,6 +101,14 @@ return [
         'ban_release_days' => 30,
     ],
 
+    // Custom images on an account (FR-COC-11, P2-23). `max` mirrors the CHECK on
+    // `coc_accounts.images_count`; the per-file size is `media.collections.account_image.max_bytes`.
+    'images' => [
+        'max' => 5,
+        // Adds and removals per user per hour (the `coc-account-images` limiter).
+        'writes_per_hour' => 60,
+    ],
+
     // Ownership disputes (specs/13 §5 guardrails).
     'disputes' => [
         // Disputes a user may have running at once.

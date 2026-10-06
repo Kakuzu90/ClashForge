@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AccountImageGallery from '@/Components/accounts/AccountImageGallery.vue';
 import { refreshHint, refreshState } from '@/Components/accounts/refreshControl';
 import GameAccountProfile from '@/Components/game/GameAccountProfile.vue';
 import GameVillageBase from '@/Components/game/GameVillageBase.vue';
@@ -26,6 +27,7 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<{
     account: App.Domain.PlayerAccounts.Data.AccountDetailData;
     progression?: App.Domain.PlayerAccounts.Data.ProgressionGroupData[];
+    imageUpload?: App.Domain.Media.Data.UploadCollectionData | null;
 }>();
 
 const { cocApi } = usePageProps();
@@ -68,7 +70,9 @@ onMounted(() => {
     }, 1000);
 });
 onBeforeUnmount(() => clearInterval(countdown));
-const refreshStatus = computed(() => refreshState({ processing: refreshForm.processing, apiDown: cocApi.value !== null, waitSeconds: refreshWait.value }));
+const refreshStatus = computed(() =>
+    refreshState({ processing: refreshForm.processing, apiDown: cocApi.value !== null, waitSeconds: refreshWait.value }),
+);
 const refreshNote = computed(() => refreshHint(refreshStatus.value, refreshWait.value));
 function refreshAccount() {
     refreshForm.post(refresh(card.value.ulid).url, { preserveScroll: true });
@@ -149,6 +153,15 @@ function remove() {
                 </div>
             </template>
         </UiTabs>
+
+        <AccountImageGallery
+            :account-ulid="card.ulid"
+            :account-name="card.name"
+            :images="account.images"
+            :can-manage="account.canManageImages"
+            :max="account.imagesMax"
+            :upload="imageUpload ?? null"
+        />
 
         <footer class="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex flex-col gap-1">

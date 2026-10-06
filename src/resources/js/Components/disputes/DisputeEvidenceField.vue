@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import DisputeEvidenceItem from '@/Components/disputes/DisputeEvidenceItem.vue';
+import UploadQueueItem from '@/Components/uploads/UploadQueueItem.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import { computed, ref, useId, watch } from 'vue';
 
@@ -81,7 +81,7 @@ defineExpose({ clear });
         <p :id="hintId" class="text-sm text-fg-secondary">{{ hint }} {{ upload.typesLabel }}, up to {{ megabytes }} each, {{ max }} at most.</p>
 
         <ul v-if="items.length" class="flex flex-col gap-2">
-            <DisputeEvidenceItem
+            <UploadQueueItem
                 v-for="item in items"
                 :key="item.key"
                 :file="item.file"

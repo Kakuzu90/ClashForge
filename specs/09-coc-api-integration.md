@@ -319,7 +319,7 @@ log{malformed_body_bytes}, fake{fixtures_path,valid_token}, request_log{retentio
 cache{player_ttl,player_sync_ttl,clan_ttl,static_ttl,negative_ttl,stale_ttl},
 rate{global_per_second,global_per_minute,per_key_per_second,interactive_share},
 circuit{consecutive_failures,error_rate,window,min_samples,bucket_seconds,probe_interval,max_open_seconds},
-sync{tiers{hot,warm,cold,frozen}, hot_active_days, warm_active_days, hot_viewed_hours, view_record_seconds, views_per_viewer_per_hour, manual_timeout, manual_cooldown, manual_per_hour, batch_size, queue, claim_seconds, backoff_base, not_found_stale, frozen_after, frozen_max_attempts, success_window_minutes, success_alert}, snapshots{keep_all_days, daily_until_days, batch_size}, display{stale_hours, delta_days}, key_rotation{enabled, portal_email, portal_password}
+sync{tiers{hot,warm,cold,frozen}, hot_active_days, warm_active_days, hot_viewed_hours, view_record_seconds, views_per_viewer_per_hour, manual_timeout, manual_cooldown, manual_per_hour, batch_size, queue, claim_seconds, backoff_base, not_found_stale, frozen_after, frozen_max_attempts, success_window_minutes, success_alert}, snapshots{keep_all_days, daily_until_days, batch_size}, display{stale_hours, delta_days}, images{max, writes_per_hour} (P2-23), key_rotation{enabled, portal_email, portal_password}
 ```
 
 Every value is environment-overridable. No magic numbers anywhere else in the codebase.

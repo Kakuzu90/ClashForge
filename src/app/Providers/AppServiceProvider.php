@@ -147,6 +147,15 @@ class AppServiceProvider extends ServiceProvider
                 return $field === null ? back()->with('error', $message) : back()->withErrors([$field => $message]);
             }));
 
+        // Adding and removing account images (P2-23); the upload intents keep their own limit.
+        RateLimiter::for('coc-account-images', fn (Request $request): Limit => Limit::perHour((int) config('coc.images.writes_per_hour'))
+            ->by('coc-account-images:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(function (Request $request): Response {
+                Log::channel('security')->warning('auth.rate_limited', ['limiter' => 'coc-account-images', 'ip_hash' => IpHash::of($request->ip())]);
+
+                return back()->with('error', 'You changed your images a lot this hour. Try again later.');
+            }));
+
         // Guessing the current password from a hijacked session: the confirm page and the
         // password change share one bucket per account (specs/11 "Authentication attacks").
         RateLimiter::for('password-confirm', function (Request $request): array {

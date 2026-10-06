@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Accounts;
 
+use App\Domain\Media\Data\UploadCollectionData;
+use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\PlayerAccounts\Data\AccountDetailData;
 use App\Domain\PlayerAccounts\Data\ProgressionGroupData;
 use App\Domain\PlayerAccounts\Queries\AccountReadModel;
@@ -29,6 +31,7 @@ class AccountController extends Controller
 
         return PageMeta::page('Accounts/Show', [
             'account' => $account->toArray(),
+            'imageUpload' => $account->canManageImages ? UploadCollectionData::fromCollection(MediaCollection::AccountImage)->toArray() : null,
             'progression' => Inertia::defer(fn (): array => array_map(
                 fn (ProgressionGroupData $group): array => $group->toArray(),
                 $accounts->progression($viewer, $ulid),

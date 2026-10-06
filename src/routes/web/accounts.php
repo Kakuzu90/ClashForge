@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Accounts\AccountController;
+use App\Http\Controllers\Accounts\AccountImageController;
 use App\Http\Controllers\Accounts\AccountOwnershipController;
 use App\Http\Controllers\Accounts\AttachController;
 use App\Http\Controllers\Accounts\VerificationController;
@@ -25,6 +26,12 @@ Route::middleware(['auth', 'account.active'])->prefix('accounts')->name('account
         // Manual refresh (P2-20): the service keeps the per-account `coc-refresh` cooldown.
         Route::post('/{ulid}/refresh', [AccountOwnershipController::class, 'refresh'])->where('ulid', '[0-9A-Za-z]{26}')->name('refresh');
     });
+});
+
+// Custom images (FR-COC-11, P2-23): content writes, so restricted accounts are out (specs/04 §3).
+Route::middleware(['auth', 'account.active:content', 'throttle:coc-account-images'])->prefix('accounts')->name('accounts.images.')->group(function (): void {
+    Route::post('/{ulid}/images', [AccountImageController::class, 'store'])->where('ulid', '[0-9A-Za-z]{26}')->name('store');
+    Route::delete('/{ulid}/images/{media}', [AccountImageController::class, 'destroy'])->where(['ulid' => '[0-9A-Za-z]{26}', 'media' => '[0-9A-Za-z]{26}'])->name('destroy');
 });
 
 // The account page (specs/18 §6): public, the policy decides who sees which account (P2-04).

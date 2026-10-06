@@ -82,6 +82,9 @@ const detail = (card: Partial<Detail['card']> = {}, rest: Partial<Detail> = {}):
     canRefresh: false,
     refreshWaitSeconds: 0,
     indexable: true,
+    images: [],
+    canManageImages: false,
+    imagesMax: 5,
     disputeUlid: null,
     ...rest,
 });

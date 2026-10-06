@@ -85,7 +85,8 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
 
 - One Policy per authorizable model: `UserPolicy`, `ProfilePolicy`, `PrivacySettingsPolicy`, `CocAccountPolicy`
   (`verify`: the user's own `unverified` or `disputed` row, P2-03; `detach`: their own `unverified` or `verified`
-  row, `feature`: their own `verified` or `disputed` row, both with account writes, P2-14; `view`: the account page, P2-04: the owner sees
+  row, `feature`: their own `verified` or `disputed` row, both with account writes, P2-14; `manageImages`: their own
+  `verified` or `disputed` row with a verified email and content writes (restricted accounts cannot), P2-23; `view`: the account page, P2-04: the owner sees
   their own rows except `released`, anyone else only a `verified` or `disputed` row whose owner's profile they may
   see with `show_coc_accounts` on and who is not banned or pending deletion; every other case is the unknown-ulid 404), `CocAccountDisputePolicy` (open as attach;
   respond / release / withdraw: the party, with account writes, and no verified email needed, so a holder

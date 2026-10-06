@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:24
+* @see app/Http/Controllers/Accounts/AccountController.php:26
 * @route '/accounts/{ulid}'
 */
 export const show = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:24
+* @see app/Http/Controllers/Accounts/AccountController.php:26
 * @route '/accounts/{ulid}'
 */
 show.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -43,7 +43,7 @@ show.url = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:24
+* @see app/Http/Controllers/Accounts/AccountController.php:26
 * @route '/accounts/{ulid}'
 */
 show.get = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -53,7 +53,7 @@ show.get = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Accounts\AccountController::show
-* @see app/Http/Controllers/Accounts/AccountController.php:24
+* @see app/Http/Controllers/Accounts/AccountController.php:26
 * @route '/accounts/{ulid}'
 */
 show.head = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({

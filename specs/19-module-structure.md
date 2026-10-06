@@ -164,6 +164,7 @@ require __DIR__.'/web/accounts.php';
 | `/accounts/{ulid}/verify` `/accounts/{ulid}/verified` | attach flow steps 2 and 3, the owner's row only (POST `…/verify` sends the token) |
 | `DELETE /accounts/{ulid}` · `PUT /accounts/{ulid}/featured` | detach (current password inline, `password-confirm` limiter) and make featured, the owner's row only (P2-14) |
 | `POST /accounts/{ulid}/refresh` | manual refresh, the owner's row only, `coc-refresh` cooldown (P2-20) |
+| `POST /accounts/{ulid}/images` · `DELETE /accounts/{ulid}/images/{media}` | add a finished upload / remove one, the owner's `verified` or `disputed` row only, `account.active:content`, `coc-account-images` limiter (P2-23) |
 | `/bases` `/bases/th{n}` `/bases/{category}` `/bases/th{n}/{category}` | discovery |
 | `/bases/{slug}` | base detail (`{ulid}-{title-slug}`) |
 | `/bases/{slug}/copy` | server-side copy-click redirect |

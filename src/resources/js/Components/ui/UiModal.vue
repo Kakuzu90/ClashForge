@@ -7,6 +7,8 @@ const props = defineProps<{
     description?: string;
     /** Hide instead of unmounting on close, so images inside stay loaded and decoded for the next open. */
     keepMounted?: boolean;
+    /** A wider panel from `sm` up, for an image viewer. */
+    wide?: boolean;
 }>();
 
 const open = defineModel<boolean>('open', { default: false });
@@ -39,7 +41,12 @@ onBeforeUnmount(() => open.value && lockScroll(false));
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
         >
-            <div v-if="open || keepMounted" v-show="open" class="fixed inset-0 z-300 flex items-end justify-center bg-scrim sm:items-center sm:p-4" @click.self="close">
+            <div
+                v-if="open || keepMounted"
+                v-show="open"
+                class="fixed inset-0 z-300 flex items-end justify-center bg-scrim sm:items-center sm:p-4"
+                @click.self="close"
+            >
                 <Transition
                     appear
                     enter-active-class="transition-transform duration-250 ease-out"
@@ -52,7 +59,8 @@ onBeforeUnmount(() => open.value && lockScroll(false));
                         :aria-labelledby="titleId"
                         :aria-describedby="props.description ? descriptionId : undefined"
                         tabindex="-1"
-                        class="max-h-[90dvh] w-full overflow-y-auto rounded-t-xl border border-line bg-surface p-6 shadow-modal sm:max-w-lg sm:rounded-xl"
+                        class="max-h-[90dvh] w-full overflow-y-auto rounded-t-xl border border-line bg-surface p-6 shadow-modal sm:rounded-xl"
+                        :class="props.wide ? 'sm:max-w-3xl' : 'sm:max-w-lg'"
                     >
                         <div class="mb-4 flex items-start justify-between gap-4">
                             <div>

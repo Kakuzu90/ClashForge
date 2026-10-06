@@ -15,6 +15,7 @@ use App\Domain\PlayerAccounts\Enums\ReleaseReason;
 use App\Domain\PlayerAccounts\Events\CocAccountReleased;
 use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Models\CocAccountClaim;
+use App\Domain\PlayerAccounts\Support\AccountImages;
 use App\Domain\PlayerAccounts\Support\FeaturedAccount;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -32,6 +33,7 @@ class AccountOwnershipService
         private readonly UserStatusService $users,
         private readonly PasswordConfirmationService $passwords,
         private readonly AuditLogger $audit,
+        private readonly AccountImages $images,
     ) {}
 
     /**
@@ -66,11 +68,13 @@ class AccountOwnershipService
     /**
      * Run inside the caller's transaction with the tag's rows and the user locked. Clears the owner
      * and the featured flag, moves the flag to another account, closes the user's pending claims,
-     * recounts and audits. P2-24 releases a deleted or banned user's tags through here.
+     * recounts and audits, and deletes the account's images (P2-23). P2-24 releases a deleted or
+     * banned user's tags through here.
      */
     public function release(CocAccount $row, User $owner, ReleaseReason $reason, AuditActorData $actor): void
     {
         $before = $row->status;
+        $this->images->releaseAll($row);
         $row->forceFill([
             'user_id' => null,
             'status' => CocAccountStatus::Released,

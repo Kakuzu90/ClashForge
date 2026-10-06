@@ -83,6 +83,19 @@ class CocAccountPolicy
     }
 
     /**
+     * Custom images (FR-COC-11, P2-23 Q1): the owner's `verified` or `disputed` row, as for the
+     * featured account. Uploads are content writes, so a verified email and content-write standing
+     * (not restricted) are needed, as `MediaPolicy` asks of the upload itself.
+     */
+    public function manageImages(User $user, CocAccount $account): bool
+    {
+        return $user->hasVerifiedEmail()
+            && $user->allowsContentWrites()
+            && $account->user_id === $user->id
+            && in_array($account->status, CocAccountStatus::HOLDING, true);
+    }
+
+    /**
      * The featured account (FR-COC-12) is one the user holds: `verified` or `disputed`.
      */
     public function feature(User $user, CocAccount $account): bool
