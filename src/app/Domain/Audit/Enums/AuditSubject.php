@@ -16,6 +16,7 @@ enum AuditSubject: string implements HasLabelAndColor
     case User = 'user';
     case CocAccount = 'coc_account';
     case CocAccountDispute = 'coc_account_dispute';
+    case FailedJob = 'failed_job';
 
     public function label(): string
     {
@@ -23,6 +24,7 @@ enum AuditSubject: string implements HasLabelAndColor
             self::User => 'Account',
             self::CocAccount => 'CoC account',
             self::CocAccountDispute => 'Ownership dispute',
+            self::FailedJob => 'Failed job',
         };
     }
 

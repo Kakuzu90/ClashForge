@@ -26,7 +26,7 @@ src/
 │   │   ├── Notifications/
 │   │   ├── Moderation/
 │   │   ├── Audit/
-│   │   ├── Operations/          # queue and failed-job read models over Laravel's own tables
+│   │   ├── Operations/          # queue and failed-job read models over Laravel's own tables, failed-job retry/delete (P2-19)
 │   │   └── Search/
 │   ├── Http/
 │   │   ├── Controllers/             # ← UI entry points: thin, return Inertia::render() or redirect

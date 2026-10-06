@@ -1,22 +1,26 @@
 <script setup lang="ts">
 import AdminPanel from '@/Components/admin/AdminPanel.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
+import { canRetry, deleteSummary, listQuery, targetPayload, type FailedJobTarget } from '@/Components/admin/failedJobActions';
 import UiAlert from '@/Components/ui/UiAlert.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
+import UiModal from '@/Components/ui/UiModal.vue';
 import UiPill from '@/Components/ui/UiPill.vue';
 import UiSkeleton from '@/Components/ui/UiSkeleton.vue';
 import { formatDateTime, formatDuration } from '@/Composables/useDateTime';
 import { formatCount } from '@/Composables/useNumberFormat';
 import { useVisitError } from '@/Composables/useVisitError';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { destroy as deleteFailedJobs, retry as retryFailedJobs } from '@/routes/admin/system/failed-jobs';
 import { Deferred, router } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 defineOptions({ layout: AdminLayout });
 
 type Queue = App.Domain.Operations.Data.QueueStatData;
 type JobGroup = App.Domain.Operations.Data.FailedJobGroupData;
 type CocKey = App.Domain.CocIntegration.Data.CocKeyData;
+type FailedJobRow = App.Domain.Operations.Data.FailedJobRowData;
 
 // specs/20 §6. Each panel is its own deferred request; the API panel's two props share one.
 const props = defineProps<{
@@ -25,6 +29,9 @@ const props = defineProps<{
     scheduler?: App.Domain.Operations.Data.SchedulerStatusData;
     cocApiHealth?: App.Domain.CocIntegration.Data.CocApiHealthData;
     cocKeys?: CocKey[];
+    canManageFailedJobs: boolean;
+    failedJobsBulkMax: number;
+    failedJobList?: App.Domain.Operations.Data.FailedJobListData;
 }>();
 
 const PANELS = ['queues', 'failedJobs', 'scheduler', 'cocApiHealth', 'cocKeys'] as const;
@@ -70,7 +77,61 @@ const jobColumns: AdminColumn[] = [
     { key: 'lastHour', label: 'Last hour', class: 'w-24 text-right tabular-nums' },
     { key: 'firstFailedAt', label: 'First failure', class: 'w-56 whitespace-nowrap' },
     { key: 'lastFailedAt', label: 'Last failure', class: 'w-56 whitespace-nowrap' },
+    { key: 'actions', label: 'Actions', class: 'w-72' },
 ];
+
+// Retry and delete (P2-19), shown only with `canManageFailedJobs`; the server checks again.
+// `listed` is the group whose jobs are open below the table (null name: unreadable payloads).
+const listed = ref<{ name: string | null } | null>(null);
+const listLoading = ref(false);
+const acting = ref<string | null>(null);
+const actionError = ref<string | null>(null);
+const confirming = ref<FailedJobTarget | null>(null);
+
+function groupTarget(row: JobGroup): FailedJobTarget {
+    return row.name === null ? { kind: 'unreadable', count: row.count } : { kind: 'class', name: row.name, count: row.count };
+}
+
+function actionKey(target: FailedJobTarget): string {
+    return target.kind === 'job' ? target.uuid : target.kind === 'class' ? `class:${target.name}` : 'unreadable';
+}
+
+function loadJobs(name: string | null) {
+    listed.value = { name };
+    listLoading.value = true;
+    router.reload({ only: ['failedJobList'], data: listQuery(name), onFinish: () => (listLoading.value = false) });
+}
+
+function act(target: FailedJobTarget, kind: 'retry' | 'delete') {
+    actionError.value = null;
+    acting.value = actionKey(target);
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => {
+            confirming.value = null;
+            if (listed.value) loadJobs(listed.value.name);
+        },
+        // The confirmation closes either way, so the error below the table is not hidden behind it.
+        onError: (errors: Record<string, string>) => {
+            confirming.value = null;
+            actionError.value = Object.values(errors)[0] ?? null;
+        },
+        onFinish: () => (acting.value = null),
+    };
+
+    if (kind === 'retry') {
+        router.post(retryFailedJobs().url, targetPayload(target), options);
+    } else {
+        router.delete(deleteFailedJobs().url, { ...options, data: targetPayload(target) });
+    }
+}
+
+const listColumns = computed<AdminColumn[]>(() => [
+    { key: 'uuid', label: 'Job id', class: 'min-w-72' },
+    { key: 'queue', label: 'Queue', class: 'w-28' },
+    { key: 'failedAt', label: 'Failed', class: 'w-56 whitespace-nowrap' },
+    ...(props.canManageFailedJobs ? [{ key: 'actions', label: 'Actions', class: 'w-48' }] : []),
+]);
 
 const keyColumns: AdminColumn[] = [
     { key: 'id', label: 'Key', class: 'w-32' },
@@ -257,9 +318,103 @@ const keyColumns: AdminColumn[] = [
                         <template #cell-lastFailedAt="{ row }">
                             <time :datetime="row.lastFailedAt">{{ formatDateTime(row.lastFailedAt) }}</time>
                         </template>
+                        <template #cell-actions="{ row }">
+                            <span class="flex flex-wrap gap-2">
+                                <UiButton size="sm" variant="ghost" @click="loadJobs(row.name)">Show jobs</UiButton>
+                                <template v-if="canManageFailedJobs">
+                                    <UiButton
+                                        v-if="canRetry(groupTarget(row))"
+                                        size="sm"
+                                        variant="secondary"
+                                        :loading="acting === actionKey(groupTarget(row))"
+                                        :disabled="acting !== null"
+                                        @click="act(groupTarget(row), 'retry')"
+                                    >
+                                        Retry all
+                                    </UiButton>
+                                    <UiButton size="sm" variant="ghost" :disabled="acting !== null" @click="confirming = groupTarget(row)">Delete all</UiButton>
+                                </template>
+                            </span>
+                        </template>
                     </AdminTable>
+
+                    <UiAlert v-if="actionError" kind="danger" title="That didn't work">{{ actionError }}</UiAlert>
+                    <UiAlert v-else-if="visitError && acting === null && failedJobs" kind="danger" title="The action didn't finish">
+                        <template v-if="visitError.throttled">Too many actions in a row. Wait a minute and try again.</template>
+                        <template v-else-if="visitError.requestId">
+                            If it keeps failing, quote request id <span class="font-semibold">{{ visitError.requestId }}</span>.
+                        </template>
+                        <template v-else>Check your connection and try again.</template>
+                    </UiAlert>
+
+                    <section v-if="listed" aria-labelledby="failed-job-list" class="flex flex-col gap-3 border-t border-line pt-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 id="failed-job-list" class="text-sm font-semibold text-fg">
+                                {{ listed.name ?? 'Jobs with an unreadable payload' }}
+                            </h3>
+                            <UiButton size="sm" variant="ghost" @click="listed = null">Close</UiButton>
+                        </div>
+                        <UiSkeleton v-if="listLoading || !failedJobList" label="Loading the jobs" :lines="3" />
+                        <template v-else>
+                            <p class="text-sm text-fg-secondary">
+                                <template v-if="failedJobList.total > failedJobList.jobs.length">
+                                    The newest {{ formatCount(failedJobList.jobs.length) }} of {{ formatCount(failedJobList.total) }}.
+                                </template>
+                                <template v-else-if="failedJobList.total === 0">None left.</template>
+                            </p>
+                            <AdminTable
+                                v-if="failedJobList.jobs.length"
+                                :columns="listColumns"
+                                :rows="failedJobList.jobs"
+                                :row-key="(row: FailedJobRow) => row.uuid"
+                                caption="Failed jobs of this kind, newest first"
+                            >
+                                <template #cell-uuid="{ row }"><span class="break-all font-mono text-xs">{{ row.uuid }}</span></template>
+                                <template #cell-failedAt="{ row }">
+                                    <time :datetime="row.failedAt">{{ formatDateTime(row.failedAt) }}</time>
+                                </template>
+                                <template #cell-actions="{ row }">
+                                    <span class="flex flex-wrap gap-2">
+                                        <UiButton
+                                            v-if="listed.name !== null"
+                                            size="sm"
+                                            variant="secondary"
+                                            :loading="acting === row.uuid"
+                                            :disabled="acting !== null"
+                                            @click="act({ kind: 'job', uuid: row.uuid, name: listed.name }, 'retry')"
+                                        >
+                                            Retry
+                                        </UiButton>
+                                        <UiButton
+                                            size="sm"
+                                            variant="ghost"
+                                            :disabled="acting !== null"
+                                            @click="confirming = { kind: 'job', uuid: row.uuid, name: listed.name }"
+                                        >
+                                            Delete
+                                        </UiButton>
+                                    </span>
+                                </template>
+                            </AdminTable>
+                        </template>
+                    </section>
                 </div>
             </Deferred>
         </AdminPanel>
+
+        <UiModal
+            v-if="canManageFailedJobs"
+            :open="confirming !== null"
+            title="Delete failed jobs?"
+            @update:open="(open: boolean) => !open && (confirming = null)"
+        >
+            <div v-if="confirming" class="flex flex-col gap-4">
+                <p class="text-body text-fg-secondary">{{ deleteSummary(confirming, failedJobsBulkMax) }}</p>
+                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <UiButton variant="secondary" :disabled="acting !== null" @click="confirming = null">Cancel</UiButton>
+                    <UiButton variant="danger" :loading="acting !== null" @click="act(confirming, 'delete')">Delete</UiButton>
+                </div>
+            </div>
+        </UiModal>
     </div>
 </template>

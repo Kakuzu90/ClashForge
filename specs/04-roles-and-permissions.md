@@ -66,6 +66,7 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
 | View audit log | – | – | ✓ | ✓ |
 | View user accounts (admin list and detail, with email) | – | – | ✓ | ✓ |
 | View platform stats (dashboard sign-ups, failed jobs, media storage; the System Health page) | – | – | ✓ | ✓ |
+| Retry or delete failed jobs (System Health page, each job audited; P2-19) | – | – | ✓ | ✓ |
 | Change user roles | – | – | – | ✓ |
 | Manage feature flags / settings | – | – | – | ✓ |
 | Hard-delete a user | – | – | – | ✓ |
@@ -123,7 +124,8 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
   still apply to super admins and the matrix holds exactly.
 - A staff ability also needs the account's status to allow it: the read abilities (`access-admin`,
   `view-users`, `view-platform-stats`, `view-report-queue`, `view-moderation-log`, `view-audit-log`) stay open to restricted and
-  pending-deletion staff, every other staff ability needs an active account, and a suspended
+  pending-deletion staff, every other staff ability needs an active account (`manage-failed-jobs`
+  among them: such staff read System Health without its buttons, P2-19), and a suspended
   account has none. A timed sanction stops counting once `status_expires_at` passes.
 
 ### IDOR prevention
@@ -284,7 +286,8 @@ After 30 days, the nightly pipeline anonymises the retained account and its Phas
 | `search` | 60 / min | ip |
 | `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
 | `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form, email form, username form, account-deletion form, CoC-account detach and a dispute release share it | user |
-| `admin-search` | 60 / min (`platform.rate_limits.admin_search_per_minute`); admin user list and audit log share it, deferred rows count; a breach is a bare 429 shown inline | user |
+| `admin-search` | 60 / min (`platform.rate_limits.admin_search_per_minute`); admin user list, audit log, dispute queue and System Health share it (its on-demand failed-job list included, P2-19), deferred rows count; a breach is a bare 429 shown inline | user |
+| `admin-failed-jobs` | 20 / min (`platform.rate_limits.admin_failed_jobs_per_minute`), every retry or delete on System Health, on top of `global-write`; a breach is a flash error, since the buttons have no field (P2-19) | user |
 
 All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their
 numbers are config keys (`config/platform.php` `auth.*` for the auth limiters). On an Inertia form

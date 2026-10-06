@@ -24,6 +24,8 @@ vi.mock('@inertiajs/vue3', async () => {
                 return () => delete handlers[name];
             },
             reload: vi.fn(),
+            post: vi.fn(),
+            delete: vi.fn(),
         },
         usePage: () => ({ url: '/admin/system', props: { auth: { user: null, can: {} } } }),
     };
@@ -75,9 +77,10 @@ const cocApiHealth: App.Domain.CocIntegration.Data.CocApiHealthData = {
     syncStopped: 0,
 };
 
-type Props = InstanceType<typeof System>['$props'];
+type Props = Partial<InstanceType<typeof System>['$props']>;
 
-const render = (props: Props, loaded: string[] = []) => mount(System, { props, global: { provide: { loaded } } });
+const render = (props: Props, loaded: string[] = []) =>
+    mount(System, { props: { canManageFailedJobs: false, failedJobsBulkMax: 200, ...props }, global: { provide: { loaded } } });
 
 function fail(requestId: string) {
     handlers.invalid?.({ detail: { response: { status: 500, headers: { 'x-request-id': requestId } } }, preventDefault: vi.fn() });
@@ -199,5 +202,128 @@ describe('Admin/System', () => {
 
         await wrapper.findAll('button').find((button) => button.text() === 'Try again')!.trigger('click');
         expect(router.reload).toHaveBeenCalledWith({ only: ['failedJobs', 'scheduler', 'cocApiHealth', 'cocKeys'] });
+    });
+
+    describe('retry and delete (P2-19)', () => {
+        const group = (name: string | null, count = 3): App.Domain.Operations.Data.FailedJobGroupData => ({
+            name,
+            queues: ['default'],
+            count,
+            lastHour: 0,
+            firstFailedAt: '2026-10-05T10:00:00+00:00',
+            lastFailedAt: '2026-10-06T10:00:00+00:00',
+        });
+        const withGroups = (can: boolean) =>
+            render({ canManageFailedJobs: can, failedJobs: failedJobs({ total: 4, classes: [group('App\\Jobs\\SyncJob'), group(null, 1)] }) }, ['failedJobs']);
+        const button = (wrapper: ReturnType<typeof render>, text: string) => wrapper.findAll('button').filter((b) => b.text() === text);
+
+        it('hides every action without the ability, but still lists the jobs', () => {
+            const wrapper = withGroups(false);
+
+            expect(button(wrapper, 'Retry all')).toHaveLength(0);
+            expect(button(wrapper, 'Delete all')).toHaveLength(0);
+            expect(button(wrapper, 'Show jobs')).toHaveLength(2);
+        });
+
+        it('retries a class at once and offers no retry for unreadable payloads', async () => {
+            const wrapper = withGroups(true);
+
+            expect(button(wrapper, 'Retry all')).toHaveLength(1);
+            await button(wrapper, 'Retry all')[0].trigger('click');
+
+            expect(router.post).toHaveBeenCalledWith('/admin/system/failed-jobs/retry', { class: 'App\\Jobs\\SyncJob' }, expect.any(Object));
+        });
+
+        it('asks before deleting, saying how many go, and deletes only after the confirmation', async () => {
+            const wrapper = withGroups(true);
+
+            await button(wrapper, 'Delete all')[1].trigger('click');
+            await nextTick();
+            expect(document.body.textContent).toContain('1 failed job with an unreadable payload will be removed for good');
+            expect(router.delete).not.toHaveBeenCalled();
+
+            const confirm = Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Delete');
+            confirm!.click();
+            expect(router.delete).toHaveBeenCalledWith('/admin/system/failed-jobs', expect.objectContaining({ data: { unreadable: true } }));
+            wrapper.unmount();
+        });
+
+        const list = (name: string | null): App.Domain.Operations.Data.FailedJobListData => ({
+            name,
+            total: 1,
+            jobs: [{ uuid: 'aaaaaaaa-0000-4000-8000-000000000001', queue: 'default', failedAt: '2026-10-06T10:00:00+00:00' }],
+        });
+        const withList = async (can: boolean, name: string | null) => {
+            const wrapper = render(
+                { canManageFailedJobs: can, failedJobs: failedJobs({ total: 1, classes: [group(name, 1)] }), failedJobList: list(name) },
+                ['failedJobs'],
+            );
+            // Inertia ends every reload with onFinish; the mock does too, so the list leaves its skeleton.
+            vi.mocked(router.reload).mockImplementationOnce((options) => (options as { onFinish?: () => void } | undefined)?.onFinish?.());
+            await button(wrapper, 'Show jobs')[0].trigger('click');
+            return wrapper;
+        };
+
+        it('offers Retry and Delete per listed job, and no Retry for an unreadable one', async () => {
+            const readable = await withList(true, 'App\\Jobs\\SyncJob');
+            expect(button(readable, 'Retry')).toHaveLength(1);
+            expect(button(readable, 'Delete')).toHaveLength(1);
+            await button(readable, 'Retry')[0].trigger('click');
+            expect(router.post).toHaveBeenCalledWith('/admin/system/failed-jobs/retry', { uuid: 'aaaaaaaa-0000-4000-8000-000000000001' }, expect.any(Object));
+
+            const unreadable = await withList(true, null);
+            expect(unreadable.text()).toContain('Jobs with an unreadable payload');
+            expect(button(unreadable, 'Retry')).toHaveLength(0);
+            expect(button(unreadable, 'Delete')).toHaveLength(1);
+        });
+
+        it('lists jobs without any action for staff who may not act', async () => {
+            const wrapper = await withList(false, 'App\\Jobs\\SyncJob');
+
+            expect(wrapper.text()).toContain('aaaaaaaa-0000-4000-8000-000000000001');
+            expect(button(wrapper, 'Retry')).toHaveLength(0);
+            expect(button(wrapper, 'Delete')).toHaveLength(0);
+        });
+
+        it('closes the confirmation and shows a refused action inline', async () => {
+            vi.mocked(router.delete).mockImplementationOnce((_url, options) => {
+                const visit = options as { onError: (errors: Record<string, string>) => void; onFinish: () => void };
+                visit.onError({ target: 'That job is no longer in the failed list.' });
+                visit.onFinish();
+            });
+            const wrapper = await withList(true, 'App\\Jobs\\SyncJob');
+
+            await button(wrapper, 'Delete')[0].trigger('click');
+            Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Delete' && b.closest('[role="dialog"]'))!.click();
+            await nextTick();
+
+            expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+            expect(wrapper.text()).toContain('That job is no longer in the failed list.');
+            wrapper.unmount();
+        });
+
+        it('shows a failed action with its request id', async () => {
+            vi.mocked(router.post).mockImplementationOnce((_url, _data, options) => {
+                handlers.start?.({ detail: {}, preventDefault: vi.fn() });
+                fail('req-123');
+                (options as { onFinish: () => void }).onFinish();
+            });
+            const wrapper = withGroups(true);
+
+            await button(wrapper, 'Retry all')[0].trigger('click');
+            await nextTick();
+
+            expect(wrapper.text()).toContain("The action didn't finish");
+            expect(wrapper.text()).toContain('req-123');
+        });
+
+        it('loads one class of jobs on demand', async () => {
+            const wrapper = withGroups(true);
+
+            await button(wrapper, 'Show jobs')[0].trigger('click');
+
+            expect(router.reload).toHaveBeenCalledWith(expect.objectContaining({ only: ['failedJobList'], data: { jobsClass: 'App\\Jobs\\SyncJob' } }));
+            expect(wrapper.text()).toContain('App\\Jobs\\SyncJob');
+        });
     });
 });

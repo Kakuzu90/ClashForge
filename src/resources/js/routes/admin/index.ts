@@ -1,5 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
 import users from './users'
+import system0654f6 from './system'
 import disputes from './disputes'
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
@@ -91,7 +92,7 @@ audit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:26
+* @see app/Http/Controllers/Admin/SystemHealthController.php:28
 * @route '/admin/system'
 */
 export const system = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -106,7 +107,7 @@ system.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:26
+* @see app/Http/Controllers/Admin/SystemHealthController.php:28
 * @route '/admin/system'
 */
 system.url = (options?: RouteQueryOptions) => {
@@ -115,7 +116,7 @@ system.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:26
+* @see app/Http/Controllers/Admin/SystemHealthController.php:28
 * @route '/admin/system'
 */
 system.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -125,7 +126,7 @@ system.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:26
+* @see app/Http/Controllers/Admin/SystemHealthController.php:28
 * @route '/admin/system'
 */
 system.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -137,7 +138,7 @@ const admin = {
     dashboard: Object.assign(dashboard, dashboard),
     audit: Object.assign(audit, audit),
     users: Object.assign(users, users),
-    system: Object.assign(system, system),
+    system: Object.assign(system, system0654f6),
     disputes: Object.assign(disputes, disputes),
 }
 

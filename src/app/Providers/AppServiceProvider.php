@@ -100,6 +100,16 @@ class AppServiceProvider extends ServiceProvider
                 return response('Too many searches.', 429, $headers);
             }));
 
+        // Failed-job retry and delete per staff member (specs/04 §4, P2-19); each action can touch
+        // a whole class, so it is kept well under the global write limit.
+        RateLimiter::for('admin-failed-jobs', fn (Request $request): Limit => Limit::perMinute((int) config('platform.rate_limits.admin_failed_jobs_per_minute'))
+            ->by('admin-failed-jobs:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(function (Request $request, array $headers): Response {
+                Log::channel('security')->warning('auth.rate_limited', ['limiter' => 'admin-failed-jobs', 'ip_hash' => IpHash::of($request->ip())]);
+
+                return back()->with('error', 'Too many failed-job actions. Wait a minute and try again.');
+            }));
+
         RateLimiter::for('password-reset', fn (Request $request): array => [
             Limit::perHour((int) config('platform.auth.password_reset_per_hour'))->by('password-reset:'.$this->emailKey($request))->response($this->throttledForm('password-reset')),
             Limit::perHour((int) config('platform.auth.password_reset_per_ip_per_hour'))->by('password-reset:ip:'.$request->ip())->response($this->throttledForm('password-reset')),

@@ -163,6 +163,8 @@ return [
         'global_write_per_minute' => 120,
         // Admin user list and audit log loads per staff member (the deferred rows count too).
         'admin_search_per_minute' => 60,
+        // Retry / delete actions on failed jobs per staff member (`admin-failed-jobs`, P2-19).
+        'admin_failed_jobs_per_minute' => 20,
     ],
 
     'admin' => [
@@ -173,6 +175,10 @@ return [
         // Dashboard failed-jobs panel: the specs/20 §6 alert line, and how many job classes it lists.
         'failed_jobs_alert_per_hour' => 20,
         'failed_jobs_top_classes' => 5,
+        // System Health: the most failed jobs one retry or delete touches (specs/20 §4 rule 7), and
+        // how many of a class the job list shows, newest first (P2-19).
+        'failed_jobs_bulk_max' => 200,
+        'failed_jobs_list_max' => 50,
     ],
 
     'notifications' => [

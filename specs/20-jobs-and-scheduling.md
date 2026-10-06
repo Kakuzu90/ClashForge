@@ -191,7 +191,7 @@ notice on retry (the same limitation as P1-15); provider idempotency remains a P
 | Job timeout | Same as exception; media jobs additionally mark the media `failed` |
 | Worker crash / OOM | Workers restart via the container policy; `--max-time` recycling bounds leaks; reserved jobs return to the queue after `retry_after` |
 | Queue backlog | Alert at depth >500 for 10 minutes. Runbook: scale the relevant worker, then investigate |
-| Poison job (fails every time) | After `tries`, it lands in `failed_jobs`; the System Health page lists failures grouped by class (§6), retry or deletion joins with P2-19 |
+| Poison job (fails every time) | After `tries`, it lands in `failed_jobs`; the System Health page lists failures grouped by class (§6). Admins with `manage-failed-jobs` retry (Laravel's `queue:retry`: attempts reset, `retryUntil` refreshed) or delete one job or a class, at most `platform.admin.failed_jobs_bulk_max` (200) per action, oldest first; each job in its own transaction with its row locked, its push and its audit entry, so a second admin skips it. Unreadable payloads can only be deleted, and a command that no longer loads is stepped over and kept for deletion (P2-19) |
 | Deploy during a long job | `queue:restart` after deploy; workers finish the current job then exit |
 | Scheduler missed runs | Tasks are catch-up-safe by design (they select due work, not "work since last run"); a missed window self-heals on the next tick |
 | Database queue contention | The symptom that triggers the Redis migration ([21](21-caching-strategy.md)) |
@@ -225,8 +225,9 @@ row reads the `platform:heartbeat` beat (`platform.health.heartbeat_max_age`); n
 "unknown", not stopped. Two rows are not on the page (owner decision, 2026-10-02): media
 processing p95 needs a processing-start time that `media` does not record (with P3-02), and
 worker liveness is a container restart count the app cannot see (container monitoring, P0-09).
-The CoC sync success rate (P2-09) is on the API panel, and retry / delete of failed jobs joins
-with P2-19. The
+The CoC sync success rate (P2-09) is on the API panel. Retry and delete of failed jobs (P2-19,
+§5) sit on the failures panel, with each class's newest `platform.admin.failed_jobs_list_max` (50)
+jobs listed on demand (uuid, queue and time only). The
 read models live in `Domain/Operations` ([05](05-architecture.md)). The admin dashboard's
 failed-jobs panel (P1-13) shows failures in the last hour and 24 h, flags the hour above the
 alert line (`platform.admin.failed_jobs_alert_per_hour`) and lists the most failed job classes by

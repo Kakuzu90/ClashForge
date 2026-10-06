@@ -16,6 +16,7 @@ enum StaffAbility: string implements HasLabelAndColor
     case AccessAdmin = 'access-admin';
     case ViewUsers = 'view-users';
     case ViewPlatformStats = 'view-platform-stats';
+    case ManageFailedJobs = 'manage-failed-jobs';
     case ViewReportQueue = 'view-report-queue';
     case ClaimReportCase = 'claim-report-case';
     case HideContent = 'hide-content';
@@ -44,6 +45,7 @@ enum StaffAbility: string implements HasLabelAndColor
             self::AccessAdmin => 'Open the admin area',
             self::ViewUsers => 'View user accounts',
             self::ViewPlatformStats => 'View platform stats',
+            self::ManageFailedJobs => 'Retry or delete failed jobs',
             self::ViewReportQueue => 'View report queue',
             self::ClaimReportCase => 'Claim or assign a report case',
             self::HideContent => 'Hide content',
@@ -96,6 +98,8 @@ enum StaffAbility: string implements HasLabelAndColor
             self::ViewUsers,
             // Dashboard sign-ups, failed jobs and media storage (FR-ADMIN-5).
             self::ViewPlatformStats,
+            // Retry or delete from the System Health page (specs/20 §5, owner decision 2026-10-02).
+            self::ManageFailedJobs,
             self::RemoveContent,
             self::SuspendUser,
             self::BanUser,

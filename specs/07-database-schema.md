@@ -694,6 +694,10 @@ the retention differs (audit: 2 years; moderation: indefinite).
   before/after (P1-09).
 - Account anonymisation records `user.anonymised`, with status before/after and the command name,
   no removed profile fields or addresses; the actor is the console (P1-11).
+- A failed job retried or deleted from System Health records `failed_job.retried` /
+  `failed_job.deleted` on subject `failed_job` (`auditable_id` = `failed_jobs.id`, kept after the
+  row goes), one entry per job, with `context` holding the job class, queue, uuid and the action's
+  batch size; never the payload or the exception (P2-19).
 
 **Indexes:** `(auditable_type, auditable_id, created_at)`; `(actor_id, created_at)`;
 `(action, created_at)`, ascending (Postgres scans them backwards for newest-first). The viewer pages

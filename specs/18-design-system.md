@@ -590,7 +590,13 @@ oldest wait, those past the holder's time and all running ones, and links to the
 deferred group per panel: Queues (waiting, delayed, running, oldest wait, alerts as text pills),
 Scheduler (heartbeat age; no heartbeat reads as "No heartbeat recorded", not stopped), Clash of
 Clans API (breaker plus each key by id, state, reason and since), Failed jobs (every kept failure
-by job class and queue, job class and queue only). Durations via `formatDuration`: hours and
+by job class and queue, job class and queue only). Since P2-19 each class row has "Show jobs" (its
+newest 50 below the table: id, queue, time, never the payload) and, behind `manage-failed-jobs`,
+"Retry all" and "Delete all"; each listed job has Retry and Delete. Unreadable payloads offer no
+retry. Delete confirms in a modal that says how many go (capped at 200 per action, oldest first);
+retry runs at once; a flash reports the jobs handled, already handled by someone else, not
+retryable and left; a refusal shows inline under the table, a failed request with its request id.
+Durations via `formatDuration`: hours and
 days carry the next unit ("3 h 5 min", "2 d 4 h"), minutes and seconds stand alone ("7 min"). The nav item "System" sits between Users and Logs
 (owner decision, 2026-10-02).
 

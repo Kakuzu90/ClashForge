@@ -4,10 +4,14 @@ namespace App\Domain\Operations\Queries;
 
 use App\Domain\Operations\Data\FailedJobClassData;
 use App\Domain\Operations\Data\FailedJobGroupData;
+use App\Domain\Operations\Data\FailedJobListData;
+use App\Domain\Operations\Data\FailedJobRowData;
 use App\Domain\Operations\Data\FailedJobsByClassData;
 use App\Domain\Operations\Data\FailedJobsSummaryData;
+use App\Domain\Operations\Data\FailedJobTarget;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -113,6 +117,46 @@ class FailedJobsQuery
             retentionDays: (int) config('platform.prune.failed_jobs_days'),
             classes: $classes,
         );
+    }
+
+    /**
+     * The newest jobs of one class, or of the unreadable ones, for the job list (P2-19).
+     */
+    public function jobs(FailedJobTarget $target): FailedJobListData
+    {
+        $query = $this->targeted($target);
+        $total = (clone $query)->count();
+        $rows = $query->orderByDesc('failed_at')->orderByDesc('id')->limit((int) config('platform.admin.failed_jobs_list_max'))->get(['uuid', 'queue', 'failed_at']);
+
+        return new FailedJobListData(
+            name: $target->class === null ? null : self::name($target->class),
+            total: $total,
+            jobs: array_values($rows->map(fn (object $row): FailedJobRowData => new FailedJobRowData(
+                uuid: (string) $row->uuid,
+                queue: (string) $row->queue,
+                failedAt: CarbonImmutable::parse($row->failed_at)->toIso8601String(),
+            ))->all()),
+        );
+    }
+
+    /**
+     * `failed_jobs` narrowed to a target: by uuid, by the payload's `displayName`, or to the rows
+     * whose payload has none. Shared with FailedJobService so the list and the actions agree.
+     */
+    public function targeted(FailedJobTarget $target): Builder
+    {
+        $connection = DB::connection((string) config('queue.failed.database'));
+        $query = $connection->table((string) config('queue.failed.table'));
+
+        return match (true) {
+            $target->uuid !== null => $query->where('uuid', $target->uuid),
+            // As `name()` reads it: no class, or a blank one.
+            $target->unreadable => $query->whereRaw('COALESCE(TRIM('.self::nameExpression($connection)."), '') = ''"),
+            // Trimmed like `name()`, so a class shown on the page always matches its rows. Names
+            // past NAME_MAX are shown cut and cannot be targeted as a class (job class names are
+            // far shorter); their jobs can still be acted on one by one.
+            default => $query->whereRaw('TRIM('.self::nameExpression($connection).') = ?', [trim((string) $target->class)]),
+        };
     }
 
     /**

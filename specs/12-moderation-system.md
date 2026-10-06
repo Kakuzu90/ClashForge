@@ -189,7 +189,8 @@ type and date. Moderators see their own; admins see everything.
 **Audit log** (`audit_logs`): every privileged action, including read access to report evidence
 (ownership dispute evidence since P2-17: `coc_dispute.evidence_viewed`, one entry per review page view
 that shows images),
-ownership transfers, role changes and data exports. Two-year retention, never edited.
+ownership transfers, role changes, data exports, and each failed job an admin retries or deletes
+(`failed_job.retried` / `failed_job.deleted`, P2-19). Two-year retention, never edited.
 
 **User-facing transparency:**
 - A user can see their own sanction history and the reason for each.

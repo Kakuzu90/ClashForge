@@ -2,8 +2,8 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_account.released' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed' | 'coc_dispute.evidence_viewed';
-export type AuditSubject = 'user' | 'coc_account' | 'coc_account_dispute';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_account.released' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed' | 'coc_dispute.evidence_viewed' | 'failed_job.retried' | 'failed_job.deleted';
+export type AuditSubject = 'user' | 'coc_account' | 'coc_account_dispute' | 'failed_job';
 }
 }
 namespace Auth {
@@ -68,7 +68,7 @@ namespace Enums {
 export type EmailChangeOutcome = 'pending' | 'changed' | 'already_changed' | 'taken' | 'wrong_account' | 'invalid';
 export type EmailVerificationOutcome = 'pending' | 'verified' | 'already_verified' | 'invalid';
 export type Role = 'user' | 'moderator' | 'admin' | 'super_admin';
-export type StaffAbility = 'access-admin' | 'view-users' | 'view-platform-stats' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
+export type StaffAbility = 'access-admin' | 'view-users' | 'view-platform-stats' | 'manage-failed-jobs' | 'view-report-queue' | 'claim-report-case' | 'hide-content' | 'remove-content' | 'warn-user' | 'restrict-user' | 'suspend-user' | 'ban-user' | 'lift-sanction' | 'review-media-quarantine' | 'resolve-disputes' | 'force-ownership-transfer' | 'approve-sellers' | 'resolve-marketplace-disputes' | 'manage-tags' | 'view-moderation-log' | 'view-audit-log' | 'manage-roles' | 'manage-settings' | 'hard-delete-user' | 'impersonate';
 export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pending_deletion';
 }
 }
@@ -276,6 +276,12 @@ export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
 }
 namespace Operations {
 namespace Data {
+export type FailedJobActionResultData = {
+done: number,
+skipped: number,
+kept: number,
+left: number,
+};
 export type FailedJobClassData = {
 name: string | null,
 count: number,
@@ -288,6 +294,16 @@ count: number,
 lastHour: number,
 firstFailedAt: string,
 lastFailedAt: string,
+};
+export type FailedJobListData = {
+name: string | null,
+total: number,
+jobs: App.Domain.Operations.Data.FailedJobRowData[],
+};
+export type FailedJobRowData = {
+uuid: string,
+queue: string,
+failedAt: string,
 };
 export type FailedJobsByClassData = {
 total: number,

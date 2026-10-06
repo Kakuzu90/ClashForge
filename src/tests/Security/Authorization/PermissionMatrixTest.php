@@ -13,6 +13,7 @@ const MATRIX = [
     'access-admin' => [false, false, true, true],
     'view-users' => [false, false, true, true],
     'view-platform-stats' => [false, false, true, true],
+    'manage-failed-jobs' => [false, false, true, true],
     'view-report-queue' => [false, true, true, true],
     'claim-report-case' => [false, true, true, true],
     'hide-content' => [false, true, true, true],
