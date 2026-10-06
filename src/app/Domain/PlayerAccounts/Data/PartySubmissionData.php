@@ -23,5 +23,7 @@ class PartySubmissionData extends Data
         /** ISO 8601 */
         public string $at,
         public bool $opening,
+        /** Images staff deleted for showing an identity document (P2-25). */
+        public int $removed = 0,
     ) {}
 }

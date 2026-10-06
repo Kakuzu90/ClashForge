@@ -2,7 +2,7 @@ declare namespace App {
 namespace Domain {
 namespace Audit {
 namespace Enums {
-export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_account.released' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed' | 'coc_dispute.evidence_viewed' | 'failed_job.retried' | 'failed_job.deleted';
+export type AuditAction = 'role.changed' | 'sanction.applied' | 'sanction.lifted' | 'sanction.expired' | 'user.anonymised' | 'user.username_changed' | 'coc_account.verified' | 'coc_account.released' | 'coc_dispute.opened' | 'coc_dispute.responded' | 'coc_dispute.info_requested' | 'coc_dispute.escalated' | 'coc_dispute.closed' | 'coc_dispute.evidence_viewed' | 'coc_dispute.evidence_removed' | 'failed_job.retried' | 'failed_job.deleted';
 export type AuditSubject = 'user' | 'coc_account' | 'coc_account_dispute' | 'failed_job';
 }
 }
@@ -223,7 +223,7 @@ liftNote: string | null,
 };
 }
 namespace Enums {
-export type ModerationActionType = 'hide' | 'unhide' | 'remove' | 'restore' | 'warn' | 'restrict' | 'suspend' | 'ban' | 'lift' | 'unban' | 'dismiss' | 'escalate' | 'transfer_ownership' | 'approve_seller' | 'reject_listing';
+export type ModerationActionType = 'hide' | 'unhide' | 'remove' | 'restore' | 'warn' | 'restrict' | 'suspend' | 'ban' | 'lift' | 'unban' | 'dismiss' | 'escalate' | 'transfer_ownership' | 'approve_seller' | 'reject_listing' | 'release_tag';
 export type ReasonCode = 'account_trading' | 'scam' | 'false_ownership' | 'nsfw' | 'hate' | 'harassment' | 'impersonation' | 'stolen_content' | 'off_platform_payment' | 'spam' | 'wrong_category' | 'other';
 export type SanctionType = 'warning' | 'restriction' | 'suspension' | 'ban';
 }
@@ -270,7 +270,7 @@ actionLabel: string | null,
 }
 namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
-export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over' | 'coc_account_not_found' | 'coc_account_released' | 'coc_dispute_opened' | 'coc_dispute_reminder' | 'coc_dispute_info_requested' | 'coc_dispute_closed';
+export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over' | 'coc_account_not_found' | 'coc_account_released' | 'coc_dispute_opened' | 'coc_dispute_reminder' | 'coc_dispute_info_requested' | 'coc_dispute_closed' | 'coc_dispute_evidence_removed';
 export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
 }
 }
@@ -422,6 +422,8 @@ note: string | null,
 images: App.Domain.PlayerAccounts.Data.DisputeEvidenceImageData[],
 at: string,
 opening: boolean,
+removed: number,
+removable: boolean,
 };
 export type DisputeEvidenceImageData = {
 ulid: string,
@@ -494,6 +496,8 @@ snapshots: App.Domain.PlayerAccounts.Data.DisputeSnapshotData[],
 decisions: App.Domain.PlayerAccounts.Data.DisputeDecisionOptionData[],
 blockedReason: string | null,
 noteMax: number,
+canReleaseTag: boolean,
+releaseBlockedReason: string | null,
 };
 export type DisputeSnapshotData = {
 capturedAt: string,
@@ -538,6 +542,7 @@ note: string | null,
 images: App.Domain.PlayerAccounts.Data.DisputeEvidenceImageData[],
 at: string,
 opening: boolean,
+removed: number,
 };
 export type PendingDisputesData = {
 awaitingAdmin: number,
@@ -606,11 +611,11 @@ export type CocAccountStatus = 'unverified' | 'verified' | 'disputed' | 'suspend
 export type DisputeDecision = 'transfer' | 'deny' | 'suspend' | 'ask_claimant' | 'ask_holder';
 export type DisputeParty = 'claimant' | 'holder';
 export type DisputeQueueView = 'active' | 'awaiting_admin' | 'waiting_on_holder' | 'waiting_on_claimant' | 'closed';
-export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'too_many_today' | 'too_many_tags' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
+export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'too_many_today' | 'too_many_tags' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn' | 'not_suspended';
 export type DisputeStatus = 'open' | 'awaiting_admin' | 'awaiting_claimant' | 'awaiting_holder' | 'resolved_transfer' | 'resolved_denied' | 'resolved_suspended' | 'withdrawn' | 'auto_resolved';
 export type PartyDisputeOutcome = 'transferred_to_you' | 'released_to_you' | 'transferred_away' | 'released_by_you' | 'denied' | 'denied_token' | 'kept' | 'kept_token' | 'suspended' | 'withdrawn_by_you' | 'withdrawn' | 'withdrawn_inactive' | 'verified_by_token';
 export type RefreshOutcome = 'updated' | 'background' | 'not_found' | 'unavailable' | 'cooling_down' | 'too_many_refreshes';
-export type ReleaseReason = 'detach' | 'deletion' | 'ban';
+export type ReleaseReason = 'detach' | 'deletion' | 'ban' | 'admin';
 export type SnapshotSource = 'scheduled' | 'manual' | 'verification';
 export type SyncOutcome = 'changed' | 'unchanged' | 'not_found' | 'failed' | 'postponed' | 'skipped';
 export type VerificationMethod = 'api_token' | 'admin';

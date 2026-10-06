@@ -32,6 +32,7 @@ enum NotificationType: string implements HasLabelAndColor
     case CocDisputeReminder = 'coc_dispute_reminder';
     case CocDisputeInfoRequested = 'coc_dispute_info_requested';
     case CocDisputeClosed = 'coc_dispute_closed';
+    case CocDisputeEvidenceRemoved = 'coc_dispute_evidence_removed';
 
     public function label(): string
     {
@@ -51,6 +52,7 @@ enum NotificationType: string implements HasLabelAndColor
             self::CocDisputeReminder => 'Dispute reminder',
             self::CocDisputeInfoRequested => 'More info needed',
             self::CocDisputeClosed => 'Dispute closed',
+            self::CocDisputeEvidenceRemoved => 'Image removed',
         };
     }
 
@@ -61,7 +63,7 @@ enum NotificationType: string implements HasLabelAndColor
             self::PasswordChanged, self::NewDeviceSignIn, self::CocAccountNotFound => 'state-warning',
             self::EmailVerified, self::SanctionEnded, self::CocAccountVerified => 'state-success',
             self::CocAccountReleased, self::CocDisputeInfoRequested, self::CocDisputeClosed => 'state-info',
-            self::CocDisputeOpened, self::CocDisputeReminder => 'state-warning',
+            self::CocDisputeOpened, self::CocDisputeReminder, self::CocDisputeEvidenceRemoved => 'state-warning',
         };
     }
 
@@ -70,7 +72,8 @@ enum NotificationType: string implements HasLabelAndColor
         return match ($this) {
             self::MediaProcessingFailed => NotificationCategory::Bases,
             self::CocAccountVerified, self::CocAccountTakenOver, self::CocAccountNotFound, self::CocAccountReleased,
-            self::CocDisputeOpened, self::CocDisputeReminder, self::CocDisputeInfoRequested, self::CocDisputeClosed => NotificationCategory::Ownership,
+            self::CocDisputeOpened, self::CocDisputeReminder, self::CocDisputeInfoRequested, self::CocDisputeClosed,
+            self::CocDisputeEvidenceRemoved => NotificationCategory::Ownership,
             default => NotificationCategory::Security,
         };
     }
@@ -165,6 +168,12 @@ enum NotificationType: string implements HasLabelAndColor
                 actionLabel: 'Answer the admins',
             ),
             self::CocDisputeClosed => self::disputeOutcome($params),
+            // specs/13 §9: we do not keep identity documents (P2-25). In-app only.
+            self::CocDisputeEvidenceRemoved => new RenderedNotificationData(
+                title: 'An image was removed from your dispute',
+                body: 'An image you sent with your dispute over '.self::tag($params).' was removed because it showed an identity document. We do not keep identity documents: verify with the in-game API token or send an in-game screenshot instead.',
+                url: self::disputeUrl($params),
+            ),
         };
     }
 

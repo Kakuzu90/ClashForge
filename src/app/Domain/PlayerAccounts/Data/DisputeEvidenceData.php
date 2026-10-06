@@ -8,7 +8,9 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * One submission in a dispute, the claimant's opening statement included (`opening`), in the
- * order they arrived. Images carry short-lived signed URLs (specs/10 §8).
+ * order they arrived. Images carry short-lived signed URLs (specs/10 §8). `removed` counts the
+ * images staff deleted for showing an identity document, and `removable` says this admin may
+ * delete one (specs/13 §9, P2-25).
  */
 #[TypeScript]
 class DisputeEvidenceData extends Data
@@ -25,5 +27,7 @@ class DisputeEvidenceData extends Data
         /** ISO 8601 */
         public string $at,
         public bool $opening,
+        public int $removed = 0,
+        public bool $removable = false,
     ) {}
 }

@@ -93,7 +93,9 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
   is never locked out of defending an account; view: the parties, whose dispute page `/disputes/{ulid}` is
   a 404 for anyone else, P2-16; review: `resolve-disputes` and no stake in the tag
   (a party, a row on it, a claim attempt on it or a side in any dispute over it, owner decision 2026-10-06);
-  decide: review and strictly outranking both parties, rule 1 below, P2-17; without the ability, or with a
+  decide: review and strictly outranking both parties, rule 1 below, P2-17; releaseTag: review, a
+  `resolved_suspended` dispute, and strictly outranking the row's holder; removeEvidence: review and
+  strictly outranking the party who sent the image, P2-25; without the ability, or with a
   stake, a dispute is a 404 in the admin pages),
   `BaseLayoutPolicy`, `BaseCommentPolicy`, `RecruitmentPostPolicy`, `ApplicationPolicy`,
   `ListingPolicy`, `OrderPolicy`, `ReportPolicy`, `MediaPolicy`, `NotificationPolicy` (a notification is

@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $claimant_id
  * @property int|null $current_holder_id
  * @property string $reason
- * @property list<array{party: string, note: string|null, media: list<string>, at: string}> $evidence
+ * @property list<array{party: string, note: string|null, media: list<string>, at: string, removed?: int}> $evidence
  * @property DisputeStatus $status
  * @property int|null $assigned_admin_id
  * @property string|null $decision_note

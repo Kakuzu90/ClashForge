@@ -27,6 +27,7 @@ enum AuditAction: string implements HasLabelAndColor
     case CocDisputeEscalated = 'coc_dispute.escalated';
     case CocDisputeClosed = 'coc_dispute.closed';
     case CocDisputeEvidenceViewed = 'coc_dispute.evidence_viewed';
+    case CocDisputeEvidenceRemoved = 'coc_dispute.evidence_removed';
     case FailedJobRetried = 'failed_job.retried';
     case FailedJobDeleted = 'failed_job.deleted';
 
@@ -47,6 +48,7 @@ enum AuditAction: string implements HasLabelAndColor
             self::CocDisputeEscalated => 'Dispute sent to admins',
             self::CocDisputeClosed => 'Ownership dispute closed',
             self::CocDisputeEvidenceViewed => 'Dispute evidence viewed',
+            self::CocDisputeEvidenceRemoved => 'Dispute evidence removed',
             self::FailedJobRetried => 'Failed job retried',
             self::FailedJobDeleted => 'Failed job deleted',
         };
@@ -63,6 +65,7 @@ enum AuditAction: string implements HasLabelAndColor
             self::CocDisputeOpened, self::CocDisputeEscalated => 'state-warning',
             self::CocDisputeResponded, self::CocDisputeInfoRequested => 'state-info',
             self::CocDisputeClosed, self::CocDisputeEvidenceViewed => 'text-muted',
+            self::CocDisputeEvidenceRemoved => 'state-danger',
             self::FailedJobRetried => 'state-info',
             self::FailedJobDeleted => 'state-warning',
         };

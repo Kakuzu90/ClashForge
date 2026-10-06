@@ -28,6 +28,7 @@ enum ModerationActionType: string implements HasLabelAndColor
     case TransferOwnership = 'transfer_ownership';
     case ApproveSeller = 'approve_seller';
     case RejectListing = 'reject_listing';
+    case ReleaseTag = 'release_tag';
 
     public function label(): string
     {
@@ -47,6 +48,7 @@ enum ModerationActionType: string implements HasLabelAndColor
             self::TransferOwnership => 'Transferred ownership',
             self::ApproveSeller => 'Approved seller',
             self::RejectListing => 'Rejected listing',
+            self::ReleaseTag => 'Released a suspended tag',
         };
     }
 

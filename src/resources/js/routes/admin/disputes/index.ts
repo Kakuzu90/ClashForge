@@ -1,8 +1,9 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 import decision from './decision'
+import evidence from './evidence'
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::index
-* @see app/Http/Controllers/Admin/DisputeController.php:35
+* @see app/Http/Controllers/Admin/DisputeController.php:36
 * @route '/admin/disputes'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -17,7 +18,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::index
-* @see app/Http/Controllers/Admin/DisputeController.php:35
+* @see app/Http/Controllers/Admin/DisputeController.php:36
 * @route '/admin/disputes'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -26,7 +27,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::index
-* @see app/Http/Controllers/Admin/DisputeController.php:35
+* @see app/Http/Controllers/Admin/DisputeController.php:36
 * @route '/admin/disputes'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -36,7 +37,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::index
-* @see app/Http/Controllers/Admin/DisputeController.php:35
+* @see app/Http/Controllers/Admin/DisputeController.php:36
 * @route '/admin/disputes'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -46,7 +47,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::show
-* @see app/Http/Controllers/Admin/DisputeController.php:57
+* @see app/Http/Controllers/Admin/DisputeController.php:58
 * @route '/admin/disputes/{ulid}'
 */
 export const show = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -61,7 +62,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::show
-* @see app/Http/Controllers/Admin/DisputeController.php:57
+* @see app/Http/Controllers/Admin/DisputeController.php:58
 * @route '/admin/disputes/{ulid}'
 */
 show.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -88,7 +89,7 @@ show.url = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::show
-* @see app/Http/Controllers/Admin/DisputeController.php:57
+* @see app/Http/Controllers/Admin/DisputeController.php:58
 * @route '/admin/disputes/{ulid}'
 */
 show.get = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -98,7 +99,7 @@ show.get = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::show
-* @see app/Http/Controllers/Admin/DisputeController.php:57
+* @see app/Http/Controllers/Admin/DisputeController.php:58
 * @route '/admin/disputes/{ulid}'
 */
 show.head = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -106,10 +107,64 @@ show.head = (args: { ulid: string | number } | [ulid: string | number ] | string
     method: 'head',
 })
 
+/**
+* @see \App\Http\Controllers\Admin\DisputeController::releaseTag
+* @see app/Http/Controllers/Admin/DisputeController.php:92
+* @route '/admin/disputes/{ulid}/release-tag'
+*/
+export const releaseTag = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: releaseTag.url(args, options),
+    method: 'post',
+})
+
+releaseTag.definition = {
+    methods: ["post"],
+    url: '/admin/disputes/{ulid}/release-tag',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Admin\DisputeController::releaseTag
+* @see app/Http/Controllers/Admin/DisputeController.php:92
+* @route '/admin/disputes/{ulid}/release-tag'
+*/
+releaseTag.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { ulid: args }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            ulid: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        ulid: args.ulid,
+    }
+
+    return releaseTag.definition.url
+            .replace('{ulid}', parsedArgs.ulid.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Admin\DisputeController::releaseTag
+* @see app/Http/Controllers/Admin/DisputeController.php:92
+* @route '/admin/disputes/{ulid}/release-tag'
+*/
+releaseTag.post = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: releaseTag.url(args, options),
+    method: 'post',
+})
+
 const disputes = {
     index: Object.assign(index, index),
     show: Object.assign(show, show),
     decision: Object.assign(decision, decision),
+    releaseTag: Object.assign(releaseTag, releaseTag),
+    evidence: Object.assign(evidence, evidence),
 }
 
 export default disputes

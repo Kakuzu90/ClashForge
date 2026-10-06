@@ -503,7 +503,8 @@ the form with a warning alert. *Show:* the tag with a status pill, one alert say
 and by when (or how it ended, with a link to the account or the token path), then only the actions
 the server allows: "End it with a token", "Answer for the admins" (same field set as create), "Give
 the account up" (a modal with the current password) or "Withdraw my claim" (a confirm modal), and
-"What you sent" (the viewer's own statements and thumbnails). The account page's "Ownership is under
+"What you sent" (the viewer's own statements and thumbnails; an entry staff took an image from says
+"An image was removed by staff because it showed an identity document.", P2-25). The account page's "Ownership is under
 review" alert gains "See the dispute" for the holder, and the verify page reads "Someone claims …"
 for a `disputed` row instead of showing the attach steps.
 
@@ -610,7 +611,12 @@ The review page (`/admin/disputes/{ulid}`) stacks a summary list, the two partie
 (sanction history included), statements and evidence side by side (thumbnails open the signed
 image; "Image not available" until it has a rendition), the decision form (radios for what is
 possible now, the rest listed with their reason, a required internal note, a confirm modal naming
-who keeps the account), the audit trail, the claim history and the snapshots. The dashboard's
+who keeps the account), the audit trail, the claim history and the snapshots. Since P2-25 an
+image the admin may remove has "Delete: ID document" under it (confirm modal: delete only an
+identity document; the sender is told), an entry with removed images says "Removed by staff: 1
+image showed an identity document.", and a `resolved_suspended` dispute whose row is still
+suspended gets a "Suspended tag" panel (required note, "Release the tag", a confirm saying anyone
+with the token can verify it next), or the reason an outranked admin cannot. The dashboard's
 "Pending disputes" panel (its own deferred group) counts disputes waiting for an admin with the
 oldest wait, those past the holder's time and all running ones, and links to the queue.
 *System Health (`/admin/system`, P2-06):* the same panel pattern behind `view-platform-stats`, one

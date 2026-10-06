@@ -28,6 +28,9 @@ Route::middleware(['auth', 'account.active', 'can:access-admin'])->prefix('admin
         Route::post('/users/{ulid}/ban', [SanctionController::class, 'ban'])->name('users.ban.store');
         Route::delete('/users/{ulid}/sanction', [SanctionController::class, 'lift'])->name('users.sanction.destroy');
         Route::post('/disputes/{ulid}/decision', [DisputeController::class, 'decide'])->name('disputes.decision.store');
+        // A suspended tag back into play, and an identity-document image out of the evidence (P2-25).
+        Route::post('/disputes/{ulid}/release-tag', [DisputeController::class, 'releaseTag'])->name('disputes.release-tag');
+        Route::delete('/disputes/{ulid}/evidence/{media}', [DisputeController::class, 'removeEvidence'])->whereUlid('media')->name('disputes.evidence.destroy');
     });
 
     // Failed jobs (P2-19): the service authorizes `manage-failed-jobs` and audits each job.

@@ -51,7 +51,12 @@ The most important workflow on the platform. Every other trust signal derives fr
 | `released` | n/a | n/a | no | yes |
 
 A `suspended` row takes the whole tag out of play: preview, attach and token verification refuse
-it (`tag_suspended`) until staff release it (P2-03; the release action comes with the admin pages).
+it (`tag_suspended`) until staff release it (P2-03). The release (P2-25) sits on the admin review
+page of the `resolved_suspended` dispute while its row is still `suspended`: a `resolve-disputes`
+admin with no stake who strictly outranks the holder writes a required note and confirms; the row
+goes through the §6 release (reason `admin`), the action is logged as `release_tag` with the note,
+and the former holder gets the "Tag released" notice. A row that moved on refuses with "This tag is
+no longer suspended."
 
 ## 3. Happy path: attach and verify
 
@@ -352,4 +357,4 @@ As built (P2-18, owner decisions 2026-10-06):
 | CoC API is down when a user wants to verify | Verification is disabled with an explicit message ("Verification is paused", on the token step and the conflict card, while the shared `cocApi` prop is set; P2-10); nothing is half-written; attach can still create an `unverified` row from cached data if we have it |
 | Same person, two website accounts, one tag | The second verification supersedes the first; allowed, logged, and visible to admins as a duplicate-account signal |
 | Verified account's user deletes their website account | Tag `released` at the end of the deletion window |
-| Dispute evidence contains a real-world ID document | Moderator policy: do not accept, delete the media, instruct the claimant to use a token or an in-game screenshot. We do not want to hold identity documents. The upload hint on both dispute forms says so up front (P2-16) |
+| Dispute evidence contains a real-world ID document | Moderator policy: do not accept, delete the media, instruct the claimant to use a token or an in-game screenshot. We do not want to hold identity documents. The upload hint on both dispute forms says so up front (P2-16). As built (P2-25): a `resolve-disputes` admin with no stake who strictly outranks the sender deletes the image from the review page ("Delete: ID document", with a confirm), on a running or closed dispute; the media is released, the entry keeps a `removed` count ("Removed by staff" on both the admin and the party page), the image no longer counts toward the party's limit, the action is audited (`coc_dispute.evidence_removed`) and logged (`remove`), and the sender gets an in-app notice saying to use a token or an in-game screenshot |

@@ -42,7 +42,8 @@ longer available", with no link.
 | | Dispute decision | I + E (P2-18; every ending with its outcome per recipient, [13 §8](13-claiming-workflow.md); a transfer or release to the claimant replaces their "CoC account verified" notice; an outcome with no other link links to the dispute page, "View the dispute", P2-16) | — | immediate |
 | | Re-verification requested | I + E | — | immediate |
 | | Account not found for 3 syncs | I (P2-09; once, on the sync that makes the account stale; names the tag and in-game name; says it stays verified) | — | immediate |
-| | Tag released | I (detach since P2-14, a ban's 30-day release since P2-24; names the tag and in-game name, no link; a deleted account gets none) | — | immediate |
+| | Tag released | I (detach since P2-14, a ban's 30-day release since P2-24, a staff release of a suspended tag since P2-25; names the tag and in-game name, no link; a deleted account gets none) | — | immediate |
+| | Dispute image removed by staff | I only (P2-25; to the sender of an evidence image that showed an identity document; names the tag, says to verify with the in-game token or send an in-game screenshot; links to the dispute page) | — | immediate |
 | **Bases** | Comment on your base | I + E (opt) | `base:{id}:comments` | batched 5 min |
 | | Reply to your comment | I + E (opt) | `comment:{id}:replies` | batched 5 min |
 | | Like milestone (10, 50, 100, 500, 1000) | I | `base:{id}:likes` | batched hourly |

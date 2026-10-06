@@ -167,6 +167,10 @@ function withdrawClaim() {
                             </span>
                         </li>
                     </ul>
+                    <p v-if="entry.removed > 0" class="text-sm text-fg-secondary">
+                        {{ entry.removed === 1 ? 'An image was' : `${entry.removed} images were` }} removed by staff because
+                        {{ entry.removed === 1 ? 'it' : 'they' }} showed an identity document.
+                    </p>
                 </li>
             </ol>
         </section>

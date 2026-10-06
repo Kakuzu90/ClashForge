@@ -21,6 +21,15 @@ final class DisputeRank
     }
 
     /**
+     * Rule 1 against one user, for the P2-25 staff writes (the holder of a suspended row, the
+     * sender of an image); nobody to outrank counts as allowed.
+     */
+    public static function outranks(User $admin, ?User $other): bool
+    {
+        return $other === null || $admin->role->outranks($other->role);
+    }
+
+    /**
      * Why this admin cannot decide the dispute at all, or null.
      */
     public static function blockedReason(User $admin, CocAccountDispute $dispute): ?string

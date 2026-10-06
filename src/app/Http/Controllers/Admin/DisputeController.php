@@ -18,6 +18,7 @@ use App\Http\Data\Admin\AuditTrailEntryData;
 use App\Http\Data\Admin\FilterOptionData;
 use App\Http\Requests\Admin\DecideDisputeRequest;
 use App\Http\Requests\Admin\DisputeFilterRequest;
+use App\Http\Requests\Admin\ReleaseDisputedTagRequest;
 use App\Models\User;
 use App\Support\Seo\PageMeta;
 use Illuminate\Http\RedirectResponse;
@@ -86,6 +87,24 @@ class DisputeController extends Controller
             DisputeDecision::AskClaimant => 'Asked the claimant for more.',
             DisputeDecision::AskHolder => 'Asked the holder for more.',
         });
+    }
+
+    public function releaseTag(ReleaseDisputedTagRequest $request, string $ulid, DisputeService $disputes): RedirectResponse
+    {
+        $result = $disputes->releaseTag($this->admin($request), $ulid, $request->note());
+
+        if ($result->refusal !== null) {
+            return back()->withErrors(['note' => $result->refusal->label().'.']);
+        }
+
+        return back()->with('success', 'The tag is released. Anyone can claim it now.');
+    }
+
+    public function removeEvidence(Request $request, string $ulid, string $media, DisputeService $disputes): RedirectResponse
+    {
+        $disputes->removeEvidence($this->admin($request), $ulid, $media);
+
+        return back()->with('success', 'Image deleted. The sender was told why.');
     }
 
     private function admin(Request $request): User

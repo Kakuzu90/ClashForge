@@ -52,5 +52,8 @@ class DisputeReviewData extends Data
         public array $decisions,
         public ?string $blockedReason,
         public int $noteMax,
+        /** The tag this dispute suspended can be released (P2-25); `releaseBlockedReason` says why this admin cannot. */
+        public bool $canReleaseTag = false,
+        public ?string $releaseBlockedReason = null,
     ) {}
 }

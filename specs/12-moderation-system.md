@@ -188,7 +188,9 @@ type and date. Moderators see their own; admins see everything.
 
 **Audit log** (`audit_logs`): every privileged action, including read access to report evidence
 (ownership dispute evidence since P2-17: `coc_dispute.evidence_viewed`, one entry per review page view
-that shows images),
+that shows images; `coc_dispute.evidence_removed` when staff delete an identity-document image, and
+`coc_account.released` with reason `admin` for a staff tag release, both also in `moderation_actions`
+as `remove` / `release_tag` with their note, P2-25),
 ownership transfers, role changes, data exports, and each failed job an admin retries or deletes
 (`failed_job.retried` / `failed_job.deleted`, P2-19). Two-year retention, never edited.
 

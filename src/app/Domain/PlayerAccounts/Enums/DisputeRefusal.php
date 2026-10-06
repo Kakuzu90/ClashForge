@@ -25,6 +25,7 @@ enum DisputeRefusal: string implements HasLabelAndColor
     case HolderCannotKeep = 'holder_cannot_keep';
     case ClaimantUnavailable = 'claimant_unavailable';
     case RecentlyWithdrawn = 'recently_withdrawn';
+    case NotSuspended = 'not_suspended';
 
     public function label(): string
     {
@@ -41,6 +42,7 @@ enum DisputeRefusal: string implements HasLabelAndColor
             self::Closed => 'This dispute is closed',
             self::HolderCannotKeep => 'A banned holder cannot keep the account',
             self::RecentlyWithdrawn => 'You withdrew a dispute for this account recently',
+            self::NotSuspended => 'This tag is no longer suspended',
             self::ClaimantUnavailable => 'The claimant cannot receive the account: banned, suspended or leaving',
         };
     }

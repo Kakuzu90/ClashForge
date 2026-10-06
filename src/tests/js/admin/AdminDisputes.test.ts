@@ -6,6 +6,8 @@ import { h, reactive } from 'vue';
 
 const calls = vi.hoisted(() => [] as { method: string; url: string; data: Record<string, unknown> }[]);
 const visits = vi.hoisted(() => [] as { url: string; data: Record<string, unknown> }[]);
+// Errors the next form post answers with, as a refused request would.
+const nextErrors = vi.hoisted(() => ({ value: null as Record<string, string> | null }));
 
 vi.mock('@inertiajs/vue3', () => ({
     Link: {
@@ -23,12 +25,24 @@ vi.mock('@inertiajs/vue3', () => ({
                 slots.default?.(),
     },
     usePage: () => ({ props: {}, url: '/admin/disputes' }),
-    router: { get: (url: string, data: Record<string, unknown>) => visits.push({ url, data }), reload: vi.fn(), on: () => () => {} },
+    router: {
+        get: (url: string, data: Record<string, unknown>) => visits.push({ url, data }),
+        delete: (url: string) => calls.push({ method: 'delete', url, data: {} }),
+        reload: vi.fn(),
+        on: () => () => {},
+    },
     useForm: (initial: Record<string, unknown>) => {
         const form: Record<string, unknown> = reactive({ ...initial, errors: {}, processing: false, reset: () => Object.assign(form, initial) });
-        form.post = (url: string, options: { onSuccess?: () => void }) => {
+        form.post = (url: string, options: { onSuccess?: () => void; onError?: () => void; onFinish?: () => void }) => {
             calls.push({ method: 'post', url, data: Object.fromEntries(Object.keys(initial).map((key) => [key, form[key]])) });
-            options.onSuccess?.();
+            if (nextErrors.value) {
+                form.errors = nextErrors.value;
+                nextErrors.value = null;
+                options.onError?.();
+            } else {
+                options.onSuccess?.();
+            }
+            options.onFinish?.();
         };
         return form;
     },
@@ -81,13 +95,15 @@ const review = (overrides: Partial<Review> = {}): Review => ({
     claimant: party('claimant'),
     holder: party('holder'),
     evidence: [
-        { party: 'claimant', note: 'I lost the phone.', images: [], at: '2026-10-01T00:00:00+00:00', opening: true },
+        { party: 'claimant', note: 'I lost the phone.', images: [], at: '2026-10-01T00:00:00+00:00', opening: true, removed: 0, removable: false },
         {
             party: 'holder',
             note: 'It is mine.',
             images: [{ ulid: 'IMG', url: null, thumbUrl: null }],
             at: '2026-10-02T00:00:00+00:00',
             opening: false,
+            removed: 0,
+            removable: false,
         },
     ],
     claims: [],
@@ -101,6 +117,8 @@ const review = (overrides: Partial<Review> = {}): Review => ({
     ],
     blockedReason: null,
     noteMax: 1000,
+    canReleaseTag: false,
+    releaseBlockedReason: null,
     ...overrides,
 });
 
@@ -197,15 +215,124 @@ describe('Admin/Disputes/Show, the form state', () => {
     });
 
     it('links earlier disputes only where the admin may review them', () => {
-        const holder = { ...party('holder'), priorDisputes: [
-            { ulid: 'P1', tag: '#8LQ9JPYC', side: 'holder', status: 'resolved_denied' as const, statusLabel: 'Denied', openedAt: '2026-09-01T00:00:00+00:00', reviewable: true },
-            { ulid: 'P2', tag: '#8LQ9JPYG', side: 'claimant', status: 'withdrawn' as const, statusLabel: 'Withdrawn', openedAt: '2026-09-02T00:00:00+00:00', reviewable: false },
-        ] };
+        const holder = {
+            ...party('holder'),
+            priorDisputes: [
+                {
+                    ulid: 'P1',
+                    tag: '#8LQ9JPYC',
+                    side: 'holder',
+                    status: 'resolved_denied' as const,
+                    statusLabel: 'Denied',
+                    openedAt: '2026-09-01T00:00:00+00:00',
+                    reviewable: true,
+                },
+                {
+                    ulid: 'P2',
+                    tag: '#8LQ9JPYG',
+                    side: 'claimant',
+                    status: 'withdrawn' as const,
+                    statusLabel: 'Withdrawn',
+                    openedAt: '2026-09-02T00:00:00+00:00',
+                    reviewable: false,
+                },
+            ],
+        };
         const wrapper = renderShow(review({ holder }));
 
         expect(wrapper.find('a[href="/admin/disputes/P1"]').exists()).toBe(true);
         expect(wrapper.find('a[href="/admin/disputes/P2"]').exists()).toBe(false);
         expect(wrapper.text()).toContain('#8LQ9JPYG');
+    });
+});
+
+describe('Admin/Disputes/Show, staff clean-up (P2-25)', () => {
+    const suspended = (overrides: Partial<Review> = {}) =>
+        review({
+            status: 'resolved_suspended',
+            statusLabel: 'Suspended',
+            active: false,
+            accountStatus: 'suspended',
+            blockedReason: 'This dispute is closed.',
+            canReleaseTag: true,
+            ...overrides,
+        });
+    const button = (root: ParentNode, text: string) =>
+        Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === text) as HTMLButtonElement;
+
+    it('releases the suspended tag after a note and a confirm', async () => {
+        const wrapper = renderShow(suspended());
+        const release = wrapper.get('section[aria-labelledby="release-heading"]');
+        expect(release.get('button[type="submit"]').attributes('disabled')).toBeDefined();
+
+        await release.get('textarea').setValue('No owner proven.');
+        await release.get('form').trigger('submit');
+        expect(calls).toEqual([]);
+
+        const dialog = document.body.querySelector('[role="dialog"]') as HTMLElement;
+        expect(dialog.textContent).toContain('Anyone with its in-game API token can verify it next');
+        button(dialog, 'Release the tag').click();
+        await flushPromises();
+        expect(calls).toEqual([
+            { method: 'post', url: '/admin/disputes/01J0000000000000000000DISP/release-tag', data: { note: 'No owner proven.' } },
+        ]);
+    });
+
+    it('keeps saying why a release was refused after the panel would have gone', async () => {
+        const wrapper = renderShow(suspended());
+        const release = wrapper.get('section[aria-labelledby="release-heading"]');
+        await release.get('textarea').setValue('No owner proven.');
+        await release.get('form').trigger('submit');
+        nextErrors.value = { note: 'This tag is no longer suspended.' };
+        button(document.body.querySelector('[role="dialog"]') as HTMLElement, 'Release the tag').click();
+        await flushPromises();
+
+        // Another admin released it first: the reloaded page no longer offers the release.
+        await wrapper.setProps({ dispute: suspended({ canReleaseTag: false, accountStatus: 'released' }) });
+
+        const panel = wrapper.get('section[aria-labelledby="release-heading"]');
+        expect(panel.text()).toContain('This tag is no longer suspended.');
+        expect(panel.find('form').exists()).toBe(false);
+    });
+
+    it('says why this admin cannot release, without a form', () => {
+        const reason = 'The holder is an admin, so only a super admin can release this tag.';
+        const release = renderShow(suspended({ canReleaseTag: false, releaseBlockedReason: reason })).get(
+            'section[aria-labelledby="release-heading"]',
+        );
+
+        expect(release.text()).toContain(reason);
+        expect(release.find('form').exists()).toBe(false);
+    });
+
+    it('has no release panel while the tag is not suspended', () => {
+        expect(renderShow(review()).find('section[aria-labelledby="release-heading"]').exists()).toBe(false);
+    });
+
+    it('deletes an evidence image after a confirm, and shows what staff removed', async () => {
+        const base = review();
+        const evidence = base.evidence.map((entry) => (entry.images.length ? { ...entry, removable: true, removed: 1 } : entry));
+        const wrapper = renderShow({ ...base, evidence });
+
+        expect(wrapper.text()).toContain('Removed by staff: 1 image showed an identity document.');
+        await wrapper
+            .findAll('button')
+            .find((b) => b.text() === 'Delete: ID document')!
+            .trigger('click');
+        expect(calls).toEqual([]);
+
+        const dialog = document.body.querySelector('[role="dialog"]') as HTMLElement;
+        expect(dialog.textContent).toContain('Delete it only if it shows an identity document.');
+        button(dialog, 'Delete the image').click();
+        expect(calls).toEqual([{ method: 'delete', url: '/admin/disputes/01J0000000000000000000DISP/evidence/IMG', data: {} }]);
+    });
+
+    it('offers no delete where the admin may not remove', () => {
+        expect(
+            renderShow(review())
+                .findAll('button')
+                .some((b) => b.text() === 'Delete: ID document'),
+        ).toBe(false);
     });
 });
 

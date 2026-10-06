@@ -2,6 +2,7 @@
 
 namespace App\Domain\PlayerAccounts\Services;
 
+use App\Domain\Audit\Data\AuditActorData;
 use App\Domain\Audit\Enums\AuditAction;
 use App\Domain\Auth\Enums\StaffAbility;
 use App\Domain\Auth\Enums\UserStatus;
@@ -21,7 +22,9 @@ use App\Domain\PlayerAccounts\Enums\DisputeDecision;
 use App\Domain\PlayerAccounts\Enums\DisputeParty;
 use App\Domain\PlayerAccounts\Enums\DisputeRefusal;
 use App\Domain\PlayerAccounts\Enums\DisputeStatus;
+use App\Domain\PlayerAccounts\Enums\ReleaseReason;
 use App\Domain\PlayerAccounts\Enums\VerificationMethod;
+use App\Domain\PlayerAccounts\Events\CocAccountDisputeEvidenceRemoved;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeInfoRequested;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeOpened;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeReminderDue;
@@ -35,6 +38,7 @@ use App\Domain\PlayerAccounts\Support\ClaimLimits;
 use App\Domain\PlayerAccounts\Support\ClaimRecorder;
 use App\Domain\PlayerAccounts\Support\DisputeLedger;
 use App\Domain\PlayerAccounts\Support\FeaturedAccount;
+use App\Domain\PlayerAccounts\Support\SuspendedTag;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -65,6 +69,7 @@ class DisputeService
         private readonly PasswordConfirmationService $passwords,
         private readonly ClaimLimits $limits,
         private readonly AccountImages $images,
+        private readonly AccountOwnershipService $ownership,
     ) {}
 
     /**
@@ -289,6 +294,90 @@ class DisputeService
                 DisputeDecision::AskHolder => $this->ask($admin, $dispute, DisputeParty::Holder),
             };
         });
+    }
+
+    /**
+     * Staff release the tag a dispute suspended (specs/13 §2, P2-25): the row goes back to
+     * `released`, claimable by anyone, through the same release as a detach (owner cleared,
+     * images deleted, audited), and the action is logged with its note.
+     */
+    public function releaseTag(User $admin, string $disputeUlid, string $note): DisputeResultData
+    {
+        $dispute = $this->reviewable($admin, $disputeUlid);
+        Gate::forUser($admin)->authorize('releaseTag', $dispute);
+        $note = $this->requiredText($note, 'note');
+
+        return DB::transaction(function () use ($admin, $dispute, $note): DisputeResultData {
+            // The order verification locks in: the tag's rows, then the user.
+            $row = CocAccount::query()->where('tag_normalized', $dispute->tag_normalized)->orderBy('id')->lockForUpdate()->get()
+                ->firstWhere('id', $dispute->coc_account_id);
+            if ($row === null || $row->user_id === null || ! SuspendedTag::releasableFrom($dispute, $row)) {
+                return DisputeResultData::refused(DisputeRefusal::NotSuspended, $dispute->ulid);
+            }
+            $this->users->lockAccounts([$row->user_id]);
+            $owner = User::query()->withTrashed()->findOrFail($row->user_id);
+
+            $this->ownership->release($row, $owner, ReleaseReason::Admin, new AuditActorData(id: $admin->id, role: $admin->role->value));
+            $this->moderation->record($admin, ModerationActionType::ReleaseTag, 'coc_account', $row->id, $owner->id, ReasonCode::FalseOwnership, $note, [
+                'dispute' => $dispute->ulid,
+                'tag' => $row->tag,
+            ]);
+
+            return new DisputeResultData($dispute->ulid, $dispute->status);
+        });
+    }
+
+    /**
+     * Staff delete an evidence image that shows an identity document (specs/13 §9, P2-25), on a
+     * running or closed dispute. The entry keeps a count of removed images, so the record shows
+     * one went, and the image stops counting toward the party's limit. The uploader is told.
+     */
+    public function removeEvidence(User $admin, string $disputeUlid, string $mediaUlid): void
+    {
+        $dispute = $this->reviewable($admin, $disputeUlid);
+
+        DB::transaction(function () use ($admin, $dispute, $mediaUlid): void {
+            $dispute = $this->lock($dispute);
+            $evidence = $dispute->evidence;
+            $index = collect($evidence)->search(fn (array $entry): bool => in_array($mediaUlid, $entry['media'], true));
+            if ($index === false) {
+                throw (new ModelNotFoundException)->setModel(CocAccountDispute::class, [$dispute->ulid]);
+            }
+            $party = DisputeParty::from($evidence[$index]['party']);
+            Gate::forUser($admin)->authorize('removeEvidence', [$dispute, $party]);
+
+            $this->media->detachFrom($dispute, MediaCollection::Evidence, $mediaUlid);
+            $evidence[$index]['media'] = array_values(array_diff($evidence[$index]['media'], [$mediaUlid]));
+            $evidence[$index]['removed'] = ($evidence[$index]['removed'] ?? 0) + 1;
+            $dispute->forceFill(['evidence' => $evidence])->save();
+
+            $uploader = $party === DisputeParty::Claimant ? $dispute->claimant_id : $dispute->current_holder_id;
+            $this->ledger->record($admin, AuditAction::CocDisputeEvidenceRemoved, $dispute, null, null, ['media' => $mediaUlid, 'party' => $party->value]);
+            $this->moderation->record($admin, ModerationActionType::Remove, 'coc_account_dispute', $dispute->id, $uploader, ReasonCode::Other, 'Showed an identity document', [
+                'media' => $mediaUlid,
+                'party' => $party->value,
+            ]);
+            if ($uploader !== null) {
+                CocAccountDisputeEvidenceRemoved::dispatch($dispute->id, $uploader, $mediaUlid);
+            }
+        });
+    }
+
+    /**
+     * A dispute this admin may review: without `resolve-disputes`, or with a stake in the tag,
+     * every ULID is a 404 (specs/04 §3).
+     */
+    private function reviewable(User $admin, string $disputeUlid): CocAccountDispute
+    {
+        if (Gate::forUser($admin)->denies(StaffAbility::ResolveDisputes->value)) {
+            throw (new ModelNotFoundException)->setModel(CocAccountDispute::class, [$disputeUlid]);
+        }
+        $dispute = CocAccountDispute::query()->where('ulid', $disputeUlid)->first();
+        if ($dispute === null || Gate::forUser($admin)->denies('review', $dispute)) {
+            throw (new ModelNotFoundException)->setModel(CocAccountDispute::class, [$disputeUlid]);
+        }
+
+        return $dispute;
     }
 
     /**

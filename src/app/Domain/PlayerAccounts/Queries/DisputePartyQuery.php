@@ -124,6 +124,7 @@ class DisputePartyQuery
                 images: array_map(fn (string $ulid): DisputeEvidenceImageData => new DisputeEvidenceImageData($ulid, null, $thumbs[$ulid] ?? null), $entry['media']),
                 at: $entry['at'],
                 opening: false,
+                removed: (int) ($entry['removed'] ?? 0),
             );
         }
 

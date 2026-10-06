@@ -18,6 +18,7 @@ use App\Domain\PlayerAccounts\Data\DisputeReviewData;
 use App\Domain\PlayerAccounts\Data\DisputeReviewResult;
 use App\Domain\PlayerAccounts\Data\DisputeSnapshotData;
 use App\Domain\PlayerAccounts\Enums\DisputeDecision;
+use App\Domain\PlayerAccounts\Enums\DisputeParty;
 use App\Domain\PlayerAccounts\Enums\DisputeRefusal;
 use App\Domain\PlayerAccounts\Enums\DisputeStatus;
 use App\Domain\PlayerAccounts\Models\CocAccountClaim;
@@ -26,6 +27,7 @@ use App\Domain\PlayerAccounts\Models\CocAccountSnapshot;
 use App\Domain\PlayerAccounts\Support\DisputeLedger;
 use App\Domain\PlayerAccounts\Support\DisputeRank;
 use App\Domain\PlayerAccounts\Support\DisputeStake;
+use App\Domain\PlayerAccounts\Support\SuspendedTag;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Gate;
@@ -60,6 +62,14 @@ class DisputeReviewService
         $limit = (int) config('coc.disputes.review_history_limit');
         $stake = DisputeStake::tags($admin);
         $blocked = DisputeRank::blockedReason($admin, $dispute);
+        // The staff writes of P2-25. `review` passed above, so only the rest is decided here, once
+        // per page rather than once per evidence entry (each policy call reads the admin's stake).
+        $releasable = SuspendedTag::releasableFrom($dispute, $account);
+        $outranksHolder = DisputeRank::outranks($admin, $account->user);
+        $removable = [
+            DisputeParty::Claimant->value => DisputeRank::outranks($admin, $claimant),
+            DisputeParty::Holder->value => DisputeRank::outranks($admin, $holder),
+        ];
         $assigned = User::query()->withTrashed()->whereKey(array_filter([$dispute->assigned_admin_id, $dispute->decided_by]))->pluck('username', 'id');
 
         $data = new DisputeReviewData(
@@ -80,12 +90,14 @@ class DisputeReviewService
             accountTownHall: $account->th_level,
             claimant: $this->party($stake, $claimant, $dispute, $limit),
             holder: $holder === null ? null : $this->party($stake, $holder, $dispute, $limit),
-            evidence: $this->evidence($admin, $dispute),
+            evidence: $this->evidence($admin, $dispute, $removable),
             claims: $this->claims($dispute, $limit),
             snapshots: $this->snapshots($dispute, $limit),
             decisions: $this->decisions($dispute, $blocked),
             blockedReason: $blocked,
             noteMax: (int) config('coc.disputes.text_max'),
+            canReleaseTag: $releasable && $outranksHolder,
+            releaseBlockedReason: $releasable && ! $outranksHolder ? 'The holder is an admin, so only a super admin can release this tag.' : null,
         );
 
         return new DisputeReviewResult($data, $dispute->id, $claimant, $holder);
@@ -134,7 +146,10 @@ class DisputeReviewService
      *
      * @return list<DisputeEvidenceData>
      */
-    private function evidence(User $admin, CocAccountDispute $dispute): array
+    /**
+     * @param  array<string, bool>  $removable  by party: may this admin delete that party's images
+     */
+    private function evidence(User $admin, CocAccountDispute $dispute, array $removable): array
     {
         /** @var list<string> $ulids */
         $ulids = collect($dispute->evidence)->pluck('media')->flatten()->unique()->values()->all();
@@ -153,6 +168,8 @@ class DisputeReviewService
                 images: array_map(fn (string $ulid): DisputeEvidenceImageData => new DisputeEvidenceImageData($ulid, $full[$ulid] ?? null, $thumbs[$ulid] ?? $full[$ulid] ?? null), $entry['media']),
                 at: $entry['at'],
                 opening: false,
+                removed: (int) ($entry['removed'] ?? 0),
+                removable: $entry['media'] !== [] && ($removable[$entry['party']] ?? false),
             );
         }
 

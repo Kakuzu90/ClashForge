@@ -7,7 +7,7 @@ use App\Support\Enums\Contracts\HasLabelAndColor;
 
 /**
  * Why a tag went back to `released` (specs/13 §6): its owner removed it, their account was deleted,
- * or their ban ran `coc.accounts.ban_release_days`.
+ * their ban ran `coc.accounts.ban_release_days`, or staff released a suspended tag (P2-25).
  */
 enum ReleaseReason: string implements HasLabelAndColor
 {
@@ -16,6 +16,7 @@ enum ReleaseReason: string implements HasLabelAndColor
     case Detach = 'detach';
     case Deletion = 'deletion';
     case Ban = 'ban';
+    case Admin = 'admin';
 
     public function label(): string
     {
@@ -23,13 +24,14 @@ enum ReleaseReason: string implements HasLabelAndColor
             self::Detach => 'Removed by the owner',
             self::Deletion => 'Owner deleted their account',
             self::Ban => 'Owner banned',
+            self::Admin => 'Released by staff',
         };
     }
 
     public function color(): string
     {
         return match ($this) {
-            self::Detach => 'state-info',
+            self::Detach, self::Admin => 'state-info',
             self::Deletion, self::Ban => 'text-muted',
         };
     }

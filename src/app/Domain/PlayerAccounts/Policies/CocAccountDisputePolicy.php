@@ -3,6 +3,8 @@
 namespace App\Domain\PlayerAccounts\Policies;
 
 use App\Domain\Auth\Enums\StaffAbility;
+use App\Domain\PlayerAccounts\Enums\DisputeParty;
+use App\Domain\PlayerAccounts\Enums\DisputeStatus;
 use App\Domain\PlayerAccounts\Models\CocAccountDispute;
 use App\Domain\PlayerAccounts\Support\DisputeRank;
 use App\Domain\PlayerAccounts\Support\DisputeStake;
@@ -54,6 +56,29 @@ class CocAccountDisputePolicy
     public function decide(User $user, CocAccountDispute $dispute): bool
     {
         return $this->review($user, $dispute) && $this->outranksParties($user, $dispute);
+    }
+
+    /**
+     * Releasing the tag a dispute suspended (specs/13 §2, P2-25): a reviewer of a dispute that
+     * ended suspended, who strictly outranks the row's holder (specs/04 §2 rule 1). Whether the row
+     * is still this dispute's suspension is checked under the lock, so a late click gets a reason
+     * ("This tag is no longer suspended.") rather than a 403.
+     */
+    public function releaseTag(User $user, CocAccountDispute $dispute): bool
+    {
+        return $this->review($user, $dispute)
+            && $dispute->status === DisputeStatus::ResolvedSuspended
+            && DisputeRank::outranks($user, $dispute->account?->user);
+    }
+
+    /**
+     * Removing an evidence image that shows an identity document (specs/13 §9, P2-25): a reviewer
+     * who strictly outranks the party who sent it.
+     */
+    public function removeEvidence(User $user, CocAccountDispute $dispute, DisputeParty $party): bool
+    {
+        return $this->review($user, $dispute)
+            && DisputeRank::outranks($user, $party === DisputeParty::Claimant ? $dispute->claimant : $dispute->holder);
     }
 
     public function outranksParties(User $user, CocAccountDispute $dispute): bool

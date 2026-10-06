@@ -11,10 +11,11 @@ import UiTextarea from '@/Components/ui/UiTextarea.vue';
 import { formatDateTime } from '@/Composables/useDateTime';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { audit } from '@/routes/admin';
-import { index, show } from '@/routes/admin/disputes';
+import { index, releaseTag, show } from '@/routes/admin/disputes';
 import { store as decisionStore } from '@/routes/admin/disputes/decision';
+import { destroy as evidenceDestroy } from '@/routes/admin/disputes/evidence';
 import { show as adminUser } from '@/routes/admin/users';
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 defineOptions({ layout: AdminLayout });
@@ -91,6 +92,43 @@ function submit() {
     }
     send();
 }
+
+// Releasing the tag this dispute suspended (specs/13 §2, P2-25): a required note, then a confirm.
+const releaseForm = useForm({ note: '' });
+const confirmingRelease = ref(false);
+function sendRelease() {
+    releaseForm.post(releaseTag(d.value.ulid).url, {
+        preserveScroll: true,
+        onFinish: () => (confirmingRelease.value = false),
+        onSuccess: () => releaseForm.reset(),
+    });
+}
+
+// Deleting an evidence image that shows an identity document (specs/13 §9, P2-25), after a confirm.
+// The panel is gone once the row is no longer suspended; a refused release still needs saying.
+const releaseRefused = computed(() => !d.value.canReleaseTag && !d.value.releaseBlockedReason && Boolean(releaseForm.errors.note));
+
+const removingImage = ref<string | null>(null);
+const removingOpen = computed({
+    get: () => removingImage.value !== null,
+    set: (open: boolean) => {
+        if (!open) removingImage.value = null;
+    },
+});
+const removing = ref(false);
+function removeImage() {
+    if (removingImage.value === null) return;
+    router.delete(evidenceDestroy({ ulid: d.value.ulid, media: removingImage.value }).url, {
+        preserveScroll: true,
+        onStart: () => (removing.value = true),
+        onFinish: () => {
+            removing.value = false;
+            removingImage.value = null;
+        },
+    });
+}
+const removedLine = (count: number) =>
+    count === 1 ? 'Removed by staff: 1 image showed an identity document.' : `Removed by staff: ${count} images showed an identity document.`;
 
 const STATUS_TONE: Record<string, PillTone> = {
     awaiting_admin: 'warning',
@@ -196,9 +234,12 @@ const snapshotColumns: AdminColumn[] = [
                         <p v-if="side.party.priorDisputes.length === 0" class="text-fg-secondary">None.</p>
                         <ul v-else class="flex flex-col gap-1">
                             <li v-for="prior in side.party.priorDisputes" :key="prior.ulid" class="flex flex-wrap items-center gap-2">
-                                <Link v-if="prior.reviewable" :href="show(prior.ulid).url" class="font-mono text-fg underline-offset-2 hover:underline">{{
-                                    prior.tag
-                                }}</Link>
+                                <Link
+                                    v-if="prior.reviewable"
+                                    :href="show(prior.ulid).url"
+                                    class="font-mono text-fg underline-offset-2 hover:underline"
+                                    >{{ prior.tag }}</Link
+                                >
                                 <span v-else class="font-mono text-fg">{{ prior.tag }}</span>
                                 <span class="text-fg-secondary">as {{ prior.side }}</span>
                                 <UiPill :label="prior.statusLabel" :tone="STATUS_TONE[prior.status] ?? 'neutral'" />
@@ -231,7 +272,7 @@ const snapshotColumns: AdminColumn[] = [
                         </p>
                         <p v-if="entry.note" class="break-words whitespace-pre-line text-fg">{{ entry.note }}</p>
                         <ul v-if="entry.images.length > 0" class="flex flex-wrap gap-2">
-                            <li v-for="image in entry.images" :key="image.ulid">
+                            <li v-for="image in entry.images" :key="image.ulid" class="flex flex-col gap-1">
                                 <a v-if="image.url" :href="image.url" target="_blank" rel="noopener noreferrer" class="block">
                                     <img
                                         :src="image.thumbUrl ?? image.url"
@@ -244,8 +285,12 @@ const snapshotColumns: AdminColumn[] = [
                                     class="flex size-24 items-center justify-center rounded-sm border border-line p-2 text-center text-fg-muted"
                                     >Image not available</span
                                 >
+                                <UiButton v-if="entry.removable" variant="ghost" size="sm" @click="removingImage = image.ulid"
+                                    >Delete: ID document</UiButton
+                                >
                             </li>
                         </ul>
+                        <p v-if="entry.removed > 0" class="text-fg-secondary">{{ removedLine(entry.removed) }}</p>
                     </article>
                 </section>
             </div>
@@ -274,7 +319,39 @@ const snapshotColumns: AdminColumn[] = [
                     :error="form.errors.note"
                 />
                 <div>
-                    <UiButton type="submit" :disabled="form.decision === '' || form.note.trim() === ''" :loading="form.processing && !confirming">Record the decision</UiButton>
+                    <UiButton type="submit" :disabled="form.decision === '' || form.note.trim() === ''" :loading="form.processing && !confirming"
+                        >Record the decision</UiButton
+                    >
+                </div>
+            </form>
+        </section>
+
+        <!-- Stays up after a refused release (another admin released it first), so the refusal shows. -->
+        <section v-if="d.canReleaseTag || d.releaseBlockedReason || releaseRefused" aria-labelledby="release-heading" class="flex flex-col gap-3">
+            <h2 id="release-heading" class="text-h3 font-semibold">Suspended tag</h2>
+            <UiAlert v-if="releaseRefused" kind="warning">{{ releaseForm.errors.note }}</UiAlert>
+            <template v-else>
+                <p class="text-sm text-fg-secondary">{{ d.tag }} is out of play: nobody can attach, verify or dispute it until staff release it.</p>
+                <UiAlert v-if="d.releaseBlockedReason" kind="info">{{ d.releaseBlockedReason }}</UiAlert>
+            </template>
+            <form
+                v-if="d.canReleaseTag"
+                class="flex flex-col gap-4 rounded-sm border border-line bg-surface p-4"
+                novalidate
+                @submit.prevent="confirmingRelease = true"
+            >
+                <UiTextarea
+                    v-model="releaseForm.note"
+                    label="Internal note"
+                    hint="Staff only. Why the tag can go back into play."
+                    :maxlength="d.noteMax"
+                    counter
+                    :rows="3"
+                    required
+                    :error="releaseForm.errors.note"
+                />
+                <div>
+                    <UiButton type="submit" variant="secondary" :disabled="releaseForm.note.trim() === ''">Release the tag</UiButton>
                 </div>
             </form>
         </section>
@@ -332,6 +409,32 @@ const snapshotColumns: AdminColumn[] = [
                 <template #empty>No snapshots yet.</template>
             </AdminTable>
         </section>
+
+        <UiModal v-model:open="confirmingRelease" :title="`Release ${d.tag}?`">
+            <div class="flex flex-col gap-4">
+                <p class="text-body text-fg">
+                    {{ d.tag }} goes back to released. Anyone with its in-game API token can verify it next, the claimant and the former holder
+                    included.
+                </p>
+                <div class="flex flex-wrap justify-end gap-3">
+                    <UiButton variant="ghost" :disabled="releaseForm.processing" @click="confirmingRelease = false">Cancel</UiButton>
+                    <UiButton variant="danger" :loading="releaseForm.processing" @click="sendRelease">Release the tag</UiButton>
+                </div>
+            </div>
+        </UiModal>
+
+        <UiModal v-model:open="removingOpen" title="Delete this image?">
+            <div class="flex flex-col gap-4">
+                <p class="text-body text-fg">
+                    Delete it only if it shows an identity document. It is deleted for good, and the sender is told to verify with the in-game token
+                    or send an in-game screenshot instead.
+                </p>
+                <div class="flex flex-wrap justify-end gap-3">
+                    <UiButton variant="ghost" :disabled="removing" @click="removingImage = null">Keep it</UiButton>
+                    <UiButton variant="danger" :loading="removing" @click="removeImage">Delete the image</UiButton>
+                </div>
+            </div>
+        </UiModal>
 
         <UiModal v-model:open="confirming" title="Record this decision?">
             <div class="flex flex-col gap-4">

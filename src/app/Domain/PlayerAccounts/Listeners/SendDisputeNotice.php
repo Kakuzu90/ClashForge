@@ -9,6 +9,7 @@ use App\Domain\Notifications\Services\Notifier;
 use App\Domain\PlayerAccounts\Enums\DisputeParty;
 use App\Domain\PlayerAccounts\Enums\DisputeStatus;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeClosed;
+use App\Domain\PlayerAccounts\Events\CocAccountDisputeEvidenceRemoved;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeInfoRequested;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeOpened;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeReminderDue;
@@ -123,6 +124,20 @@ class SendDisputeNotice implements ShouldQueue
     }
 
     /**
+     * In-app only (P2-25 Q4): it tells the uploader what to send instead, nothing to act on by email.
+     */
+    public function handleEvidenceRemoved(CocAccountDisputeEvidenceRemoved $event): void
+    {
+        $dispute = CocAccountDispute::query()->find($event->disputeId);
+        $user = User::query()->find($event->userId);
+        if ($dispute === null || $user === null) {
+            return;
+        }
+
+        $this->notifier->sendOnce($user, new InAppMessageData(NotificationType::CocDisputeEvidenceRemoved, $this->base($dispute)), "{$dispute->ulid}:evidence_removed:{$event->mediaUlid}");
+    }
+
+    /**
      * @param  array<string, string|int|bool|null>  $params
      */
     private function send(int $userId, NotificationType $type, string $eventKey, array $params): void
@@ -164,6 +179,7 @@ class SendDisputeNotice implements ShouldQueue
             CocAccountDisputeReminderDue::class => 'handleReminder',
             CocAccountDisputeInfoRequested::class => 'handleInfoRequested',
             CocAccountDisputeClosed::class => 'handleClosed',
+            CocAccountDisputeEvidenceRemoved::class => 'handleEvidenceRemoved',
         ];
     }
 }
