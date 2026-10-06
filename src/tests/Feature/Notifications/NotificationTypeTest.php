@@ -66,3 +66,36 @@ it('words the account-not-found notice as still verified, under Accounts (specs/
         ->and(NotificationType::CocAccountNotFound->category())->toBe(NotificationCategory::Ownership)
         ->and(NotificationType::CocAccountNotFound->color())->toBe('state-warning');
 });
+
+it('renders every dispute notice in the Ownership category, even without params (P2-18)', function (NotificationType $type) {
+    $rendered = $type->render([]);
+
+    expect($type->category())->toBe(NotificationCategory::Ownership)
+        ->and($rendered->title)->not->toBe('')
+        ->and($rendered->body)->not->toBe('')
+        ->and($rendered->url)->toBeNull();
+})->with([NotificationType::CocDisputeOpened, NotificationType::CocDisputeReminder, NotificationType::CocDisputeInfoRequested, NotificationType::CocDisputeClosed]);
+
+it('renders each dispute outcome with its own words and link', function (string $outcome, string $title, ?string $url) {
+    $rendered = NotificationType::CocDisputeClosed->render(['tag' => '#2PQ8GRJC', 'dispute' => '01J0000000000000000000DISP', 'outcome' => $outcome, 'account' => '01J00000000000000000000ACC']);
+
+    expect($rendered->title)->toBe($title)->and($rendered->url)->toBe($url);
+})->with([
+    ['transferred_to_you', '#2PQ8GRJC is now yours', '/accounts/01J00000000000000000000ACC'],
+    ['released_to_you', '#2PQ8GRJC is now yours', '/accounts/01J00000000000000000000ACC'],
+    ['transferred_away', '#2PQ8GRJC was moved to another player', '/accounts/attach?tag=%232PQ8GRJC'],
+    ['kept', '#2PQ8GRJC stays yours', '/accounts/01J00000000000000000000ACC'],
+    ['denied', 'Your claim to #2PQ8GRJC was not accepted', '/accounts/attach?tag=%232PQ8GRJC'],
+    ['denied_token', 'Your claim to #2PQ8GRJC was closed', '/accounts/attach?tag=%232PQ8GRJC'],
+    ['suspended', '#2PQ8GRJC is suspended', null],
+    ['withdrawn', 'The review of #2PQ8GRJC is over', '/accounts/01J00000000000000000000ACC'],
+    ['withdrawn_inactive', 'Your claim to #2PQ8GRJC was closed', null],
+    ['verified_by_other', 'The review of #2PQ8GRJC is over', null],
+    ['unknown', 'The review of #2PQ8GRJC is over', null],
+]);
+
+it('says how many days are left to answer, and nothing when it does not know', function () {
+    expect(NotificationType::CocDisputeReminder->render(['tag' => '#2PQ8GRJC', 'days' => 1])->body)->toStartWith('You have 1 day to answer.')
+        ->and(NotificationType::CocDisputeReminder->render(['tag' => '#2PQ8GRJC', 'days' => 4])->body)->toStartWith('You have 4 days to answer.')
+        ->and(NotificationType::CocDisputeReminder->render(['tag' => '#2PQ8GRJC'])->body)->toStartWith('Verify #2PQ8GRJC again');
+});

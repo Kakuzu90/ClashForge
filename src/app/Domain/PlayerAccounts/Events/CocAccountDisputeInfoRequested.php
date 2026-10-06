@@ -16,5 +16,7 @@ final class CocAccountDisputeInfoRequested implements ShouldDispatchAfterCommit
     public function __construct(
         public readonly int $disputeId,
         public readonly DisputeParty $party,
+        /** Unix time the new wait began, for the email's event key (P2-18) */
+        public readonly int $awaitingSince,
     ) {}
 }

@@ -41,4 +41,24 @@ class Notifier
             return $notification->id;
         });
     }
+
+    /**
+     * send() for a notice another module may deliver more than once (a retried event): the key
+     * is stored in the params, and a row with it already there is not written again. Checked under
+     * the account's lock, so two attempts cannot both write.
+     */
+    public function sendOnce(User $user, InAppMessageData $message, string $key): ?string
+    {
+        return DB::transaction(function () use ($user, $message, $key): ?string {
+            $owner = User::query()->lockForUpdate()->find($user->id);
+            if ($owner === null) {
+                return null;
+            }
+
+            $written = Notification::query()->where('notifiable_type', $owner->getMorphClass())->where('notifiable_id', $owner->id)
+                ->where('type', $message->type->value)->where('data->params->key', $key)->value('id');
+
+            return $written ?? $this->send($owner, new InAppMessageData($message->type, [...$message->params, 'key' => $key], $message->groupKey));
+        });
+    }
 }

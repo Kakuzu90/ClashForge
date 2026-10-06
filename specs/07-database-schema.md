@@ -235,6 +235,7 @@ A contested tag, routed to admins.
 | closed_by | varchar(20) null | `claimant`\|`holder`\|`admin`\|`token`\|`sweep`; a `sweep` withdrawal counts toward the claimant's bar like a denial |
 | awaiting_since | timestamptz | when the current wait began (the holder's 7 days, or the 30 days a party asked for more has) |
 | escalated_at | timestamptz null | set when an unanswered dispute goes to the admins |
+| holder_reminders_sent | smallint default 0 | reminders sent in the current holder wait (day 3, day 6, specs/16 §2); back to 0 when a new wait starts (P2-18) |
 | created_at / updated_at | timestamptz | |
 
 **Unique:** `(tag_normalized, claimant_id) WHERE status IN ('open','awaiting_admin','awaiting_claimant','awaiting_holder')`

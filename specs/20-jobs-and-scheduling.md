@@ -123,6 +123,7 @@ for a full temp volume does not.
 hourly :05   coc:sync-clans               (only tracked clans)
 hourly :10   bases:aggregate-metrics       (views + copies)
 hourly :20   media:sweep-orphans
+hourly :25   coc:process-disputes         (escalate, withdraw, remind holders on day 3 and 6; P2-03, P2-18)
 6 h at :45   media:retry-failed           (00:45, 06:45, 12:45, 18:45)
 hourly :30   moderation:escalate-aging-cases
 daily  02:00 platform:prune-operational-tables

@@ -284,10 +284,29 @@ pending: their tag is about to be released anyway.
 | Your account was verified by someone else (supersede) | previous holder | in-app + **email** (security-relevant) |
 | Dispute opened against you | holder | in-app + email |
 | Dispute response required (reminder at day 3, day 6) | holder | in-app + email |
+| An admin asks for more | the asked party | in-app + email |
 | Dispute decision | both parties | in-app + email |
 | Tag released (detach, ban, deletion) | owner | in-app |
 | Re-verification requested | holder | in-app + email |
 | Account not found for 3 consecutive syncs | owner | in-app |
+
+As built (P2-18, owner decisions 2026-10-06):
+- **Reminders** go out on day 3 and day 6 of every holder wait (`open`, and `awaiting_holder` after
+  an admin asks), from the hourly `coc:process-disputes`, each once (`holder_reminders_sent`). A run
+  that missed a day sends only the latest one due.
+- **Endings:** an admin's transfer, deny or suspend reaches both parties, each with their outcome.
+  A holder's release reaches the claimant; a claimant's withdrawal the holder; the sweep's
+  withdrawal both. The holder's own token tells the claimant; the claimant's token tells nobody here
+  (the verified and takeover notices already do); anyone else's token tells both.
+- **Content:** the tag and what to do, never the other party or their statements. Every notice
+  carries the dispute; the holder's link to their account page, and the claimant's gain a link to
+  the dispute page with P2-16.
+- **Outcomes** (`coc_dispute_closed`): `transferred_to_you` and `released_to_you` link the claimant
+  to their account, and replace the generic "account verified" notice for that ending;
+  `transferred_away` ("Verify it again"), `denied` and `denied_token` ("Verify with a token") link
+  to the attach flow; `kept` and `withdrawn` link the holder to their account; `suspended`,
+  `withdrawn_inactive` and `verified_by_other` have no link. An ending by someone else's token also
+  sends the previous holder the takeover notice.
 
 ## 9. Edge cases
 

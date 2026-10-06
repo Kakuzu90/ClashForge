@@ -270,7 +270,7 @@ actionLabel: string | null,
 }
 namespace Enums {
 export type NotificationCategory = 'security' | 'ownership' | 'bases' | 'moderation' | 'recruitment' | 'marketplace' | 'social' | 'staff';
-export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over' | 'coc_account_not_found' | 'coc_account_released';
+export type NotificationType = 'email_verified' | 'password_changed' | 'new_device_sign_in' | 'account_suspended' | 'account_banned' | 'sanction_ended' | 'media_processing_failed' | 'coc_account_verified' | 'coc_account_taken_over' | 'coc_account_not_found' | 'coc_account_released' | 'coc_dispute_opened' | 'coc_dispute_reminder' | 'coc_dispute_info_requested' | 'coc_dispute_closed';
 export type UnsubscribeOutcome = 'pending' | 'unsubscribed' | 'invalid';
 }
 }

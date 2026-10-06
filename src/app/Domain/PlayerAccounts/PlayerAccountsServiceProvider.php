@@ -5,6 +5,7 @@ namespace App\Domain\PlayerAccounts;
 use App\Domain\Auth\Contracts\DeletionHold;
 use App\Domain\Auth\Contracts\DeletionStep;
 use App\Domain\PlayerAccounts\Events\CocAccountVerified;
+use App\Domain\PlayerAccounts\Listeners\SendDisputeNotice;
 use App\Domain\PlayerAccounts\Listeners\SendOwnershipNotice;
 use App\Domain\PlayerAccounts\Listeners\StartAccountSync;
 use App\Domain\PlayerAccounts\Models\CocAccount;
@@ -29,6 +30,7 @@ class PlayerAccountsServiceProvider extends ServiceProvider
         Gate::policy(CocAccount::class, CocAccountPolicy::class);
         Gate::policy(CocAccountDispute::class, CocAccountDisputePolicy::class);
         Event::subscribe(SendOwnershipNotice::class);
+        Event::subscribe(SendDisputeNotice::class);
         Event::listen(CocAccountVerified::class, StartAccountSync::class);
     }
 }

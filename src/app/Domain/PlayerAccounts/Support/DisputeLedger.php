@@ -45,7 +45,7 @@ final class DisputeLedger
             ->update(['status' => CocAccountStatus::Verified]);
 
         $this->record($actor, AuditAction::CocDisputeClosed, $dispute, ['status' => $before->value], ['status' => $status->value], $context);
-        CocAccountDisputeClosed::dispatch($dispute->id, $status);
+        CocAccountDisputeClosed::dispatch($dispute->id, $status, $closedBy, is_string($context['by'] ?? null) ? $context['by'] : null);
     }
 
     /**

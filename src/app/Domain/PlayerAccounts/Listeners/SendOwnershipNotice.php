@@ -6,12 +6,14 @@ use App\Domain\Notifications\Data\InAppMessageData;
 use App\Domain\Notifications\Enums\NotificationType;
 use App\Domain\Notifications\Services\EmailDeliveryService;
 use App\Domain\Notifications\Services\Notifier;
+use App\Domain\PlayerAccounts\Enums\ClaimMethod;
 use App\Domain\PlayerAccounts\Enums\ReleaseReason;
 use App\Domain\PlayerAccounts\Enums\VerificationMethod;
 use App\Domain\PlayerAccounts\Events\CocAccountOwnershipTransferred;
 use App\Domain\PlayerAccounts\Events\CocAccountReleased;
 use App\Domain\PlayerAccounts\Events\CocAccountVerified;
 use App\Domain\PlayerAccounts\Models\CocAccount;
+use App\Domain\PlayerAccounts\Models\CocAccountClaim;
 use App\Domain\PlayerAccounts\Notifications\CocAccountTakenOverNotification;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -40,6 +42,11 @@ class SendOwnershipNotice implements ShouldQueue
 
         // A deleted account reads nothing; there is no one to tell.
         if ($account === null || $user === null) {
+            return;
+        }
+        // A dispute transfer or a holder's release: the dispute's outcome notice says it (P2-18).
+        $method = CocAccountClaim::query()->whereKey($event->claimId)->value('method');
+        if (in_array($method, [ClaimMethod::Admin, ClaimMethod::Dispute], true)) {
             return;
         }
 

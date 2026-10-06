@@ -23,6 +23,7 @@ use App\Domain\PlayerAccounts\Enums\DisputeStatus;
 use App\Domain\PlayerAccounts\Enums\VerificationMethod;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeInfoRequested;
 use App\Domain\PlayerAccounts\Events\CocAccountDisputeOpened;
+use App\Domain\PlayerAccounts\Events\CocAccountDisputeReminderDue;
 use App\Domain\PlayerAccounts\Events\CocAccountOwnershipTransferred;
 use App\Domain\PlayerAccounts\Events\CocAccountVerified;
 use App\Domain\PlayerAccounts\Models\CocAccount;
@@ -277,14 +278,16 @@ class DisputeService
     /**
      * The hourly sweep (specs/13 §5 3d and guardrails): a dispute the holder has not answered in
      * `holder_response_days` goes to the admins (non-response alone never transfers); one that has
-     * waited `claimant_inactive_days` on the claimant is withdrawn.
+     * waited `claimant_inactive_days` on the claimant is withdrawn. A holder still in their window
+     * is reminded on each of `coc.disputes.reminder_days` (specs/16 §2), once.
      *
-     * @return array{escalated: int, withdrawn: int}
+     * @return array{escalated: int, withdrawn: int, reminded: int}
      */
     public function sweep(): array
     {
         $escalated = 0;
         $withdrawn = 0;
+        $reminded = $this->remindHolders();
         $holderDeadline = Date::now()->subDays((int) config('coc.disputes.holder_response_days'));
         $claimantDeadline = Date::now()->subDays((int) config('coc.disputes.claimant_inactive_days'));
 
@@ -324,7 +327,49 @@ class DisputeService
             });
         }
 
-        return ['escalated' => $escalated, 'withdrawn' => $withdrawn];
+        return ['escalated' => $escalated, 'withdrawn' => $withdrawn, 'reminded' => $reminded];
+    }
+
+    /**
+     * Day 3 and day 6 of a holder's wait (`open`, or `awaiting_holder` after an admin asked them).
+     * A sweep that missed a day sends the latest reminder due, not both.
+     */
+    private function remindHolders(): int
+    {
+        $days = array_map('intval', (array) config('coc.disputes.reminder_days'));
+        sort($days);
+        $window = (int) config('coc.disputes.holder_response_days');
+        if ($days === []) {
+            return 0;
+        }
+
+        $due = CocAccountDispute::query()->whereIn('status', [DisputeStatus::Open, DisputeStatus::AwaitingHolder])
+            ->where('awaiting_since', '<=', Date::now()->subDays($days[0]))
+            ->where('awaiting_since', '>', Date::now()->subDays($window))
+            ->where('holder_reminders_sent', '<', count($days))
+            ->pluck('id');
+
+        $sent = 0;
+        foreach ($due as $id) {
+            $sent += DB::transaction(function () use ($id, $days, $window): int {
+                $dispute = CocAccountDispute::query()->lockForUpdate()->whereKey($id)->first();
+                if ($dispute === null || ! in_array($dispute->status, [DisputeStatus::Open, DisputeStatus::AwaitingHolder], true)) {
+                    return 0;
+                }
+                $elapsed = (int) floor($dispute->awaiting_since->diffInDays(Date::now()));
+                $reached = count(array_filter($days, fn (int $day): bool => $day <= $elapsed));
+                if ($elapsed >= $window || $reached <= $dispute->holder_reminders_sent) {
+                    return 0;
+                }
+
+                $dispute->forceFill(['holder_reminders_sent' => $reached])->save();
+                CocAccountDisputeReminderDue::dispatch($dispute->id, $reached, $window - $elapsed, $dispute->awaiting_since->getTimestamp());
+
+                return 1;
+            });
+        }
+
+        return $sent;
     }
 
     private function transfer(User $admin, CocAccountDispute $dispute, ?CocAccount $held, string $note): DisputeResultData
@@ -397,10 +442,11 @@ class DisputeService
     {
         $before = $dispute->status;
         $status = $party === DisputeParty::Claimant ? DisputeStatus::AwaitingClaimant : DisputeStatus::AwaitingHolder;
-        $dispute->forceFill(['status' => $status, 'awaiting_since' => Date::now()])->save();
+        // A new wait: its reminders start over (P2-18).
+        $dispute->forceFill(['status' => $status, 'awaiting_since' => Date::now(), 'holder_reminders_sent' => 0])->save();
 
         $this->ledger->record($admin, AuditAction::CocDisputeInfoRequested, $dispute, ['status' => $before->value], ['status' => $status->value], ['party' => $party->value]);
-        CocAccountDisputeInfoRequested::dispatch($dispute->id, $party);
+        CocAccountDisputeInfoRequested::dispatch($dispute->id, $party, $dispute->awaiting_since->getTimestamp());
 
         return new DisputeResultData($dispute->ulid, $status);
     }

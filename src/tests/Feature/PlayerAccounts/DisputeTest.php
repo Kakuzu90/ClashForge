@@ -242,7 +242,9 @@ it('sends no token-takeover notice for an admin transfer; the decision notice is
     ($this->disputes)()->decide($this->admin, $ulid, DisputeDecision::Transfer, 'Clear evidence.');
 
     expect(Notification::query()->where('type', NotificationType::CocAccountTakenOver->value)->count())->toBe(0)
-        ->and(Notification::query()->where('notifiable_id', $this->claimant->id)->where('type', NotificationType::CocAccountVerified->value)->count())->toBe(1);
+        // The dispute's outcome notice replaces the generic "verified" one (P2-18).
+        ->and(Notification::query()->where('notifiable_id', $this->claimant->id)->where('type', NotificationType::CocAccountVerified->value)->count())->toBe(0)
+        ->and(Notification::query()->where('notifiable_id', $this->claimant->id)->where('type', NotificationType::CocDisputeClosed->value)->count())->toBe(1);
 });
 
 it('denies and puts the holder back, the default under doubt', function () {
@@ -393,10 +395,10 @@ it('escalates an unanswered dispute after holder_response_days, not before (spec
     ($this->open)();
 
     Date::setTestNow('2026-10-09 11:59:59');
-    expect(($this->disputes)()->sweep())->toBe(['escalated' => 0, 'withdrawn' => 0]);
+    expect(($this->disputes)()->sweep())->toBe(['escalated' => 0, 'withdrawn' => 0, 'reminded' => 1]);
 
     Date::setTestNow('2026-10-09 12:00:00');
-    expect(($this->disputes)()->sweep())->toBe(['escalated' => 1, 'withdrawn' => 0]);
+    expect(($this->disputes)()->sweep())->toBe(['escalated' => 1, 'withdrawn' => 0, 'reminded' => 0]);
 
     $dispute = CocAccountDispute::query()->sole();
     expect($dispute->status)->toBe(DisputeStatus::AwaitingAdmin)
@@ -412,7 +414,7 @@ it('withdraws a dispute left waiting on the claimant for claimant_inactive_days'
     Date::setTestNow('2026-11-01 11:59:59');
     expect(($this->disputes)()->sweep()['withdrawn'])->toBe(0);
     Date::setTestNow('2026-11-01 12:00:00');
-    $this->artisan('coc:process-disputes')->expectsOutputToContain('0 escalated, 1 withdrawn.')->assertSuccessful();
+    $this->artisan('coc:process-disputes')->expectsOutputToContain('0 escalated, 1 withdrawn, 0 reminded.')->assertSuccessful();
 
     expect(CocAccountDispute::query()->sole()->status)->toBe(DisputeStatus::Withdrawn)
         ->and($this->held->refresh()->status)->toBe(CocAccountStatus::Verified);

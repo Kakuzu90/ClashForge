@@ -28,6 +28,10 @@ enum NotificationType: string implements HasLabelAndColor
     case CocAccountTakenOver = 'coc_account_taken_over';
     case CocAccountNotFound = 'coc_account_not_found';
     case CocAccountReleased = 'coc_account_released';
+    case CocDisputeOpened = 'coc_dispute_opened';
+    case CocDisputeReminder = 'coc_dispute_reminder';
+    case CocDisputeInfoRequested = 'coc_dispute_info_requested';
+    case CocDisputeClosed = 'coc_dispute_closed';
 
     public function label(): string
     {
@@ -43,6 +47,10 @@ enum NotificationType: string implements HasLabelAndColor
             self::CocAccountTakenOver => 'Account taken over',
             self::CocAccountNotFound => 'Account not found',
             self::CocAccountReleased => 'Account removed',
+            self::CocDisputeOpened => 'Ownership disputed',
+            self::CocDisputeReminder => 'Dispute reminder',
+            self::CocDisputeInfoRequested => 'More info needed',
+            self::CocDisputeClosed => 'Dispute closed',
         };
     }
 
@@ -52,7 +60,8 @@ enum NotificationType: string implements HasLabelAndColor
             self::AccountSuspended, self::AccountBanned, self::MediaProcessingFailed, self::CocAccountTakenOver => 'state-danger',
             self::PasswordChanged, self::NewDeviceSignIn, self::CocAccountNotFound => 'state-warning',
             self::EmailVerified, self::SanctionEnded, self::CocAccountVerified => 'state-success',
-            self::CocAccountReleased => 'state-info',
+            self::CocAccountReleased, self::CocDisputeInfoRequested, self::CocDisputeClosed => 'state-info',
+            self::CocDisputeOpened, self::CocDisputeReminder => 'state-warning',
         };
     }
 
@@ -60,7 +69,8 @@ enum NotificationType: string implements HasLabelAndColor
     {
         return match ($this) {
             self::MediaProcessingFailed => NotificationCategory::Bases,
-            self::CocAccountVerified, self::CocAccountTakenOver, self::CocAccountNotFound, self::CocAccountReleased => NotificationCategory::Ownership,
+            self::CocAccountVerified, self::CocAccountTakenOver, self::CocAccountNotFound, self::CocAccountReleased,
+            self::CocDisputeOpened, self::CocDisputeReminder, self::CocDisputeInfoRequested, self::CocDisputeClosed => NotificationCategory::Ownership,
             default => NotificationCategory::Security,
         };
     }
@@ -132,6 +142,28 @@ enum NotificationType: string implements HasLabelAndColor
                 body: ucfirst(self::cocAccount($params, 'one of your Clash of Clans accounts')).' is no longer on your Clash Commons account. Anyone with its in-game API token can verify it now.',
                 url: null,
             ),
+            // Dispute notices (P2-18) name the tag only, never the other party (owner decision
+            // 2026-10-06). The holder's link is their account page; the claimant's comes with P2-16.
+            self::CocDisputeOpened => new RenderedNotificationData(
+                title: 'Someone disputes your ownership of '.self::tag($params),
+                body: 'Another player says '.self::tag($params).' is theirs and asked the admins to review it. '
+                    .self::within($params).'Verify it again with a new in-game API token to end the review at once.',
+                url: self::accountUrl($params),
+                actionLabel: 'Review your account',
+            ),
+            self::CocDisputeReminder => new RenderedNotificationData(
+                title: 'Answer the review of '.self::tag($params),
+                body: self::within($params).'Verify '.self::tag($params).' again with a new in-game API token to end the review. Otherwise the admins decide without your answer.',
+                url: self::accountUrl($params),
+                actionLabel: 'Review your account',
+            ),
+            self::CocDisputeInfoRequested => new RenderedNotificationData(
+                title: 'The admins need more about '.self::tag($params),
+                body: trim('The admins reviewing the ownership of '.self::tag($params).' asked you for more information. '.self::within($params)),
+                url: self::accountUrl($params),
+                actionLabel: 'Review your account',
+            ),
+            self::CocDisputeClosed => self::disputeOutcome($params),
         };
     }
 
@@ -201,6 +233,51 @@ enum NotificationType: string implements HasLabelAndColor
         $ulid = $params['account'] ?? null;
 
         return is_string($ulid) && preg_match('/^[0-9A-Za-z]{26}$/D', $ulid) === 1 ? route('accounts.show', ['ulid' => $ulid], absolute: false) : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     */
+    private static function tag(array $params): string
+    {
+        return self::cocAccount(['tag' => $params['tag'] ?? null], 'your Clash of Clans account');
+    }
+
+    /**
+     * "You have 4 days to answer. ", or nothing without a usable count.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    private static function within(array $params): string
+    {
+        $days = $params['days'] ?? null;
+
+        return is_int($days) && $days > 0 ? 'You have '.($days === 1 ? '1 day' : "{$days} days").' to answer. ' : '';
+    }
+
+    /**
+     * How a dispute ended for this recipient (`outcome`, P2-18).
+     *
+     * @param  array<string, mixed>  $params
+     */
+    private static function disputeOutcome(array $params): RenderedNotificationData
+    {
+        $tag = self::tag($params);
+        $verifyAgain = is_string($params['tag'] ?? null) && $params['tag'] !== '' ? route('accounts.attach', ['tag' => $params['tag']], absolute: false) : null;
+
+        return match ($params['outcome'] ?? null) {
+            'transferred_to_you' => new RenderedNotificationData("{$tag} is now yours", "The admins reviewed your claim and moved {$tag} to your Clash Commons account.", self::accountUrl($params), 'View your account'),
+            'released_to_you' => new RenderedNotificationData("{$tag} is now yours", "The holder gave {$tag} up, so it is now verified on your Clash Commons account.", self::accountUrl($params), 'View your account'),
+            'transferred_away' => new RenderedNotificationData("{$tag} was moved to another player", "The admins reviewed the claim to {$tag} and moved it to the other player's account. If it is yours, verify it again with a new in-game API token.", $verifyAgain, 'Verify it again'),
+            'kept' => new RenderedNotificationData("{$tag} stays yours", "The admins reviewed the claim to {$tag}. It stays on your Clash Commons account.", self::accountUrl($params), 'View your account'),
+            'denied' => new RenderedNotificationData("Your claim to {$tag} was not accepted", "The admins reviewed your claim and {$tag} stays with its current holder. If it is yours, you can still verify it with a new in-game API token.", $verifyAgain, 'Verify with a token'),
+            'denied_token' => new RenderedNotificationData("Your claim to {$tag} was closed", "The holder verified {$tag} again with an in-game API token, which ends a dispute. If it is yours, secure the game account, then verify it with a new token.", $verifyAgain, 'Verify with a token'),
+            'suspended' => new RenderedNotificationData("{$tag} is suspended", "After reviewing the dispute, the admins suspended {$tag} on Clash Commons. Nobody can verify it for now.", null),
+            'withdrawn' => new RenderedNotificationData("The review of {$tag} is over", "The claim to {$tag} was withdrawn. It stays on your Clash Commons account.", self::accountUrl($params), 'View your account'),
+            'withdrawn_inactive' => new RenderedNotificationData("Your claim to {$tag} was closed", 'The admins asked you for more and got no answer in time, so the claim was closed.', null),
+            'verified_by_other' => new RenderedNotificationData("The review of {$tag} is over", "Someone verified {$tag} with an in-game API token, which ends the dispute.", null),
+            default => new RenderedNotificationData("The review of {$tag} is over", 'The ownership dispute is closed.', null),
+        };
     }
 
     /**

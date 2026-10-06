@@ -36,9 +36,10 @@ longer available", with no link.
 | | Sanction lifted / expired | I + E (email since P1-14; in-app since P1-07) | — | immediate |
 | **Ownership** | CoC account verified | I + E (P2-12; names the tag and in-game name; links to the account page `/accounts/{ulid}` from the `account` param, and the email's button reads "View your account", P2-04; notices written before P2-04 have no link) | — | immediate |
 | | Your verified account was claimed by someone else | I + E* (P2-12; names the tag only, never the new holder or the in-game name; links to `/accounts/attach?tag=…`, the email's button reads "Verify it again", P2-11) | — | immediate |
-| | Dispute opened against you | I + E | — | immediate |
-| | Dispute response reminder (day 3, day 6) | I + E | — | scheduled |
-| | Dispute decision | I + E | — | immediate |
+| | Dispute opened against you | I + E (P2-18; the tag and the days left, never the claimant; links to the holder's account page) | — | immediate |
+| | Dispute response reminder (day 3, day 6) | I + E (P2-18; each holder wait, once each, from `coc:process-disputes`) | — | scheduled |
+| | An admin asks for more in a dispute | I + E (P2-18; to the asked party, with their days to answer) | — | immediate |
+| | Dispute decision | I + E (P2-18; every ending with its outcome per recipient, [13 §8](13-claiming-workflow.md); a transfer or release to the claimant replaces their "CoC account verified" notice) | — | immediate |
 | | Re-verification requested | I + E | — | immediate |
 | | Account not found for 3 syncs | I (P2-09; once, on the sync that makes the account stale; names the tag and in-game name; says it stays verified) | — | immediate |
 | | Tag released | I (detach since P2-14, a ban's 30-day release since P2-24; names the tag and in-game name, no link; a deleted account gets none) | — | immediate |

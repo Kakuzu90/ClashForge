@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $closed_by
  * @property CarbonImmutable $awaiting_since
  * @property CarbonImmutable|null $escalated_at
+ * @property int $holder_reminders_sent
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  */

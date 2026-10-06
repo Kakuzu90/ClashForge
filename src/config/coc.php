@@ -118,6 +118,8 @@ return [
         'evidence_max' => 3,
         // Longest statement or note, in characters (specs/07: reason ≤ 1000).
         'text_max' => 1000,
+        // Days into the holder's window on which they are reminded to answer (specs/16 §2).
+        'reminder_days' => [3, 6],
         // The admin queue's page size, and how many claim rows and snapshots the review page shows.
         'queue_per_page' => 25,
         'review_history_limit' => 20,
