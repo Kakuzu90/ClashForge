@@ -96,7 +96,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | `accepts_uploads` is false for collections whose processor has not shipped yet:
-    | base_video (P3-02) and evidence (P3-06). Square variants are centre-cropped.
+    | base_video (P3-02). Square variants are centre-cropped.
     |
     */
 
@@ -147,8 +147,12 @@ return [
             'kind' => 'image',
             'visibility' => 'private',
             'max_bytes' => 5 * $mb,
-            'accepts_uploads' => false,
-            'variants' => [],
+            'accepts_uploads' => true,
+            // Dispute evidence (P2-16): staff read it full size, its uploader sees the thumbnail.
+            'variants' => [
+                'full' => ['width' => 1600],
+                'thumb' => ['width' => 320],
+            ],
         ],
     ],
 

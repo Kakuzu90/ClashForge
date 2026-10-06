@@ -30,7 +30,7 @@ quarantine/{yyyy}/{mm}/{media_ulid}/original.{ext}    ← raw upload lands here,
 public/{collection}/{media_ulid}/{variant}.webp      ← e.g. public/base_screenshot/01j…/card.webp
 public/base_video/{media_ulid}/video_720p.mp4
 public/base_video/{media_ulid}/poster.webp
-private/{collection}/{media_ulid}/{variant}.webp     ← e.g. evidence; signed URLs only, staff access
+private/{collection}/{media_ulid}/{variant}.webp     ← e.g. evidence; signed URLs only, staff access (and the uploader's own thumbnails)
 
 game/{pack_version}/{folder}/{slug}.{png|webp}               ← curated game assets, uploaded by staff, byte-exact
 game/{pack_version}/{folder}/builder-base/{slug}.{png|webp}  ← the Builder Base copy of a unit or hall
@@ -196,7 +196,8 @@ the primary control** — it destroys embedded payloads by construction. On top 
   anything that does get served.
 - **Optional ClamAV step**: a `MediaScanner` interface with a no-op implementation at launch and a
   ClamAV implementation behind a feature flag. Enable it when user-uploaded evidence files
-  (arbitrary formats) ship with the report system, where re-encoding cannot be applied.
+  (arbitrary formats) ship with the report system, where re-encoding cannot be applied. Dispute
+  evidence (P2-16) is images only and re-encoded like any image, so it does not need it.
 - Any file failing validation in a way that suggests intent (a real MIME outside the allowlist,
   embedded script markers, a zip appended to the image) is set to `quarantined`, retained 30 days
   for review, and its uploader is flagged for moderation (logged as `media.quarantined` until the
@@ -214,6 +215,7 @@ the primary control** — it destroys embedded payloads by construction. On top 
 | account_image | full 1600w, card 800w, thumb 320w |
 | base_screenshot | full 1600w, card 800w, thumb 320w |
 | portfolio | card 800w, thumb 320w |
+| evidence | full 1600w, thumb 320w (private; staff read `full`, the uploader sees their own `thumb`, P2-16) |
 
 - Output format: **WebP** (quality 82), with a JPEG fallback variant only if analytics show
   meaningful traffic from browsers without WebP support (in practice: none).
@@ -272,6 +274,7 @@ correct for ≤60 s clips), multiple resolutions, subtitles, GIF output.
 | Base screenshots | 2 per base, ≤5 MB each | attach transaction |
 | Base video | 1 per base, ≤100 MB, ≤60 s | attach transaction |
 | Report evidence | 3 per report, ≤5 MB each | attach transaction |
+| Dispute evidence | 3 per party over the whole dispute, ≤5 MB each (`coc.disputes.evidence_max`) | `DisputeService`, in the attach transaction (P2-03, uploads open with P2-16) |
 | Marketplace portfolio | 5 per listing | attach transaction |
 | Per-user total storage | 500 MB soft cap, warn at 80%, block new uploads at 100% | nightly recompute into `user_stats` |
 | Upload intents | 30/hour/user | rate limiter |

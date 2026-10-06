@@ -348,6 +348,7 @@ canVerify: boolean,
 canDetach: boolean,
 canFeature: boolean,
 indexable: boolean,
+disputeUlid: string | null,
 };
 export type AccountStatData = {
 key: string,
@@ -483,6 +484,33 @@ townHallLevel: number | null,
 featured: boolean,
 canFeature: boolean,
 };
+export type PartyDisputeData = {
+ulid: string,
+tag: string,
+role: App.Domain.PlayerAccounts.Enums.DisputeParty,
+status: App.Domain.PlayerAccounts.Enums.DisputeStatus,
+statusLabel: string,
+waitingOn: string | null,
+deadline: string | null,
+openedAt: string,
+closedAt: string | null,
+outcome: App.Domain.PlayerAccounts.Enums.PartyDisputeOutcome | null,
+outcomeLabel: string | null,
+accountUlid: string | null,
+submissions: App.Domain.PlayerAccounts.Data.PartySubmissionData[],
+evidenceLeft: number,
+canRespond: boolean,
+canWithdraw: boolean,
+canRelease: boolean,
+canVerify: boolean,
+withdrawCountsTowardBar: boolean,
+};
+export type PartySubmissionData = {
+note: string | null,
+images: App.Domain.PlayerAccounts.Data.DisputeEvidenceImageData[],
+at: string,
+opening: boolean,
+};
 export type PendingDisputesData = {
 awaitingAdmin: number,
 oldestWaitingSince: string | null,
@@ -543,8 +571,9 @@ export type CocAccountStatus = 'unverified' | 'verified' | 'disputed' | 'suspend
 export type DisputeDecision = 'transfer' | 'deny' | 'suspend' | 'ask_claimant' | 'ask_holder';
 export type DisputeParty = 'claimant' | 'holder';
 export type DisputeQueueView = 'active' | 'awaiting_admin' | 'waiting_on_holder' | 'waiting_on_claimant' | 'closed';
-export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
+export type DisputeRefusal = 'not_held' | 'own_account' | 'already_disputed' | 'tag_suspended' | 'too_many_open' | 'too_many_today' | 'too_many_tags' | 'barred' | 'not_your_turn' | 'closed' | 'holder_cannot_keep' | 'claimant_unavailable' | 'recently_withdrawn';
 export type DisputeStatus = 'open' | 'awaiting_admin' | 'awaiting_claimant' | 'awaiting_holder' | 'resolved_transfer' | 'resolved_denied' | 'resolved_suspended' | 'withdrawn' | 'auto_resolved';
+export type PartyDisputeOutcome = 'transferred_to_you' | 'released_to_you' | 'transferred_away' | 'released_by_you' | 'denied' | 'denied_token' | 'kept' | 'kept_token' | 'suspended' | 'withdrawn_by_you' | 'withdrawn' | 'withdrawn_inactive' | 'verified_by_token';
 export type ReleaseReason = 'detach' | 'deletion' | 'ban';
 export type SnapshotSource = 'scheduled' | 'manual' | 'verification';
 export type SyncOutcome = 'changed' | 'unchanged' | 'not_found' | 'failed' | 'postponed' | 'skipped';
@@ -659,6 +688,7 @@ tag: string | null,
 preview: App.Domain.PlayerAccounts.Data.AttachResultData | null,
 verifyResult: App.Domain.PlayerAccounts.Data.VerifyResultData | null,
 block: App.Domain.PlayerAccounts.Enums.AttachBlock | null,
+disputeUlid: string | null,
 };
 export type VerifiedPageData = {
 account: App.Domain.PlayerAccounts.Data.OwnCocAccountData,
@@ -801,6 +831,22 @@ export type VerifyEmailPageData = {
 email: string,
 status: string | null,
 linkMinutes: number,
+};
+}
+namespace Disputes {
+export type DisputeCreatePageData = {
+tag: string,
+player: App.Domain.PlayerAccounts.Data.CocPlayerPreviewData | null,
+refusal: string | null,
+evidenceUpload: App.Domain.Media.Data.UploadCollectionData,
+evidenceMax: number,
+textMax: number,
+responseDays: number,
+};
+export type DisputeShowPageData = {
+dispute: App.Domain.PlayerAccounts.Data.PartyDisputeData,
+evidenceUpload: App.Domain.Media.Data.UploadCollectionData,
+textMax: number,
 };
 }
 namespace Notifications {

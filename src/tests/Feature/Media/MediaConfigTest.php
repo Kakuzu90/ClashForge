@@ -24,6 +24,12 @@ it('configures every collection with a known kind, visibility and variant names'
     }
 });
 
-it('holds video and evidence back until their processors ship', function () {
-    expect(MediaCollection::uploadable())->not->toContain(MediaCollection::BaseVideo, MediaCollection::Evidence);
+it('holds video back until its processor ships', function () {
+    expect(MediaCollection::uploadable())->not->toContain(MediaCollection::BaseVideo);
+});
+
+it('takes private dispute evidence with a full and a thumbnail rendition (P2-16)', function () {
+    expect(MediaCollection::uploadable())->toContain(MediaCollection::Evidence)
+        ->and(MediaCollection::Evidence->visibility())->toBe(MediaVisibility::Private)
+        ->and(array_keys(MediaCollection::Evidence->variants()))->toBe(['full', 'thumb']);
 });

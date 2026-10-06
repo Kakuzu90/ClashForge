@@ -8,6 +8,7 @@ use App\Domain\Media\Jobs\DeleteMediaObjectsJob;
 use App\Domain\Media\Models\Media;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -20,6 +21,7 @@ class MediaAttachmentService
      * Returns the media id for the parent's foreign key. Another user's ULID is a 404 before any
      * other check, so it reveals nothing.
      *
+     * @throws ModelNotFoundException when the user has no media with that ULID
      * @throws ValidationException when the media is in the wrong collection or not usable yet
      */
     public function attach(Authenticatable $user, string $ulid, MediaCollection $collection, Model $attachable, int $position = 0, string $field = 'media'): int

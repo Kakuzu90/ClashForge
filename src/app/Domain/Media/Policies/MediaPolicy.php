@@ -10,8 +10,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 /**
  * Uploading needs a verified email (FR-AUTH-4) and an account whose status allows the write: an
- * avatar is a profile write, open to restricted accounts; every other collection is content,
- * active accounts only (specs/04 §1, §3). An upload is only ever visible to its uploader until
+ * avatar and dispute evidence are account writes, open to restricted accounts, as a dispute is
+ * (P2-16); every other collection is content, active accounts only (specs/04 §1, §3). An upload is only ever visible to its uploader until
  * something attaches it.
  */
 class MediaPolicy
@@ -37,7 +37,7 @@ class MediaPolicy
             return false;
         }
 
-        return $collection === MediaCollection::Avatar ? $user->allowsAccountWrites() : $user->allowsContentWrites();
+        return in_array($collection, [MediaCollection::Avatar, MediaCollection::Evidence], true) ? $user->allowsAccountWrites() : $user->allowsContentWrites();
     }
 
     private function owns(Authenticatable $user, Media $media): bool

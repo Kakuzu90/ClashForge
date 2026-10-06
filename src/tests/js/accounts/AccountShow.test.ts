@@ -78,6 +78,7 @@ const detail = (card: Partial<Detail['card']> = {}, rest: Partial<Detail> = {}):
     canDetach: false,
     canFeature: false,
     indexable: true,
+    disputeUlid: null,
     ...rest,
 });
 

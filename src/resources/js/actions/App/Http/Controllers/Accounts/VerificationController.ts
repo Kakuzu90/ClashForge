@@ -63,7 +63,7 @@ show.head = (args: { ulid: string | number } | [ulid: string | number ] | string
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verified
-* @see app/Http/Controllers/Accounts/VerificationController.php:58
+* @see app/Http/Controllers/Accounts/VerificationController.php:59
 * @route '/accounts/{ulid}/verified'
 */
 export const verified = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -78,7 +78,7 @@ verified.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verified
-* @see app/Http/Controllers/Accounts/VerificationController.php:58
+* @see app/Http/Controllers/Accounts/VerificationController.php:59
 * @route '/accounts/{ulid}/verified'
 */
 verified.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -105,7 +105,7 @@ verified.url = (args: { ulid: string | number } | [ulid: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verified
-* @see app/Http/Controllers/Accounts/VerificationController.php:58
+* @see app/Http/Controllers/Accounts/VerificationController.php:59
 * @route '/accounts/{ulid}/verified'
 */
 verified.get = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -115,7 +115,7 @@ verified.get = (args: { ulid: string | number } | [ulid: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verified
-* @see app/Http/Controllers/Accounts/VerificationController.php:58
+* @see app/Http/Controllers/Accounts/VerificationController.php:59
 * @route '/accounts/{ulid}/verified'
 */
 verified.head = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -125,7 +125,7 @@ verified.head = (args: { ulid: string | number } | [ulid: string | number ] | st
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verify
-* @see app/Http/Controllers/Accounts/VerificationController.php:42
+* @see app/Http/Controllers/Accounts/VerificationController.php:43
 * @route '/accounts/{ulid}/verify'
 */
 export const verify = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -140,7 +140,7 @@ verify.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verify
-* @see app/Http/Controllers/Accounts/VerificationController.php:42
+* @see app/Http/Controllers/Accounts/VerificationController.php:43
 * @route '/accounts/{ulid}/verify'
 */
 verify.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -167,7 +167,7 @@ verify.url = (args: { ulid: string | number } | [ulid: string | number ] | strin
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verify
-* @see app/Http/Controllers/Accounts/VerificationController.php:42
+* @see app/Http/Controllers/Accounts/VerificationController.php:43
 * @route '/accounts/{ulid}/verify'
 */
 verify.post = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({

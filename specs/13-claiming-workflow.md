@@ -122,7 +122,10 @@ has no row for the tag (attach was refused), so `VerifyOwnershipService::verifyT
 token first and only then creates their row and promotes it in the same transaction; a failed
 token leaves nothing but a `failed` claim row.
 
-**B. Dispute** (manual, slow, evidence-based) → §5. The card's dispute button joins with P2-03.
+**B. Dispute** (manual, slow, evidence-based) → §5. Below the token form the card offers "Open a
+dispute" (`/disputes/create?tag=`), or "View your dispute" when the viewer already has one running
+for the tag; the form itself sends a claimant with a running dispute to it (P2-16). The dispute path
+stays open while the CoC API is down: it needs no API call.
 
 The card names the holder only where their own profile would show the tag: a listed account
 (not banned or pending deletion) whose profile the viewer can see, with "show connected accounts"
@@ -144,7 +147,7 @@ previous owner attached the tag and left the platform).
      - reason (≤1000 chars)
      - evidence: up to 3 images (private media), plus free text
      - one open dispute per claimant per tag
-     - rate-limited: 2 open disputes per user at a time
+     - rate-limited: 2 open disputes per user at a time, and 3 opened per rolling day (P2-16)
      - refused as "not held" while the holder's account deletion is pending (P2-24, §6)
 2. Dispute created (status=open); coc_accounts.status = 'disputed'
    Current holder is notified and has 7 days to respond.
@@ -175,17 +178,38 @@ As built (P2-03, owner decisions 2026-10-02):
   - The claimant must still be in good standing (not banned, suspended or pending deletion).
   - A banned holder cannot be given a deny.
 - **Release (3c)** releases the holder's row and verifies it for the claimant by `admin` at once,
-  recorded as a voluntary release.
+  recorded as a voluntary release. It is an ownership transfer, so it takes the current password on
+  every submission ([11](11-security.md), P2-16).
 - **The holder's token (3a)** works on their own `disputed` row.
 - **Withdrawals:**
   - The claimant may withdraw only while the dispute is `open`, before the holder answers, and may
     not dispute the same tag again for `reopen_cooldown_days` (30).
   - The sweep withdraws a dispute that has waited on the claimant for 30 days. Such a withdrawal
-    counts toward the 2-denials bar.
+    counts toward the 2-denials bar, and so does the claimant's own withdrawal within
+    `coc.disputes.early_withdraw_hours` (24) of opening, so open/withdraw cycles cannot keep
+    notifying a holder (P2-16).
 - **Each party** may attach at most 3 evidence images over the whole dispute.
 - **A third denial** logs `coc.dispute_false_claim` for review; the report reason joins with P3-06.
 - **Moderation rows** are written for admin decisions only ([07](07-database-schema.md)
   `moderation_actions`).
+
+As built for the parties (P2-16, owner decisions 2026-10-06):
+- **Opening** (`/disputes/create?tag=`): a reason (≤ 1000 characters) and up to 3 private evidence
+  images, uploaded as soon as they are picked, with a hint never to send an ID document. Refusals
+  show before anyone writes, from `DisputeService::eligibility`; each new tag spends a `coc-attach`
+  lookup ([04 §4](04-roles-and-permissions.md)), so the form cannot read tags in bulk. A tag nobody
+  holds and one already under review read the same ("A dispute cannot be opened for this account
+  now"), so the form tells nobody that a holder is leaving or that a hidden account is disputed.
+- **The dispute page** (`/disputes/{ulid}`, parties only, anyone else a 404): the status, whose turn
+  it is and the viewer's own deadline, and only the viewer's own statements and images (signed
+  thumbnails, for the uploader only and not audited). Never the other party's name, statements or
+  evidence. The holder can verify with a token (`/accounts/{ulid}/verify`, which now opens for a
+  `disputed` row), answer, or give the account up; the claimant can withdraw while `open`, warned
+  when that would count toward the bar; the asked party answers in `awaiting_*`. A closed dispute
+  shows how it ended for the viewer, every ending included, with a link to their account or the
+  token path.
+- **The holder's account page** links the running dispute from its "Ownership is under review"
+  alert.
 
 As built for the admin side (P2-17, owner decisions 2026-10-05):
 - **Queue** `/admin/disputes`: running disputes, the longest wait first, sliced by who it waits on
@@ -227,7 +251,8 @@ claim (the claimant can still verify later with a token).
 - A claimant who files 2 disputes that are denied is barred from filing further disputes for 90
   days, and a third denied dispute is a sanctionable offence (`false_ownership` report reason).
 - Admins cannot resolve a dispute in which they are a party (enforced in the service).
-- All dispute evidence is private media, staff-only, and each access is audit-logged.
+- All dispute evidence is private media, staff-only, and each staff access is audit-logged. Its
+  uploader alone also sees their own thumbnails on their dispute page (P2-16).
 - Disputes auto-close as `withdrawn` after 30 days of claimant inactivity.
 
 ## 6. Detach, release and reclaim
@@ -299,13 +324,15 @@ As built (P2-18, owner decisions 2026-10-06):
   withdrawal both. The holder's own token tells the claimant; the claimant's token tells nobody here
   (the verified and takeover notices already do); anyone else's token tells both.
 - **Content:** the tag and what to do, never the other party or their statements. Every notice
-  carries the dispute; the holder's link to their account page, and the claimant's gain a link to
-  the dispute page with P2-16.
+  carries the dispute. The opened, reminder and info-requested notices link to the dispute page
+  `/disputes/{ulid}` ("Answer the claim", "Answer the admins"), or to the holder's account page for
+  rows without the dispute (P2-16, owner decision 2026-10-06).
 - **Outcomes** (`coc_dispute_closed`): `transferred_to_you` and `released_to_you` link the claimant
   to their account, and replace the generic "account verified" notice for that ending;
   `transferred_away` ("Verify it again"), `denied` and `denied_token` ("Verify with a token") link
   to the attach flow; `kept` and `withdrawn` link the holder to their account; `suspended`,
-  `withdrawn_inactive` and `verified_by_other` have no link. An ending by someone else's token also
+  `withdrawn_inactive`, `verified_by_other` and an unknown outcome link to the dispute page ("View
+  the dispute", P2-16). An ending by someone else's token also
   sends the previous holder the takeover notice.
 
 ## 9. Edge cases
@@ -321,4 +348,4 @@ As built (P2-18, owner decisions 2026-10-06):
 | CoC API is down when a user wants to verify | Verification is disabled with an explicit message ("Verification is paused", on the token step and the conflict card, while the shared `cocApi` prop is set; P2-10); nothing is half-written; attach can still create an `unverified` row from cached data if we have it |
 | Same person, two website accounts, one tag | The second verification supersedes the first; allowed, logged, and visible to admins as a duplicate-account signal |
 | Verified account's user deletes their website account | Tag `released` at the end of the deletion window |
-| Dispute evidence contains a real-world ID document | Moderator policy: do not accept, delete the media, instruct the claimant to use a token or an in-game screenshot. We do not want to hold identity documents |
+| Dispute evidence contains a real-world ID document | Moderator policy: do not accept, delete the media, instruct the claimant to use a token or an in-game screenshot. We do not want to hold identity documents. The upload hint on both dispute forms says so up front (P2-16) |

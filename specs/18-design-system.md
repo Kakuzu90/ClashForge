@@ -462,7 +462,23 @@ featured; otherwise it offers "Make this your featured account" (P2-14). A user 
 confirmed) sees why on step 1 instead of the form.
 *Error states:* tag not found · already verified by someone else (conflict card with both the token
 path and the dispute path) · invalid token (with "tokens expire in a few minutes — copy a fresh
-one") · API unavailable (retry later, nothing lost).
+one") · API unavailable (retry later, nothing lost). As built (P2-16): the dispute path is its own card
+under the token form, "Open a dispute", or "View your dispute" when one is running; it stays usable
+while the API is down.
+
+### Ownership dispute pages (`/disputes/create`, `/disputes/{ulid}`, P2-16)
+Work register (plain cards, alerts and forms, no game styling): a dispute is a support process, not a
+reward surface. *Create:* the tag, a line pointing to the faster token path, the "Is this you?" card
+when the attach flow just showed it, what happens next in four plain bullets, then the reason
+(textarea with counter) and up to 3 images that upload as soon as they are picked (per-file progress,
+retry, remove; submit waits with "Waiting for your images to finish uploading"). A refusal replaces
+the form with a warning alert. *Show:* the tag with a status pill, one alert saying whose turn it is
+and by when (or how it ended, with a link to the account or the token path), then only the actions
+the server allows: "End it with a token", "Answer for the admins" (same field set as create), "Give
+the account up" (a modal with the current password) or "Withdraw my claim" (a confirm modal), and
+"What you sent" (the viewer's own statements and thumbnails). The account page's "Ownership is under
+review" alert gains "See the dispute" for the holder, and the verify page reads "Someone claims …"
+for a `disputed` row instead of showing the attach steps.
 
 ### Base composer (`/bases/create`)
 Step-less single form: media dropzone first (upload begins immediately, progress per file) →

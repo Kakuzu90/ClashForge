@@ -87,11 +87,24 @@ it('renders each dispute outcome with its own words and link', function (string 
     ['kept', '#2PQ8GRJC stays yours', '/accounts/01J00000000000000000000ACC'],
     ['denied', 'Your claim to #2PQ8GRJC was not accepted', '/accounts/attach?tag=%232PQ8GRJC'],
     ['denied_token', 'Your claim to #2PQ8GRJC was closed', '/accounts/attach?tag=%232PQ8GRJC'],
-    ['suspended', '#2PQ8GRJC is suspended', null],
+    ['suspended', '#2PQ8GRJC is suspended', '/disputes/01J0000000000000000000DISP'],
     ['withdrawn', 'The review of #2PQ8GRJC is over', '/accounts/01J00000000000000000000ACC'],
-    ['withdrawn_inactive', 'Your claim to #2PQ8GRJC was closed', null],
-    ['verified_by_other', 'The review of #2PQ8GRJC is over', null],
-    ['unknown', 'The review of #2PQ8GRJC is over', null],
+    ['withdrawn_inactive', 'Your claim to #2PQ8GRJC was closed', '/disputes/01J0000000000000000000DISP'],
+    ['verified_by_other', 'The review of #2PQ8GRJC is over', '/disputes/01J0000000000000000000DISP'],
+    ['unknown', 'The review of #2PQ8GRJC is over', '/disputes/01J0000000000000000000DISP'],
+]);
+
+it('links the open-dispute notices to the dispute page, and to the account without one (P2-16)', function (NotificationType $type, string $label) {
+    $params = ['tag' => '#2PQ8GRJC', 'account' => '01J00000000000000000000ACC'];
+
+    expect($type->render([...$params, 'dispute' => '01J0000000000000000000DISP'])->url)->toBe('/disputes/01J0000000000000000000DISP')
+        ->and($type->render([...$params, 'dispute' => '01J0000000000000000000DISP'])->actionLabel)->toBe($label)
+        ->and($type->render($params)->url)->toBe('/accounts/01J00000000000000000000ACC')
+        ->and($type->render([...$params, 'dispute' => '../admin'])->url)->toBe('/accounts/01J00000000000000000000ACC');
+})->with([
+    [NotificationType::CocDisputeOpened, 'Answer the claim'],
+    [NotificationType::CocDisputeReminder, 'Answer the claim'],
+    [NotificationType::CocDisputeInfoRequested, 'Answer the admins'],
 ]);
 
 it('says how many days are left to answer, and nothing when it does not know', function () {

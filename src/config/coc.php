@@ -114,6 +114,12 @@ return [
         'claimant_inactive_days' => 30,
         // Days before a claimant may dispute the same tag again after withdrawing.
         'reopen_cooldown_days' => 30,
+        // Disputes a user may open in a rolling day (the `coc-dispute-open` limit, specs/04 §4).
+        'open_per_day' => 3,
+        // Answers and withdrawals a user may send per hour (the `coc-dispute-write` limiter).
+        'write_per_hour' => 10,
+        // A withdrawal this soon after opening counts toward the denials bar, like the sweep's.
+        'early_withdraw_hours' => 24,
         // Evidence images per submission (specs/10: 3 per item).
         'evidence_max' => 3,
         // Longest statement or note, in characters (specs/07: reason ≤ 1000).

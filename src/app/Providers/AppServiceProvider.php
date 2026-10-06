@@ -118,6 +118,25 @@ class AppServiceProvider extends ServiceProvider
                 return back()->with('error', 'You asked for a new link a few times already. Try again in an hour.');
             }));
 
+        // Dispute answers and withdrawals per account (specs/04 §4, P2-16); opening also counts here,
+        // and its own daily cap is counted by DisputeService on accepted disputes only. The open and
+        // answer forms get a field error with the wait; withdraw is a button, so it gets a flash.
+        RateLimiter::for('coc-dispute-write', fn (Request $request): Limit => Limit::perHour((int) config('coc.disputes.write_per_hour'))
+            ->by('coc-dispute-write:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(function (Request $request, array $headers): Response {
+                Log::channel('security')->warning('auth.rate_limited', ['limiter' => 'coc-dispute-write', 'ip_hash' => IpHash::of($request->ip())]);
+
+                $seconds = (int) ($headers['Retry-After'] ?? 60);
+                $message = 'You changed your disputes a lot this hour. Try again in '.($seconds >= 120 ? ceil($seconds / 60).' minutes' : "{$seconds} seconds").'.';
+                $field = match (true) {
+                    $request->routeIs('disputes.store') => 'reason',
+                    $request->routeIs('disputes.respond') => 'statement',
+                    default => null,
+                };
+
+                return $field === null ? back()->with('error', $message) : back()->withErrors([$field => $message]);
+            }));
+
         // Guessing the current password from a hijacked session: the confirm page and the
         // password change share one bucket per account (specs/11 "Authentication attacks").
         RateLimiter::for('password-confirm', function (Request $request): array {

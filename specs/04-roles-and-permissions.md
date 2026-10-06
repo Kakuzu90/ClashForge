@@ -87,7 +87,9 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
   row, `feature`: their own `verified` or `disputed` row, both with account writes, P2-14; `view`: the account page, P2-04: the owner sees
   their own rows except `released`, anyone else only a `verified` or `disputed` row whose owner's profile they may
   see with `show_coc_accounts` on and who is not banned or pending deletion; every other case is the unknown-ulid 404), `CocAccountDisputePolicy` (open as attach;
-  respond / release / withdraw: the party, with account writes; review: `resolve-disputes` and no stake in the tag
+  respond / release / withdraw: the party, with account writes, and no verified email needed, so a holder
+  is never locked out of defending an account; view: the parties, whose dispute page `/disputes/{ulid}` is
+  a 404 for anyone else, P2-16; review: `resolve-disputes` and no stake in the tag
   (a party, a row on it, a claim attempt on it or a side in any dispute over it, owner decision 2026-10-06);
   decide: review and strictly outranking both parties, rule 1 below, P2-17; without the ability, or with a
   stake, a dispute is a 404 in the admin pages),
@@ -151,7 +153,9 @@ Three middlewares, applied in order, each with a dedicated denial page:
    name for 90 days (owner decision, 2026-10-01, P1-09).
 2. `EnsureAccountIsActive` — `account.active` blocks `suspended`, `banned` and `pending_deletion`
    writes; `account.active:content` also blocks `restricted` on content writes (uploads, publishing,
-   commenting, applying, messaging). Profile and settings writes stay open to restricted users.
+   commenting, applying, messaging). Profile and settings writes stay open to restricted users, and
+   so do the uploads that serve them: an avatar, and dispute evidence, since a dispute is an account
+   write (`MediaPolicy`, P2-16).
    Reads (GET/HEAD) pass, so the gate can sit on a whole route group such as `/admin`. The
    notification centre's writes (mark one or all read) skip it: they touch only the account's own
    rows, so unverified, restricted, suspended and pending-deletion accounts keep them (owner
@@ -268,8 +272,10 @@ After 30 days, the nightly pipeline anonymises the retained account and its Phas
 | `password-reset` | 3 / hour; 20 / hour per ip (link requests only) | ip + email; ip |
 | `verify-email-resend` | 3 / hour; a breach is a flash error on the notice page | user |
 | `email-change` | 3 accepted requests and resends / hour (`platform.auth.email_change_per_hour`), counted after validation (`EmailChangeLimit`), so typos are free | user |
-| `coc-attach` | 5 distinct tags / hour (`coc.accounts.attach_per_hour`); a preview and the attach of one tag count once | user |
+| `coc-attach` | 5 distinct tags / hour (`coc.accounts.attach_per_hour`); a preview and the attach of one tag count once, and the dispute form's check of a tag shares the count (P2-16) | user |
 | `coc-verify` | 5 / hour (`coc.accounts.verify_per_hour`), every attempt; past the limit only the first refusal of the window is recorded | user |
+| `coc-dispute-open` | 3 accepted disputes per rolling 24 h (`coc.disputes.open_per_day`), counted from the disputes themselves under the claimant's lock, so refusals and typos are free; a breach is the `too_many_today` refusal (P2-16) | user |
+| `coc-dispute-write` | 10 / hour (`coc.disputes.write_per_hour`), every attempt at opening, answering and withdrawing; a breach is a field error on the open and answer forms and a flash error on withdraw (P2-16) | user |
 | `coc-refresh` | 1 / 10 min | user + account |
 | `base-publish` | 5 / day, 20 / week | user |
 | `comment` | 10 / hour, 60 / day | user |
@@ -277,7 +283,7 @@ After 30 days, the nightly pipeline anonymises the retained account and its Phas
 | `upload-intent` | 30 / hour | user |
 | `search` | 60 / min | ip |
 | `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
-| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form, email form, username form and account-deletion form share it | user |
+| `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form, email form, username form, account-deletion form, CoC-account detach and a dispute release share it | user |
 | `admin-search` | 60 / min (`platform.rate_limits.admin_search_per_minute`); admin user list and audit log share it, deferred rows count; a breach is a bare 429 shown inline | user |
 
 All limiters are defined centrally and use the `Cache` facade so they move to Redis unchanged. Their

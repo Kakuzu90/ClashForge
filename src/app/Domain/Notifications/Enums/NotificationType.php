@@ -143,25 +143,26 @@ enum NotificationType: string implements HasLabelAndColor
                 url: null,
             ),
             // Dispute notices (P2-18) name the tag only, never the other party (owner decision
-            // 2026-10-06). The holder's link is their account page; the claimant's comes with P2-16.
+            // 2026-10-06). They link to the dispute page, where the party acts (P2-16); rows
+            // without the dispute fall back to the holder's account page.
             self::CocDisputeOpened => new RenderedNotificationData(
                 title: 'Someone disputes your ownership of '.self::tag($params),
                 body: 'Another player says '.self::tag($params).' is theirs and asked the admins to review it. '
                     .self::within($params).'Verify it again with a new in-game API token to end the review at once.',
-                url: self::accountUrl($params),
-                actionLabel: 'Review your account',
+                url: self::disputeUrl($params) ?? self::accountUrl($params),
+                actionLabel: 'Answer the claim',
             ),
             self::CocDisputeReminder => new RenderedNotificationData(
                 title: 'Answer the review of '.self::tag($params),
                 body: self::within($params).'Verify '.self::tag($params).' again with a new in-game API token to end the review. Otherwise the admins decide without your answer.',
-                url: self::accountUrl($params),
-                actionLabel: 'Review your account',
+                url: self::disputeUrl($params) ?? self::accountUrl($params),
+                actionLabel: 'Answer the claim',
             ),
             self::CocDisputeInfoRequested => new RenderedNotificationData(
                 title: 'The admins need more about '.self::tag($params),
                 body: trim('The admins reviewing the ownership of '.self::tag($params).' asked you for more information. '.self::within($params)),
-                url: self::accountUrl($params),
-                actionLabel: 'Review your account',
+                url: self::disputeUrl($params) ?? self::accountUrl($params),
+                actionLabel: 'Answer the admins',
             ),
             self::CocDisputeClosed => self::disputeOutcome($params),
         };
@@ -224,6 +225,18 @@ enum NotificationType: string implements HasLabelAndColor
     }
 
     /**
+     * The party's dispute page for the `dispute` ulid param, only for a well-formed ulid (P2-16).
+     *
+     * @param  array<string, mixed>  $params
+     */
+    private static function disputeUrl(array $params): ?string
+    {
+        $ulid = $params['dispute'] ?? null;
+
+        return is_string($ulid) && preg_match('/^[0-9A-Za-z]{26}$/D', $ulid) === 1 ? route('disputes.show', ['ulid' => $ulid], absolute: false) : null;
+    }
+
+    /**
      * The account page for the `account` ulid param, only for a well-formed ulid.
      *
      * @param  array<string, mixed>  $params
@@ -272,11 +285,11 @@ enum NotificationType: string implements HasLabelAndColor
             'kept' => new RenderedNotificationData("{$tag} stays yours", "The admins reviewed the claim to {$tag}. It stays on your Clash Commons account.", self::accountUrl($params), 'View your account'),
             'denied' => new RenderedNotificationData("Your claim to {$tag} was not accepted", "The admins reviewed your claim and {$tag} stays with its current holder. If it is yours, you can still verify it with a new in-game API token.", $verifyAgain, 'Verify with a token'),
             'denied_token' => new RenderedNotificationData("Your claim to {$tag} was closed", "The holder verified {$tag} again with an in-game API token, which ends a dispute. If it is yours, secure the game account, then verify it with a new token.", $verifyAgain, 'Verify with a token'),
-            'suspended' => new RenderedNotificationData("{$tag} is suspended", "After reviewing the dispute, the admins suspended {$tag} on Clash Commons. Nobody can verify it for now.", null),
+            'suspended' => new RenderedNotificationData("{$tag} is suspended", "After reviewing the dispute, the admins suspended {$tag} on Clash Commons. Nobody can verify it for now.", self::disputeUrl($params), 'View the dispute'),
             'withdrawn' => new RenderedNotificationData("The review of {$tag} is over", "The claim to {$tag} was withdrawn. It stays on your Clash Commons account.", self::accountUrl($params), 'View your account'),
-            'withdrawn_inactive' => new RenderedNotificationData("Your claim to {$tag} was closed", 'The admins asked you for more and got no answer in time, so the claim was closed.', null),
-            'verified_by_other' => new RenderedNotificationData("The review of {$tag} is over", "Someone verified {$tag} with an in-game API token, which ends the dispute.", null),
-            default => new RenderedNotificationData("The review of {$tag} is over", 'The ownership dispute is closed.', null),
+            'withdrawn_inactive' => new RenderedNotificationData("Your claim to {$tag} was closed", 'The admins asked you for more and got no answer in time, so the claim was closed.', self::disputeUrl($params), 'View the dispute'),
+            'verified_by_other' => new RenderedNotificationData("The review of {$tag} is over", "Someone verified {$tag} with an in-game API token, which ends the dispute.", self::disputeUrl($params), 'View the dispute'),
+            default => new RenderedNotificationData("The review of {$tag} is over", 'The ownership dispute is closed.', self::disputeUrl($params), 'View the dispute'),
         };
     }
 

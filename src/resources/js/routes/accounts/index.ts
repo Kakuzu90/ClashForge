@@ -3,7 +3,7 @@ import attachE7dcd8 from './attach'
 import verify8ef1b2 from './verify'
 /**
 * @see \App\Http\Controllers\Accounts\AttachController::attach
-* @see app/Http/Controllers/Accounts/AttachController.php:32
+* @see app/Http/Controllers/Accounts/AttachController.php:33
 * @route '/accounts/attach'
 */
 export const attach = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -18,7 +18,7 @@ attach.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\AttachController::attach
-* @see app/Http/Controllers/Accounts/AttachController.php:32
+* @see app/Http/Controllers/Accounts/AttachController.php:33
 * @route '/accounts/attach'
 */
 attach.url = (options?: RouteQueryOptions) => {
@@ -27,7 +27,7 @@ attach.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Accounts\AttachController::attach
-* @see app/Http/Controllers/Accounts/AttachController.php:32
+* @see app/Http/Controllers/Accounts/AttachController.php:33
 * @route '/accounts/attach'
 */
 attach.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -37,7 +37,7 @@ attach.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Accounts\AttachController::attach
-* @see app/Http/Controllers/Accounts/AttachController.php:32
+* @see app/Http/Controllers/Accounts/AttachController.php:33
 * @route '/accounts/attach'
 */
 attach.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -109,7 +109,7 @@ verify.head = (args: { ulid: string | number } | [ulid: string | number ] | stri
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verified
-* @see app/Http/Controllers/Accounts/VerificationController.php:58
+* @see app/Http/Controllers/Accounts/VerificationController.php:59
 * @route '/accounts/{ulid}/verified'
 */
 export const verified = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -124,7 +124,7 @@ verified.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verified
-* @see app/Http/Controllers/Accounts/VerificationController.php:58
+* @see app/Http/Controllers/Accounts/VerificationController.php:59
 * @route '/accounts/{ulid}/verified'
 */
 verified.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -151,7 +151,7 @@ verified.url = (args: { ulid: string | number } | [ulid: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verified
-* @see app/Http/Controllers/Accounts/VerificationController.php:58
+* @see app/Http/Controllers/Accounts/VerificationController.php:59
 * @route '/accounts/{ulid}/verified'
 */
 verified.get = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -161,7 +161,7 @@ verified.get = (args: { ulid: string | number } | [ulid: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::verified
-* @see app/Http/Controllers/Accounts/VerificationController.php:58
+* @see app/Http/Controllers/Accounts/VerificationController.php:59
 * @route '/accounts/{ulid}/verified'
 */
 verified.head = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({

@@ -17,6 +17,8 @@ enum DisputeRefusal: string implements HasLabelAndColor
     case AlreadyDisputed = 'already_disputed';
     case TagSuspended = 'tag_suspended';
     case TooManyOpen = 'too_many_open';
+    case TooManyToday = 'too_many_today';
+    case TooManyTags = 'too_many_tags';
     case Barred = 'barred';
     case NotYourTurn = 'not_your_turn';
     case Closed = 'closed';
@@ -32,6 +34,8 @@ enum DisputeRefusal: string implements HasLabelAndColor
             self::AlreadyDisputed => 'This account is already under review',
             self::TagSuspended => 'This account is suspended while staff review it',
             self::TooManyOpen => 'You have too many disputes running',
+            self::TooManyToday => 'You opened as many disputes as one day allows. Try again tomorrow',
+            self::TooManyTags => 'You looked up too many new tags this hour. Try again later',
             self::Barred => 'You cannot open disputes for a while after earlier ones were denied',
             self::NotYourTurn => 'This dispute is not waiting on you yet',
             self::Closed => 'This dispute is closed',

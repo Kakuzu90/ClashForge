@@ -46,7 +46,7 @@ const player: App.Domain.PlayerAccounts.Data.CocPlayerPreviewData = {
     stale: false,
     fetchedAt: '2026-10-02T12:00:00+00:00',
 };
-const page = (overrides: Partial<Page> = {}): Page => ({ tag: '#2PQ8GRJC', preview: null, verifyResult: null, block: null, ...overrides });
+const page = (overrides: Partial<Page> = {}): Page => ({ tag: '#2PQ8GRJC', preview: null, verifyResult: null, block: null, disputeUlid: null, ...overrides });
 
 describe('UiSteps', () => {
     it('marks earlier steps done and the current one with aria-current', () => {
@@ -130,6 +130,21 @@ describe('Accounts/Attach', () => {
         expect(wrapper.findAll('input')[0]!.attributes('disabled')).toBeUndefined();
         await wrapper.findAll('form').at(-1)!.trigger('submit');
         expect(posted).toEqual([]);
+    });
+
+    it('keeps the dispute path open while the API is down, and links a running dispute instead (specs/13 §4 B)', () => {
+        shared.cocApi = { reason: 'failures' };
+        const conflict = { outcome: 'verified_elsewhere' as const, tag: '#2PQ8GRJC', player: null, accountUlid: null, holderUsername: null, retryAfter: null };
+        const wrapper = mount(Attach, { props: page({ preview: conflict }) });
+
+        const open = wrapper.findAll('a').find((link) => link.text() === 'Open a dispute');
+        expect(open?.attributes('href')).toBe('/disputes/create?tag=%232PQ8GRJC');
+        expect(open?.attributes('aria-disabled')).toBeUndefined();
+
+        const running = mount(Attach, { props: page({ preview: conflict, disputeUlid: '01J0000000000000000000DISP' }) });
+        expect(running.text()).toContain('You already dispute this account');
+        expect(running.findAll('a').find((link) => link.text() === 'View your dispute')?.attributes('href')).toBe('/disputes/01J0000000000000000000DISP');
+        expect(running.text()).not.toContain('Open a dispute');
     });
 
     it('names a visible holder', () => {

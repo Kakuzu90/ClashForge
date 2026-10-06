@@ -5,6 +5,7 @@ namespace App\Domain\PlayerAccounts\Services;
 use App\Domain\Audit\Enums\AuditAction;
 use App\Domain\Auth\Enums\StaffAbility;
 use App\Domain\Auth\Enums\UserStatus;
+use App\Domain\Auth\Services\PasswordConfirmationService;
 use App\Domain\Auth\Services\UserStatusService;
 use App\Domain\CocIntegration\Data\PlayerTag;
 use App\Domain\Media\Enums\MediaCollection;
@@ -29,6 +30,7 @@ use App\Domain\PlayerAccounts\Events\CocAccountVerified;
 use App\Domain\PlayerAccounts\Models\CocAccount;
 use App\Domain\PlayerAccounts\Models\CocAccountDispute;
 use App\Domain\PlayerAccounts\Support\AccountRows;
+use App\Domain\PlayerAccounts\Support\ClaimLimits;
 use App\Domain\PlayerAccounts\Support\ClaimRecorder;
 use App\Domain\PlayerAccounts\Support\DisputeLedger;
 use App\Domain\PlayerAccounts\Support\FeaturedAccount;
@@ -39,6 +41,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use SensitiveParameter;
 
 /**
  * Ownership disputes (specs/13 §5): for the claimant who owns the game account but cannot produce
@@ -58,6 +61,8 @@ class DisputeService
         private readonly UserStatusService $users,
         private readonly MediaAttachmentService $media,
         private readonly ModerationActionLog $moderation,
+        private readonly PasswordConfirmationService $passwords,
+        private readonly ClaimLimits $limits,
     ) {}
 
     /**
@@ -74,27 +79,13 @@ class DisputeService
             $rows = CocAccount::query()->where('tag_normalized', $tag->bare())->orderBy('id')->lockForUpdate()->get();
             $held = $rows->first(fn (CocAccount $row): bool => in_array($row->status, AttachAccountService::HOLDING, true));
 
-            // A holder leaving the platform gives the tag up at the end of the window (specs/13 §6); a
-            // dispute opened meanwhile would only hold their deletion back (P2-24), so it reads as unheld.
-            $leaving = $held?->user_id !== null && User::query()->whereKey($held->user_id)->where('status', UserStatus::PendingDeletion)->exists();
-
-            $refusal = match (true) {
-                $rows->contains(fn (CocAccount $row): bool => $row->status === CocAccountStatus::Suspended) => DisputeRefusal::TagSuspended,
-                $held === null || $held->user_id === null || $leaving => DisputeRefusal::NotHeld,
-                $held->user_id === $claimant->id => DisputeRefusal::OwnAccount,
-                $held->status === CocAccountStatus::Disputed => DisputeRefusal::AlreadyDisputed,
-                default => null,
-            };
-            if ($refusal !== null) {
+            if (($refusal = $this->tagRefusal($claimant, $rows)) !== null) {
                 return DisputeResultData::refused($refusal);
             }
 
             // Counted under the claimant's lock, so two submits cannot both pass the limit.
             $this->users->lockAccounts([$claimant->id]);
-            // Reopening the same tag right after withdrawing would restart the holder's window.
-            $recentlyWithdrawn = CocAccountDispute::query()->where('claimant_id', $claimant->id)->where('tag_normalized', $tag->bare())
-                ->where('status', DisputeStatus::Withdrawn)->where('decided_at', '>=', Date::now()->subDays((int) config('coc.disputes.reopen_cooldown_days')))->exists();
-            if ($recentlyWithdrawn) {
+            if ($this->recentlyWithdrawn($claimant, $tag)) {
                 return DisputeResultData::refused(DisputeRefusal::RecentlyWithdrawn);
             }
             if (($limit = $this->limitRefusal($claimant)) !== null) {
@@ -129,6 +120,26 @@ class DisputeService
 
             return new DisputeResultData($dispute->ulid, DisputeStatus::Open);
         });
+    }
+
+    /**
+     * Why `open` would refuse this tag right now, read without locks: for the dispute form, so a
+     * refusal shows before anyone writes a statement. `open` checks everything again under locks.
+     * Each new tag spends a `coc-attach` lookup (specs/04 §4), as the attach preview does, so the
+     * form cannot be used to read the state of tags in bulk; a tag the attach flow just showed is
+     * free (P2-16 security review).
+     */
+    public function eligibility(User $claimant, PlayerTag $tag): ?DisputeRefusal
+    {
+        Gate::forUser($claimant)->authorize('open', CocAccountDispute::class);
+        if ($this->limits->attach($claimant, $tag) !== null) {
+            return DisputeRefusal::TooManyTags;
+        }
+        $rows = CocAccount::query()->where('tag_normalized', $tag->bare())->orderBy('id')->get();
+
+        return $this->tagRefusal($claimant, $rows)
+            ?? ($this->recentlyWithdrawn($claimant, $tag) ? DisputeRefusal::RecentlyWithdrawn : null)
+            ?? $this->limitRefusal($claimant);
     }
 
     /**
@@ -195,15 +206,17 @@ class DisputeService
     /**
      * The holder gives the tag up (specs/13 §5 3c): their row is released and the claimant gets it
      * verified, recorded as a voluntary release (owner decision 2026-10-02, P2-03). No takeover
-     * notice: the holder did it.
+     * notice: the holder did it. An ownership transfer, so it takes the current password on every
+     * submission, checked on the locked account like a detach (specs/11, P2-16).
      */
-    public function release(User $holder, string $disputeUlid): DisputeResultData
+    public function release(User $holder, string $disputeUlid, #[SensitiveParameter] string $currentPassword, ?string $ip = null): DisputeResultData
     {
         $dispute = $this->ownDispute($holder, $disputeUlid);
         Gate::forUser($holder)->authorize('release', $dispute);
 
-        return DB::transaction(function () use ($holder, $dispute): DisputeResultData {
+        return DB::transaction(function () use ($holder, $dispute, $currentPassword, $ip): DisputeResultData {
             [$dispute, $held] = $this->lockForChange($dispute);
+            $this->passwords->confirm(User::query()->findOrFail($holder->id), $currentPassword, $ip);
             if (! $dispute->status->isActive() || $held === null) {
                 return DisputeResultData::refused(DisputeRefusal::Closed, $dispute->ulid);
             }
@@ -511,6 +524,38 @@ class DisputeService
             ->firstOrFail();
     }
 
+    /**
+     * What the tag itself allows, from its rows: a holder other than the claimant, not leaving, and
+     * no running dispute or suspension on it.
+     *
+     * @param  Collection<int, CocAccount>  $rows
+     */
+    private function tagRefusal(User $claimant, Collection $rows): ?DisputeRefusal
+    {
+        $held = $rows->first(fn (CocAccount $row): bool => in_array($row->status, AttachAccountService::HOLDING, true));
+
+        // A holder leaving the platform gives the tag up at the end of the window (specs/13 §6); a
+        // dispute opened meanwhile would only hold their deletion back (P2-24), so it reads as unheld.
+        $leaving = $held?->user_id !== null && User::query()->whereKey($held->user_id)->where('status', UserStatus::PendingDeletion)->exists();
+
+        return match (true) {
+            $rows->contains(fn (CocAccount $row): bool => $row->status === CocAccountStatus::Suspended) => DisputeRefusal::TagSuspended,
+            $held === null || $held->user_id === null || $leaving => DisputeRefusal::NotHeld,
+            $held->user_id === $claimant->id => DisputeRefusal::OwnAccount,
+            $held->status === CocAccountStatus::Disputed => DisputeRefusal::AlreadyDisputed,
+            default => null,
+        };
+    }
+
+    /**
+     * Reopening the same tag right after withdrawing would restart the holder's window.
+     */
+    private function recentlyWithdrawn(User $claimant, PlayerTag $tag): bool
+    {
+        return CocAccountDispute::query()->where('claimant_id', $claimant->id)->where('tag_normalized', $tag->bare())
+            ->where('status', DisputeStatus::Withdrawn)->where('decided_at', '>=', Date::now()->subDays((int) config('coc.disputes.reopen_cooldown_days')))->exists();
+    }
+
     private function limitRefusal(User $claimant): ?DisputeRefusal
     {
         $running = CocAccountDispute::query()->active()->where('claimant_id', $claimant->id)->count();
@@ -518,12 +563,28 @@ class DisputeService
             return DisputeRefusal::TooManyOpen;
         }
 
-        // A denial, or a withdrawal for not answering an admin, counts toward the bar.
-        $recentDenials = CocAccountDispute::query()->where('claimant_id', $claimant->id)
-            ->where(fn ($q) => $q->where('status', DisputeStatus::ResolvedDenied)->orWhere(fn ($w) => $w->where('status', DisputeStatus::Withdrawn)->where('closed_by', 'sweep')))
-            ->where('decided_at', '>=', Date::now()->subDays((int) config('coc.disputes.bar_days')))->count();
+        // The `coc-dispute-open` limit (specs/04 §4): accepted opens in a rolling day, counted from
+        // the disputes themselves, so a refusal or a typo never uses one up.
+        $today = CocAccountDispute::query()->where('claimant_id', $claimant->id)->where('created_at', '>=', Date::now()->subDay())->count();
+        if ($today >= (int) config('coc.disputes.open_per_day')) {
+            return DisputeRefusal::TooManyToday;
+        }
 
-        return $recentDenials >= (int) config('coc.disputes.bar_after_denials') ? DisputeRefusal::Barred : null;
+        // A denial, a withdrawal for not answering an admin, or a withdrawal soon after opening
+        // (an open/withdraw cycle only notifies the holder twice) counts toward the bar.
+        $closed = CocAccountDispute::query()->where('claimant_id', $claimant->id)
+            ->whereIn('status', [DisputeStatus::ResolvedDenied, DisputeStatus::Withdrawn])
+            ->where('decided_at', '>=', Date::now()->subDays((int) config('coc.disputes.bar_days')))
+            ->get(['status', 'closed_by', 'created_at', 'decided_at']);
+        $early = (int) config('coc.disputes.early_withdraw_hours');
+        $counted = $closed->filter(fn (CocAccountDispute $dispute): bool => match (true) {
+            $dispute->status === DisputeStatus::ResolvedDenied => true,
+            $dispute->closed_by === 'sweep' => true,
+            $dispute->closed_by === 'claimant' => $dispute->decided_at !== null && $dispute->decided_at->lt($dispute->created_at->addHours($early)),
+            default => false,
+        })->count();
+
+        return $counted >= (int) config('coc.disputes.bar_after_denials') ? DisputeRefusal::Barred : null;
     }
 
     /**
@@ -540,7 +601,13 @@ class DisputeService
         }
 
         foreach (array_values(array_unique($media)) as $position => $ulid) {
-            $this->media->attach($user, $ulid, MediaCollection::Evidence, $dispute, $position, 'evidence');
+            try {
+                $this->media->attach($user, $ulid, MediaCollection::Evidence, $dispute, $position, 'evidence');
+            } catch (ModelNotFoundException) {
+                // Someone else's upload or one already cleaned up: the same answer for both, and the
+                // statement typed on the form is kept.
+                throw ValidationException::withMessages(['evidence' => 'One of the images did not upload properly. Remove it and upload it again.']);
+            }
         }
 
         if ($media === [] && $note === null) {

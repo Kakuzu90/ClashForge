@@ -76,7 +76,7 @@ mechanism and the test that proves it.
 - `SameSite=Lax` session cookies; `Secure` and `HttpOnly` set.
 - No route is exempted. If a webhook ever needs exemption, it authenticates by signature instead.
 - Sensitive actions (email change, password change, account deletion, ownership transfer) require
-  password re-confirmation within the last 15 minutes; the password, email, username, account-deletion and CoC-account detach (P2-14) forms take the
+  password re-confirmation within the last 15 minutes; the password, email, username, account-deletion, CoC-account detach (P2-14) and dispute release (P2-16) forms take the
   current password inline on each submission instead, sharing the `password-confirm` limiter.
 
 ### IDOR / broken object-level authorization
@@ -313,6 +313,8 @@ author; disclosure obligations and timelines. Rehearsed once before launch.
 - Data export and deletion flows exist (NFR-PRIV-1/2). Settings and role writes reload the account
   under its row lock, shared with anonymisation; late login/session writes skip tombstones,
   so concurrent requests cannot restore cleared PII or credentials (P1-16).
-- Report evidence is private media, visible only to staff, with every access audit-logged.
+- Report evidence is private media, visible only to staff, with every access audit-logged. Dispute
+  evidence is the same, except that its uploader sees their own thumbnails on their dispute page,
+  and never the other party's ([13 §5](13-claiming-workflow.md), P2-16).
 - Moderator actions on a user are visible to that user in aggregate (what and why), never the
   identity of the reporter.

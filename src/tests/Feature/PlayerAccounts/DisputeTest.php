@@ -183,7 +183,7 @@ it('hands the tag to the claimant when the holder releases it (specs/13 §5 3c, 
     Event::fake([CocAccountVerified::class, CocAccountOwnershipTransferred::class, CocAccountDisputeClosed::class]);
     $ulid = ($this->open)()->disputeUlid;
 
-    expect(($this->disputes)()->release($this->holder, $ulid)->status)->toBe(DisputeStatus::ResolvedTransfer);
+    expect(($this->disputes)()->release($this->holder, $ulid, 'password')->status)->toBe(DisputeStatus::ResolvedTransfer);
 
     $granted = CocAccount::query()->where('user_id', $this->claimant->id)->sole();
     expect($granted->id)->toBe($this->held->id)
@@ -311,7 +311,7 @@ it('gives the tag only to a claimant in good standing (specs/13 §9)', function 
     $this->claimant->forceFill(['status' => $state])->save();
 
     expect(($this->disputes)()->decide($this->admin, $ulid, DisputeDecision::Transfer, 'Evidence holds')->refusal)->toBe(DisputeRefusal::ClaimantUnavailable)
-        ->and(($this->disputes)()->release($this->holder, $ulid)->refusal)->toBe(DisputeRefusal::ClaimantUnavailable)
+        ->and(($this->disputes)()->release($this->holder, $ulid, 'password')->refusal)->toBe(DisputeRefusal::ClaimantUnavailable)
         ->and(($this->disputes)()->decide($this->admin, $ulid, DisputeDecision::Deny, 'Claimant left')->status)->toBe(DisputeStatus::ResolvedDenied);
 })->with(['banned', 'suspended', 'pending_deletion']);
 

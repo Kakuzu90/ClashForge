@@ -4,6 +4,7 @@ import Auth from './Auth'
 import Account from './Account'
 import Profile from './Profile'
 import Accounts from './Accounts'
+import Disputes from './Disputes'
 import Settings from './Settings'
 import Notifications from './Notifications'
 import Moderation from './Moderation'
@@ -18,6 +19,7 @@ const Controllers = {
     Account: Object.assign(Account, Account),
     Profile: Object.assign(Profile, Profile),
     Accounts: Object.assign(Accounts, Accounts),
+    Disputes: Object.assign(Disputes, Disputes),
     Settings: Object.assign(Settings, Settings),
     Notifications: Object.assign(Notifications, Notifications),
     Moderation: Object.assign(Moderation, Moderation),

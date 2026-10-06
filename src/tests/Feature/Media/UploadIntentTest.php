@@ -73,7 +73,6 @@ it('rejects invalid declarations', function (array $payload, string $field) {
     'missing collection' => [['collection' => null], 'collection'],
     'unknown collection' => [['collection' => 'banner'], 'collection'],
     'video before P3-02' => [['collection' => 'base_video', 'mime' => 'video/mp4', 'filename' => 'a.mp4'], 'collection'],
-    'evidence before P3-06' => [['collection' => 'evidence'], 'collection'],
     'svg type' => [['mime' => 'image/svg+xml', 'filename' => 'a.svg'], 'mime'],
     'svg extension' => [['filename' => 'a.svg'], 'mime'],
     'gif' => [['mime' => 'image/gif', 'filename' => 'a.gif'], 'mime'],

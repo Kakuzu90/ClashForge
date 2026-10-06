@@ -14,6 +14,7 @@ use App\Domain\PlayerAccounts\Data\PlayerCardData;
 use App\Domain\PlayerAccounts\Data\ProgressionGroupData;
 use App\Domain\PlayerAccounts\Enums\CocAccountStatus;
 use App\Domain\PlayerAccounts\Models\CocAccount;
+use App\Domain\PlayerAccounts\Models\CocAccountDispute;
 use App\Domain\PlayerAccounts\Models\CocAccountSnapshot;
 use App\Domain\PlayerAccounts\Support\ProgressionGrid;
 use App\Domain\Users\Services\PrivacyPolicyResolver;
@@ -133,6 +134,9 @@ class AccountReadModel
             canDetach: $viewer !== null && Gate::forUser($viewer)->allows('detach', $account),
             canFeature: $viewer !== null && ! $account->is_featured && Gate::forUser($viewer)->allows('feature', $account),
             indexable: $account->status === CocAccountStatus::Verified && $owner !== null && $this->privacy->isIndexable($owner),
+            disputeUlid: $isOwn && $account->status === CocAccountStatus::Disputed
+                ? CocAccountDispute::query()->active()->where('coc_account_id', $account->id)->where('current_holder_id', $viewer->id)->value('ulid')
+                : null,
         );
     }
 

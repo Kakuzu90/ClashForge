@@ -7,6 +7,7 @@ use App\Domain\PlayerAccounts\Data\AttachResultData;
 use App\Domain\PlayerAccounts\Data\VerifyResultData;
 use App\Domain\PlayerAccounts\Enums\AttachOutcome;
 use App\Domain\PlayerAccounts\Enums\VerifyOutcome;
+use App\Domain\PlayerAccounts\Queries\DisputePartyQuery;
 use App\Domain\PlayerAccounts\Services\AttachAccountService;
 use App\Domain\PlayerAccounts\Services\VerifyOwnershipService;
 use App\Http\Controllers\Controller;
@@ -29,7 +30,7 @@ class AttachController extends Controller
 {
     public const PREVIEW = 'accounts.attach.preview';
 
-    public function create(Request $request, AttachAccountService $accounts): Response
+    public function create(Request $request, AttachAccountService $accounts, DisputePartyQuery $disputes): Response
     {
         $user = $this->user($request);
         $tag = PlayerTag::tryFrom($request->string('tag')->toString());
@@ -37,8 +38,10 @@ class AttachController extends Controller
         $verifyResult = $request->session()->get('verifyResult');
 
         $preview = is_array($preview) && $tag !== null && ($preview['tag'] ?? null) === $tag->value ? AttachResultData::from($preview) : null;
+        $disputeUlid = null;
         if ($preview?->outcome === AttachOutcome::VerifiedElsewhere) {
             $preview->holderUsername = $accounts->holderUsername($user, $tag);
+            $disputeUlid = $disputes->runningFor($user, $tag);
         }
 
         $page = new AttachPageData(
@@ -46,6 +49,7 @@ class AttachController extends Controller
             preview: $preview,
             verifyResult: is_array($verifyResult) ? VerifyResultData::from($verifyResult) : null,
             block: $accounts->block($user),
+            disputeUlid: $disputeUlid,
         );
 
         return PageMeta::page('Accounts/Attach', $page->toArray(), new PageMeta(title: 'Attach an account', noindex: true));

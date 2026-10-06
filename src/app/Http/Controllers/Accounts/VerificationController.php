@@ -31,7 +31,8 @@ class VerificationController extends Controller
         if ($account->status === CocAccountStatus::Verified) {
             return to_route('accounts.verified', ['ulid' => $ulid]);
         }
-        abort_unless($account->status === CocAccountStatus::Unverified, HttpResponse::HTTP_NOT_FOUND);
+        // A holder's token ends a dispute over their own row (specs/13 §5 3a), so a `disputed` row has the page too.
+        abort_unless(in_array($account->status, [CocAccountStatus::Unverified, CocAccountStatus::Disputed], true), HttpResponse::HTTP_NOT_FOUND);
 
         $result = $request->session()->get('verifyResult');
         $page = new VerifyPageData(account: $account, result: is_array($result) ? VerifyResultData::from($result) : null);

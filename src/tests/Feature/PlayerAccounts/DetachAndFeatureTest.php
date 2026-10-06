@@ -204,7 +204,7 @@ it('moves the featured flag when a dispute takes the featured account away', fun
     $ulid = $disputes->open($claimant, PlayerTag::from('#2PQ8GRJC'), 'I lost the phone with this account.')->disputeUlid;
 
     if ($how === 'release') {
-        $disputes->release($this->user, $ulid);
+        $disputes->release($this->user, $ulid, 'password');
     } else {
         $disputes->respond($this->user, $ulid, 'It is mine.');
         $disputes->decide(User::factory()->admin()->create(), $ulid, $how === 'transfer' ? DisputeDecision::Transfer : DisputeDecision::Suspend, 'Decided on the evidence.');

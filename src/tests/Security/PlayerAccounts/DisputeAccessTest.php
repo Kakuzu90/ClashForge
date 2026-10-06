@@ -33,7 +33,7 @@ it("hides another user's dispute behind a 404 (IDOR)", function (string $action)
     expect(fn () => match ($action) {
         'respond' => ($this->service)()->respond($stranger, $ulid, 'Hi'),
         'withdraw' => ($this->service)()->withdraw($stranger, $ulid),
-        'release' => ($this->service)()->release($stranger, $ulid),
+        'release' => ($this->service)()->release($stranger, $ulid, 'password'),
     })->toThrow(ModelNotFoundException::class)
         ->and(CocAccountDispute::query()->sole()->status)->toBe(DisputeStatus::Open);
 })->with(['respond', 'withdraw', 'release']);
@@ -42,7 +42,7 @@ it('keeps each party to its own actions', function () {
     $ulid = ($this->ulid)();
 
     expect(fn () => ($this->service)()->withdraw($this->holder, $ulid))->toThrow(AuthorizationException::class)
-        ->and(fn () => ($this->service)()->release($this->claimant, $ulid))->toThrow(AuthorizationException::class)
+        ->and(fn () => ($this->service)()->release($this->claimant, $ulid, 'password'))->toThrow(AuthorizationException::class)
         ->and(CocAccountDispute::query()->sole()->status)->toBe(DisputeStatus::Open);
 });
 
@@ -72,7 +72,7 @@ it('stops a pending-deletion party from answering, withdrawing or releasing', fu
     $this->claimant->forceFill(['status' => 'pending_deletion'])->save();
 
     expect(fn () => ($this->service)()->respond($this->holder, $ulid, 'Mine'))->toThrow(AuthorizationException::class)
-        ->and(fn () => ($this->service)()->release($this->holder, $ulid))->toThrow(AuthorizationException::class)
+        ->and(fn () => ($this->service)()->release($this->holder, $ulid, 'password'))->toThrow(AuthorizationException::class)
         ->and(fn () => ($this->service)()->withdraw($this->claimant, $ulid))->toThrow(AuthorizationException::class);
 });
 
@@ -87,7 +87,8 @@ it("accepts only the submitter's own evidence uploads", function () {
     $theirs = Media::factory()->collection(MediaCollection::Evidence)->ready()->create();
     $wrongKind = Media::factory()->collection(MediaCollection::Avatar)->ready()->create(['user_id' => $this->claimant->id]);
 
-    expect(fn () => ($this->service)()->open($this->claimant, $this->tag, 'Mine.', [$theirs->ulid]))->toThrow(ModelNotFoundException::class)
+    // Someone else's upload reads like a lost one (P2-16): a field error that does not say it exists.
+    expect(fn () => ($this->service)()->open($this->claimant, $this->tag, 'Mine.', [$theirs->ulid]))->toThrow(ValidationException::class, 'did not upload properly')
         ->and(fn () => ($this->service)()->open($this->claimant, $this->tag, 'Mine.', [$wrongKind->ulid]))->toThrow(ValidationException::class)
         ->and(CocAccountDispute::query()->count())->toBe(0)
         ->and($theirs->refresh()->attachable_id)->toBeNull();

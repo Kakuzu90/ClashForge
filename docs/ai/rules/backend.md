@@ -27,6 +27,7 @@ paths:
 - Every limit/weight/window is a config key in `config/{coc,media,moderation,bases,recruitment,platform,assets}.php`.
 - No `env()` outside `config/`. No `dd`/`dump`/`ray`.
 - Mutations are POST/PATCH/DELETE only (the deduped `/bases/{slug}/copy` is the sole exception).
-- SSR is disabled for `/admin/*`, `/settings/*`, `/dashboard`, `/notifications`, `/account/*`. Render pages with
+- SSR is disabled for `/admin/*`, `/settings/*`, `/dashboard`, `/notifications`, `/account/*`, `/moderation/*`,
+  `/disputes/*` (`inertia.ssr.except`). Render pages with
   `PageMeta::page($component, $props, new PageMeta(...))` so the root view gets title/description/
   canonical/OG/JSON-LD and the client gets `meta.title`.

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::store
-* @see app/Http/Controllers/Accounts/VerificationController.php:42
+* @see app/Http/Controllers/Accounts/VerificationController.php:43
 * @route '/accounts/{ulid}/verify'
 */
 export const store = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::store
-* @see app/Http/Controllers/Accounts/VerificationController.php:42
+* @see app/Http/Controllers/Accounts/VerificationController.php:43
 * @route '/accounts/{ulid}/verify'
 */
 store.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -43,7 +43,7 @@ store.url = (args: { ulid: string | number } | [ulid: string | number ] | string
 
 /**
 * @see \App\Http\Controllers\Accounts\VerificationController::store
-* @see app/Http/Controllers/Accounts/VerificationController.php:42
+* @see app/Http/Controllers/Accounts/VerificationController.php:43
 * @route '/accounts/{ulid}/verify'
 */
 store.post = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({

@@ -11,6 +11,7 @@ import { focusFirstError } from '@/Composables/useFirstErrorFocus';
 import { usePageProps } from '@/Composables/usePageProps';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { destroy, featured, verify } from '@/routes/accounts';
+import { show as disputeShow } from '@/routes/disputes';
 import { Deferred, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -82,12 +83,13 @@ function remove() {
             </UiAlert>
             <UiAlert v-if="card.status === 'disputed'" kind="info" title="Ownership is under review">
                 Someone has asked the admins to review who owns this account. It stays with its current owner until they decide.
-                <template v-if="account.canVerify">
-                    If it is yours, verifying it again with the in-game API token ends the review.
-                    <div class="mt-3">
-                        <UiButton :href="verify(card.ulid).url" size="sm">Verify this account</UiButton>
-                    </div>
-                </template>
+                <template v-if="account.canVerify">If it is yours, verifying it again with the in-game API token ends the review.</template>
+                <div v-if="account.disputeUlid || account.canVerify" class="mt-3 flex flex-wrap gap-2">
+                    <UiButton v-if="account.canVerify" :href="verify(card.ulid).url" size="sm">Verify this account</UiButton>
+                    <UiButton v-if="account.disputeUlid" :href="disputeShow(account.disputeUlid).url" size="sm" variant="secondary">
+                        See the dispute
+                    </UiButton>
+                </div>
             </UiAlert>
             <UiAlert v-if="card.status === 'suspended'" kind="danger" title="This account is suspended">
                 The admins have suspended this account on Clash Commons. Only you can see it, and nobody can verify it until they release it.

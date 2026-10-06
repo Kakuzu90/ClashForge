@@ -12,6 +12,7 @@ import { usePageProps } from '@/Composables/usePageProps';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { verify } from '@/routes/accounts';
 import { preview as previewRoute, store, verifyTag } from '@/routes/accounts/attach';
+import { create as disputeCreate, show as disputeShow } from '@/routes/disputes';
 import { notice } from '@/routes/verification';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -19,7 +20,13 @@ import { computed, ref } from 'vue';
 defineOptions({ layout: AppLayout });
 
 type Props = App.Http.Data.Accounts.AttachPageData;
-const props = defineProps<{ tag: Props['tag']; preview: Props['preview']; verifyResult: Props['verifyResult']; block: Props['block'] }>();
+const props = defineProps<{
+    tag: Props['tag'];
+    preview: Props['preview'];
+    verifyResult: Props['verifyResult'];
+    block: Props['block'];
+    disputeUlid: Props['disputeUlid'];
+}>();
 
 const lookup = useForm({ tag: props.tag ?? '' });
 // The page stays mounted across lookups, so the tag is read from the current card at submit time.
@@ -150,6 +157,24 @@ function submitClaim() {
                             />
                             <UiButton type="submit" block :loading="claim.processing" :disabled="!!cocApi">Verify with token</UiButton>
                         </form>
+                    </UiCard>
+                    <!-- The dispute path (specs/13 §4 B), second to the token: for an owner who cannot get one. -->
+                    <UiCard class="flex flex-col gap-3 p-4 sm:p-6">
+                        <template v-if="disputeUlid">
+                            <h2 class="text-h3 font-semibold">You already dispute this account</h2>
+                            <p class="text-body text-fg-secondary">The admins review it there. A token above still ends it at once.</p>
+                            <UiButton class="self-start" variant="secondary" :href="disputeShow(disputeUlid).url">View your dispute</UiButton>
+                        </template>
+                        <template v-else>
+                            <h2 class="text-h3 font-semibold">Cannot get a token?</h2>
+                            <p class="text-body text-fg-secondary">
+                                If the account is yours but you cannot open it in game, for example after losing the device, ask the admins to review
+                                who owns it.
+                            </p>
+                            <UiButton class="self-start" variant="secondary" :href="disputeCreate({ query: { tag: preview.tag } }).url">
+                                Open a dispute
+                            </UiButton>
+                        </template>
                     </UiCard>
                 </template>
             </section>

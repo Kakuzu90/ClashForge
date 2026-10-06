@@ -39,11 +39,20 @@ function submit() {
     <div class="mx-auto flex w-full max-w-xl flex-col gap-6 py-6 md:py-10">
         <header class="flex flex-col gap-4">
             <h1 class="font-display text-h1">Prove {{ account.name }} is yours</h1>
-            <UiSteps :steps="['Find your account', 'Prove it is yours', 'Done']" :current="2" label="Attach steps" />
-            <p class="text-body text-fg-secondary">
-                <span class="font-mono">{{ account.tag }}</span> is attached but not verified yet. Only someone who can open the account in game can
-                get its API token.
-            </p>
+            <!-- A holder answering a dispute with a token (specs/13 §5 3a) is not in the attach flow. -->
+            <template v-if="account.status === 'disputed'">
+                <p class="text-body text-fg-secondary">
+                    Someone claims <span class="font-mono">{{ account.tag }}</span>. A new token from the game proves it is yours and ends the
+                    review at once.
+                </p>
+            </template>
+            <template v-else>
+                <UiSteps :steps="['Find your account', 'Prove it is yours', 'Done']" :current="2" label="Attach steps" />
+                <p class="text-body text-fg-secondary">
+                    <span class="font-mono">{{ account.tag }}</span> is attached but not verified yet. Only someone who can open the account in game
+                    can get its API token.
+                </p>
+            </template>
         </header>
 
         <UiCard class="flex flex-col gap-5 p-4 sm:p-6">

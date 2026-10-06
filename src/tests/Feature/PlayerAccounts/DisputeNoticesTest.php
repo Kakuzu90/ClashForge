@@ -53,7 +53,7 @@ it('tells the holder when a dispute is opened, in-app and by email, without nami
     expect($notice->data['params'])->toHaveCount(5)->toMatchArray(['tag' => '#2PQ8GRJC', 'dispute' => $ulid, 'account' => $this->held->ulid, 'days' => 7, 'key' => "{$ulid}:opened"])
         ->and($rendered->title)->toBe('Someone disputes your ownership of #2PQ8GRJC')
         ->and($rendered->body)->toContain('You have 7 days to answer.')
-        ->and($rendered->url)->toBe("/accounts/{$this->held->ulid}")
+        ->and($rendered->url)->toBe("/disputes/{$ulid}")
         ->and(disputeNotices($this->claimant))->toHaveCount(0)
         ->and(EmailDelivery::query()->where('user_id', $this->holder->id)->sole()->event_key)->toBe("{$ulid}:opened");
     Mail::assertSent(NonSecurityEmail::class, fn (NonSecurityEmail $mail) => $mail->hasTo($this->holder->email)
@@ -116,13 +116,13 @@ it('starts the reminders over when an admin asks the holder for more, and tells 
     expect(disputeNotices($this->holder, NotificationType::CocDisputeReminder))->toHaveCount(2);
 });
 
-it('tells the claimant when an admin asks them, with their own deadline and no account link', function () {
+it('tells the claimant when an admin asks them, with their own deadline and a link to the dispute', function () {
     $ulid = ($this->open)();
     $this->disputes->decide($this->admin, $ulid, DisputeDecision::AskClaimant, 'Send a receipt.');
 
     $asked = disputeNotices($this->claimant, NotificationType::CocDisputeInfoRequested)->sole();
     expect($asked->data['params'])->toHaveCount(4)->toMatchArray(['tag' => '#2PQ8GRJC', 'dispute' => $ulid, 'days' => 30])
-        ->and(NotificationType::CocDisputeInfoRequested->render($asked->data['params'])->url)->toBeNull();
+        ->and(NotificationType::CocDisputeInfoRequested->render($asked->data['params'])->url)->toBe("/disputes/{$ulid}");
 });
 
 it('tells both parties of an admin decision, each their own outcome', function (DisputeDecision $decision, string $claimantOutcome, string $holderOutcome) {
@@ -151,7 +151,7 @@ it('links the claimant to their new account after a transfer', function () {
 
 it('tells only the other side when one side ends it', function () {
     $ulid = ($this->open)();
-    $this->disputes->release($this->holder, $ulid);
+    $this->disputes->release($this->holder, $ulid, 'password');
 
     expect(disputeNotices($this->claimant, NotificationType::CocDisputeClosed)->sole()->data['params']['outcome'])->toBe('released_to_you')
         ->and(disputeNotices($this->holder, NotificationType::CocDisputeClosed))->toHaveCount(0);
@@ -263,7 +263,7 @@ it('keeps the in-app notice but sends no email when the holder turned Ownership 
 it('sends the claimant only the outcome, not a second "verified" notice, on a transfer or release', function (string $how) {
     $ulid = ($this->open)();
     if ($how === 'release') {
-        $this->disputes->release($this->holder, $ulid);
+        $this->disputes->release($this->holder, $ulid, 'password');
     } else {
         $this->disputes->respond($this->holder, $ulid, 'It is mine.');
         $this->disputes->decide($this->admin, $ulid, DisputeDecision::Transfer, 'Receipt matches.');
