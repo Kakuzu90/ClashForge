@@ -144,10 +144,8 @@ class DisputeReviewService
      * The opening statement, then every submission in order. The media they cite are looked up
      * once; the view is audited before any signed URL leaves.
      *
-     * @return list<DisputeEvidenceData>
-     */
-    /**
      * @param  array<string, bool>  $removable  by party: may this admin delete that party's images
+     * @return list<DisputeEvidenceData>
      */
     private function evidence(User $admin, CocAccountDispute $dispute, array $removable): array
     {
