@@ -60,7 +60,9 @@ function loadQueue(User $viewer, array $query = []): TestResponse
 
 function evidenceImage(User $owner, CocAccountDispute $dispute): Media
 {
-    $media = Media::factory()->collection(MediaCollection::Evidence)->ready()->create(['user_id' => $owner->id]);
+    $media = Media::factory()->collection(MediaCollection::Evidence)->ready()->create([
+        'user_id' => $owner->id, 'attachable_type' => $dispute->getMorphClass(), 'attachable_id' => $dispute->id,
+    ]);
     foreach ([VariantName::Full, VariantName::Thumb] as $variant) {
         MediaVariant::factory()->create(['media_id' => $media->id, 'variant' => $variant->value, 'path' => "private/evidence/{$media->ulid}/{$variant->value}.webp"]);
     }
@@ -87,7 +89,7 @@ it('renders the queue shell and loads the rows deferred, oldest wait first', fun
 
     $entries = loadQueue($this->admin)->assertOk()->json('props.disputes.entries');
     expect(array_column($entries, 'ulid'))->toBe([$first, $second])
-        ->and($entries[0])->toMatchArray(['tag' => '#2PQ8GRJC', 'claimant' => 'claimant', 'holder' => 'holder', 'status' => 'awaiting_admin', 'needsSuperAdmin' => false])
+        ->and($entries[0])->toMatchArray(['tag' => '#2PQ8GRJC', 'claimant' => 'claimant', 'holder' => 'holder', 'status' => 'awaiting_admin', 'blockedReason' => null])
         ->and($entries[0])->not->toHaveKeys(['reason', 'evidence', 'decisionNote']);
 });
 
@@ -189,7 +191,7 @@ it('records a decision through the service and says so', function () {
     $this->actingAs($this->admin)->from("/admin/disputes/{$ulid}")
         ->post("/admin/disputes/{$ulid}/decision", ['decision' => 'deny', 'note' => 'No evidence beyond the statement.'])
         ->assertRedirect("/admin/disputes/{$ulid}")
-        ->assertSessionHas('success', 'Deny the claim: done.');
+        ->assertSessionHas('success', 'Claim denied. The holder keeps the account.');
 
     expect(CocAccountDispute::query()->where('ulid', $ulid)->sole()->status)->toBe(DisputeStatus::ResolvedDenied)
         ->and($this->held->refresh()->status)->toBe(CocAccountStatus::Verified);
@@ -261,6 +263,65 @@ it('keeps the queue, the review page and the panel within the query budget', fun
         expect(count(DB::getQueryLog()))->toBeLessThanOrEqual(25);
         DB::disableQueryLog();
     }
+});
+
+it('records every decision through the controller', function (string $decision, DisputeStatus $after) {
+    $ulid = disputeAgainst($this->holder, $this->claimant);
+
+    $this->actingAs($this->admin)->from("/admin/disputes/{$ulid}")
+        ->post("/admin/disputes/{$ulid}/decision", ['decision' => $decision, 'note' => 'Weighed both sides.'])
+        ->assertRedirect("/admin/disputes/{$ulid}")
+        ->assertSessionHasNoErrors();
+
+    expect(CocAccountDispute::query()->where('ulid', $ulid)->sole()->status)->toBe($after);
+})->with([
+    'transfer' => ['transfer', DisputeStatus::ResolvedTransfer],
+    'deny' => ['deny', DisputeStatus::ResolvedDenied],
+    'suspend' => ['suspend', DisputeStatus::ResolvedSuspended],
+    'ask the claimant' => ['ask_claimant', DisputeStatus::AwaitingClaimant],
+    'ask the holder' => ['ask_holder', DisputeStatus::AwaitingHolder],
+]);
+
+it('shows each refusal of the service inline', function (string $decision, Closure $setup, string $message) {
+    $ulid = disputeAgainst($this->holder, $this->claimant);
+    $setup($this);
+
+    $this->actingAs($this->admin)->from("/admin/disputes/{$ulid}")
+        ->post("/admin/disputes/{$ulid}/decision", ['decision' => $decision, 'note' => 'Weighed both sides.'])
+        ->assertSessionHasErrors(['decision' => $message]);
+
+    expect(CocAccountDispute::query()->where('ulid', $ulid)->sole()->status)->toBe(DisputeStatus::AwaitingAdmin);
+})->with([
+    'a banned holder cannot keep it' => ['deny', fn ($test) => $test->holder->forceFill(['status' => 'banned'])->save(), 'A banned holder cannot keep the account.'],
+    'the claimant cannot receive it' => ['transfer', fn ($test) => $test->claimant->forceFill(['status' => 'suspended', 'status_expires_at' => now()->addDay()])->save(), 'The claimant cannot receive the account: banned, suspended or leaving.'],
+]);
+
+it('leaves the admin\'s own disputes out of the panel and unlinked on the review page', function () {
+    $ulid = disputeAgainst($this->holder, $this->claimant);
+    CocAccount::factory()->for($this->admin)->forTag('#8LQ9JPYC')->verified()->create();
+    $own = disputeAgainst($this->admin, $this->claimant, '#8LQ9JPYC');
+
+    $this->actingAs($this->admin)->get("/admin/disputes/{$ulid}")
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('dispute.claimant.priorDisputes.0.ulid', $own)
+            ->where('dispute.claimant.priorDisputes.0.reviewable', false));
+
+    $panel = test()->actingAs($this->admin)->withHeaders([
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => (string) app(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Partial-Component' => 'Admin/Dashboard',
+        'X-Inertia-Partial-Data' => 'pendingDisputes',
+    ])->get('/admin')->json('props.pendingDisputes');
+    expect($panel['awaitingAdmin'])->toBe(1)->and($panel['running'])->toBe(1);
+});
+
+it('shows the dispute\'s own audit trail on the review page', function () {
+    $ulid = disputeAgainst($this->holder, $this->claimant);
+
+    $this->actingAs($this->admin)->get("/admin/disputes/{$ulid}")
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('auditTrail', fn ($entries) => collect($entries)->pluck('actionLabel')->contains('Ownership dispute opened'))
+            ->where('moreAuditEntries', false));
 });
 
 it('reads its limits from config', function () {

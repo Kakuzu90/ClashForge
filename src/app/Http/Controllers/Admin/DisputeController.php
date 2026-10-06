@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Domain\Auth\Enums\StaffAbility;
+use App\Domain\Audit\Data\AuditLogFilterData;
+use App\Domain\Audit\Enums\AuditSubject;
+use App\Domain\Audit\Queries\AuditLogQuery;
 use App\Domain\Moderation\Queries\SanctionHistoryQuery;
+use App\Domain\PlayerAccounts\Enums\DisputeDecision;
 use App\Domain\PlayerAccounts\Enums\DisputeQueueView;
 use App\Domain\PlayerAccounts\Queries\DisputeAdminQuery;
 use App\Domain\PlayerAccounts\Services\DisputeReviewService;
@@ -11,6 +14,7 @@ use App\Domain\PlayerAccounts\Services\DisputeService;
 use App\Http\Controllers\Controller;
 use App\Http\Data\Admin\AdminDisputeIndexPageData;
 use App\Http\Data\Admin\AdminDisputeShowPageData;
+use App\Http\Data\Admin\AuditTrailEntryData;
 use App\Http\Data\Admin\FilterOptionData;
 use App\Http\Requests\Admin\DecideDisputeRequest;
 use App\Http\Requests\Admin\DisputeFilterRequest;
@@ -18,13 +22,13 @@ use App\Models\User;
 use App\Support\Seo\PageMeta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
  * The ownership dispute queue, review page and decision (FR-ADMIN-2 disputes, specs/13 §5 step 4,
- * P2-17). `resolve-disputes` (admin+); a party gets the same 404 as an unknown dispute.
+ * P2-17). `resolve-disputes` (admin+): the queue is a 403 without it; a dispute is a 404 without it
+ * or for a party, the same as an unknown one.
  */
 class DisputeController extends Controller
 {
@@ -47,16 +51,21 @@ class DisputeController extends Controller
         ], new PageMeta(title: 'Disputes', noindex: true));
     }
 
-    public function show(Request $request, string $ulid, DisputeReviewService $reviews, SanctionHistoryQuery $sanctions): Response
+    /**
+     * Without `resolve-disputes`, or as a party, the review service answers 404 (specs/04 §3).
+     */
+    public function show(Request $request, string $ulid, DisputeReviewService $reviews, SanctionHistoryQuery $sanctions, AuditLogQuery $audit): Response
     {
-        Gate::authorize(StaffAbility::ResolveDisputes->value);
         $review = $reviews->review($this->admin($request), $ulid);
         $limit = (int) config('platform.admin.audit_trail_limit');
+        $trail = $audit->page(new AuditLogFilterData(subjectId: $review->disputeId, subject: AuditSubject::CocAccountDispute), $limit);
 
         $page = new AdminDisputeShowPageData(
             dispute: $review->data,
             claimantSanctions: $sanctions->forUser($review->claimant, $limit),
             holderSanctions: $review->holder === null ? [] : $sanctions->forUser($review->holder, $limit),
+            auditTrail: array_map(AuditTrailEntryData::fromRecord(...), $trail->entries),
+            moreAuditEntries: $trail->olderCursor !== null,
         );
 
         return PageMeta::page('Admin/Disputes/Show', $page->toArray(), new PageMeta(title: "Dispute {$review->data->tag}", noindex: true));
@@ -70,7 +79,13 @@ class DisputeController extends Controller
             return back()->withErrors(['decision' => $result->refusal->label().'.']);
         }
 
-        return back()->with('success', $request->decision()->label().': done.');
+        return back()->with('success', match ($request->decision()) {
+            DisputeDecision::Transfer => 'The account now belongs to the claimant.',
+            DisputeDecision::Deny => 'Claim denied. The holder keeps the account.',
+            DisputeDecision::Suspend => 'The account is suspended.',
+            DisputeDecision::AskClaimant => 'Asked the claimant for more.',
+            DisputeDecision::AskHolder => 'Asked the holder for more.',
+        });
     }
 
     private function admin(Request $request): User

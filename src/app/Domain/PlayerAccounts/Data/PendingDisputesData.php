@@ -7,7 +7,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * The dashboard's pending disputes panel (FR-ADMIN-5, P2-17): disputes waiting for an admin, the
- * oldest wait, and `open` disputes past the holder's window that the hourly sweep has not moved yet.
+ * oldest wait, and disputes waiting on the holder past their window that the hourly sweep has not
+ * moved yet. A dispute the viewing admin is part of is not counted.
  */
 #[TypeScript]
 class PendingDisputesData extends Data

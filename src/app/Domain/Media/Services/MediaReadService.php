@@ -3,11 +3,13 @@
 namespace App\Domain\Media\Services;
 
 use App\Domain\Media\Data\MediaVariantData;
+use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Enums\MediaStatus;
 use App\Domain\Media\Enums\MediaVisibility;
 use App\Domain\Media\Enums\VariantName;
 use App\Domain\Media\Models\Media;
 use App\Domain\Media\Models\MediaVariant;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Read access to attached media for other modules, which hold only the media id (specs/05 §2).
@@ -47,18 +49,24 @@ class MediaReadService
     }
 
     /**
-     * The same, for media another module holds by ULID (dispute evidence), keyed by ULID.
+     * The same, for media another module holds by ULID (dispute evidence), keyed by ULID. Only media
+     * attached to `$parent` in `$collection` is looked up, so a stray ULID can never sign someone
+     * else's upload.
      *
      * @param  list<string>  $ulids
      * @return array<string, string>
      */
-    public function readyVariantUrlsByUlid(array $ulids, VariantName $variant): array
+    public function readyVariantUrlsByUlid(array $ulids, VariantName $variant, Model $parent, MediaCollection $collection): array
     {
         if ($ulids === []) {
             return [];
         }
 
-        $ids = Media::query()->whereIn('ulid', $ulids)->pluck('ulid', 'id')->all();
+        $ids = Media::query()->whereIn('ulid', $ulids)
+            ->where('collection', $collection)
+            ->where('attachable_type', $parent->getMorphClass())
+            ->where('attachable_id', $parent->getKey())
+            ->pluck('ulid', 'id')->all();
         $urls = $this->readyVariantUrls(array_map('intval', array_keys($ids)), $variant);
 
         $byUlid = [];

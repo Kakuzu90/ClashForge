@@ -130,7 +130,7 @@ const columns: AdminColumn[] = [
                     <template #cell-status="{ row }">
                         <div class="flex flex-col items-start gap-1">
                             <UiPill :label="row.statusLabel" :tone="STATUS_TONE[row.status] ?? 'neutral'" />
-                            <span v-if="row.needsSuperAdmin" class="text-sm text-fg-secondary">Needs a super admin</span>
+                            <span v-if="row.blockedReason" class="text-sm text-fg-secondary">{{ row.blockedReason }}</span>
                         </div>
                     </template>
                     <template #cell-waiting="{ row }">

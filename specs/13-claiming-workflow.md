@@ -187,6 +187,26 @@ As built (P2-03, owner decisions 2026-10-02):
 - **Moderation rows** are written for admin decisions only ([07](07-database-schema.md)
   `moderation_actions`).
 
+As built for the admin side (P2-17, owner decisions 2026-10-05):
+- **Queue** `/admin/disputes`: running disputes, the longest wait first, sliced by who it waits on
+  (admins, holder, claimant) or closed; "assigned to me". No statement, evidence or note in it.
+- **Review** `/admin/disputes/{ulid}`: both statements and every submission side by side, each
+  party's account age, status, verified accounts, sanctions and other disputes, the tag's claim
+  history and its snapshots with clan and Town Hall changes. In-game names have no history
+  ([23 §2](23-edge-cases.md)), so a rename cannot be shown. The dispute's own audit trail sits below.
+- **Evidence** images are signed private URLs, only for media attached to that dispute. Each review
+  render that shows any writes `coc_dispute.evidence_viewed` (with the media ids) before the URLs
+  are built.
+- **Parties:** an admin with a stake in the tag gets a 404 on the review and does not see the
+  dispute in the queue or the dashboard counts. A stake is being the claimant or the holder, a row
+  of theirs on the tag, any claim attempt on it, or a side in any dispute over it (owner decision
+  2026-10-06), so an admin who lost an earlier claim cannot read the holder's evidence later.
+- **Rank** ([04 §2](04-roles-and-permissions.md) rule 1): deciding also needs to strictly outrank
+  both parties. With an admin party the page says only a super admin can decide it; with a super
+  admin party nobody can decide it in the app.
+- **Decision form:** only the decisions the service would accept now are offered, the others with
+  their reason; the internal note is required; transfer, suspend and deny confirm with the outcome.
+
 ### Evidence the admin weighs
 
 | Signal | Weight | Notes |

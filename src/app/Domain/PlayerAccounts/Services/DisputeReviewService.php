@@ -3,9 +3,9 @@
 namespace App\Domain\PlayerAccounts\Services;
 
 use App\Domain\Audit\Enums\AuditAction;
-use App\Domain\Auth\Enums\Role;
 use App\Domain\Auth\Enums\StaffAbility;
 use App\Domain\Auth\Enums\UserStatus;
+use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Enums\VariantName;
 use App\Domain\Media\Services\MediaReadService;
 use App\Domain\PlayerAccounts\Data\DisputeClaimData;
@@ -23,15 +23,16 @@ use App\Domain\PlayerAccounts\Enums\DisputeStatus;
 use App\Domain\PlayerAccounts\Models\CocAccountClaim;
 use App\Domain\PlayerAccounts\Models\CocAccountDispute;
 use App\Domain\PlayerAccounts\Models\CocAccountSnapshot;
-use App\Domain\PlayerAccounts\Policies\CocAccountDisputePolicy;
 use App\Domain\PlayerAccounts\Support\DisputeLedger;
+use App\Domain\PlayerAccounts\Support\DisputeRank;
+use App\Domain\PlayerAccounts\Support\DisputeStake;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Gate;
 
 /**
  * The admin review page of one dispute (specs/13 §5 step 4, P2-17). Without `resolve-disputes`,
- * or as a party, every ULID is a 404. Evidence is private: the signed URLs are handed out here only,
+ * or with a stake in the tag (DisputeStake), every ULID is a 404. Evidence is private: the signed URLs are handed out here only,
  * and each view that shows any is written to `audit_logs` first (specs/13 §5 guardrails, specs/12 §9).
  */
 class DisputeReviewService
@@ -39,7 +40,6 @@ class DisputeReviewService
     public function __construct(
         private readonly DisputeLedger $ledger,
         private readonly MediaReadService $media,
-        private readonly CocAccountDisputePolicy $policy,
     ) {}
 
     public function review(User $admin, string $ulid): DisputeReviewResult
@@ -58,7 +58,8 @@ class DisputeReviewService
         $account = $dispute->account()->firstOrFail();
         $holder = $dispute->holder;
         $limit = (int) config('coc.disputes.review_history_limit');
-        $blocked = $this->blockedReason($admin, $dispute);
+        $stake = DisputeStake::tags($admin);
+        $blocked = DisputeRank::blockedReason($admin, $dispute);
         $assigned = User::query()->withTrashed()->whereKey(array_filter([$dispute->assigned_admin_id, $dispute->decided_by]))->pluck('username', 'id');
 
         $data = new DisputeReviewData(
@@ -77,8 +78,8 @@ class DisputeReviewService
             accountName: $account->ign,
             accountStatus: $account->status,
             accountTownHall: $account->th_level,
-            claimant: $this->party($claimant, $dispute, $limit),
-            holder: $holder === null ? null : $this->party($holder, $dispute, $limit),
+            claimant: $this->party($stake, $claimant, $dispute, $limit),
+            holder: $holder === null ? null : $this->party($stake, $holder, $dispute, $limit),
             evidence: $this->evidence($admin, $dispute),
             claims: $this->claims($dispute, $limit),
             snapshots: $this->snapshots($dispute, $limit),
@@ -87,10 +88,13 @@ class DisputeReviewService
             noteMax: (int) config('coc.disputes.text_max'),
         );
 
-        return new DisputeReviewResult($data, $claimant, $holder);
+        return new DisputeReviewResult($data, $dispute->id, $claimant, $holder);
     }
 
-    private function party(User $user, CocAccountDispute $dispute, int $limit): DisputePartyData
+    /**
+     * @param  list<string>  $stake  tags the viewing admin has a stake in
+     */
+    private function party(array $stake, User $user, CocAccountDispute $dispute, int $limit): DisputePartyData
     {
         $status = $user->effectiveStatus();
         $prior = CocAccountDispute::query()->whereKeyNot($dispute->id)
@@ -118,6 +122,8 @@ class DisputeReviewService
                 status: $other->status,
                 statusLabel: $other->status->label(),
                 openedAt: $other->created_at->toIso8601String(),
+                // A dispute over a tag the viewer has a stake in has no admin review page for them.
+                reviewable: ! in_array($other->tag_normalized, $stake, true),
             ))->all()),
         );
     }
@@ -136,8 +142,8 @@ class DisputeReviewService
         if ($ulids !== []) {
             $this->ledger->record($admin, AuditAction::CocDisputeEvidenceViewed, $dispute, null, null, ['media' => $ulids]);
         }
-        $full = $this->media->readyVariantUrlsByUlid($ulids, VariantName::Full);
-        $thumbs = $this->media->readyVariantUrlsByUlid($ulids, VariantName::Thumb);
+        $full = $this->media->readyVariantUrlsByUlid($ulids, VariantName::Full, $dispute, MediaCollection::Evidence);
+        $thumbs = $this->media->readyVariantUrlsByUlid($ulids, VariantName::Thumb, $dispute, MediaCollection::Evidence);
 
         $entries = [new DisputeEvidenceData(party: 'claimant', note: $dispute->reason, images: [], at: $dispute->created_at->toIso8601String(), opening: true)];
         foreach ($dispute->evidence as $entry) {
@@ -202,22 +208,6 @@ class DisputeReviewService
         }
 
         return $snapshots;
-    }
-
-    private function blockedReason(User $admin, CocAccountDispute $dispute): ?string
-    {
-        if (! $dispute->status->isActive()) {
-            return DisputeRefusal::Closed->label().'.';
-        }
-        if ($this->policy->outranksParties($admin, $dispute)) {
-            return null;
-        }
-
-        $superAdmin = collect([$dispute->claimant, $dispute->holder])->filter()->contains(fn (User $party): bool => $party->role === Role::SuperAdmin);
-
-        return $superAdmin
-            ? 'A super admin is part of this dispute, so it cannot be decided here.'
-            : 'Needs a super admin: an admin is part of this dispute.';
     }
 
     /**

@@ -10,7 +10,9 @@ use App\Domain\Operations\Queries\FailedJobsQuery;
 use App\Domain\PlayerAccounts\Queries\DisputeAdminQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Data\Admin\AdminDashboardPageData;
+use App\Models\User;
 use App\Support\Seo\PageMeta;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,7 +25,7 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(SignupStatsQuery $signups, FailedJobsQuery $failedJobs, MediaStorageQuery $storage, CocApiHealthReport $cocApi, DisputeAdminQuery $pendingDisputes): Response
+    public function __invoke(Request $request, SignupStatsQuery $signups, FailedJobsQuery $failedJobs, MediaStorageQuery $storage, CocApiHealthReport $cocApi, DisputeAdminQuery $pendingDisputes): Response
     {
         Gate::authorize(StaffAbility::AccessAdmin->value);
 
@@ -32,7 +34,9 @@ class DashboardController extends Controller
         $props = (new AdminDashboardPageData(platformStats: $platformStats, disputes: $disputes))->toArray();
 
         if ($disputes) {
-            $props['pendingDisputes'] = Inertia::defer(fn (): array => $pendingDisputes->pending()->toArray(), 'pendingDisputes');
+            $admin = $request->user();
+            abort_unless($admin instanceof User, 401);
+            $props['pendingDisputes'] = Inertia::defer(fn (): array => $pendingDisputes->pending($admin)->toArray(), 'pendingDisputes');
         }
 
         if ($platformStats) {

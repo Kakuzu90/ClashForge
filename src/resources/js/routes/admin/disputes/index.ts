@@ -2,7 +2,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 import decision from './decision'
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::index
-* @see app/Http/Controllers/Admin/DisputeController.php:31
+* @see app/Http/Controllers/Admin/DisputeController.php:35
 * @route '/admin/disputes'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -17,7 +17,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::index
-* @see app/Http/Controllers/Admin/DisputeController.php:31
+* @see app/Http/Controllers/Admin/DisputeController.php:35
 * @route '/admin/disputes'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -26,7 +26,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::index
-* @see app/Http/Controllers/Admin/DisputeController.php:31
+* @see app/Http/Controllers/Admin/DisputeController.php:35
 * @route '/admin/disputes'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -36,7 +36,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::index
-* @see app/Http/Controllers/Admin/DisputeController.php:31
+* @see app/Http/Controllers/Admin/DisputeController.php:35
 * @route '/admin/disputes'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -46,7 +46,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::show
-* @see app/Http/Controllers/Admin/DisputeController.php:50
+* @see app/Http/Controllers/Admin/DisputeController.php:57
 * @route '/admin/disputes/{ulid}'
 */
 export const show = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -61,7 +61,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::show
-* @see app/Http/Controllers/Admin/DisputeController.php:50
+* @see app/Http/Controllers/Admin/DisputeController.php:57
 * @route '/admin/disputes/{ulid}'
 */
 show.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -88,7 +88,7 @@ show.url = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::show
-* @see app/Http/Controllers/Admin/DisputeController.php:50
+* @see app/Http/Controllers/Admin/DisputeController.php:57
 * @route '/admin/disputes/{ulid}'
 */
 show.get = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -98,7 +98,7 @@ show.get = (args: { ulid: string | number } | [ulid: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::show
-* @see app/Http/Controllers/Admin/DisputeController.php:50
+* @see app/Http/Controllers/Admin/DisputeController.php:57
 * @route '/admin/disputes/{ulid}'
 */
 show.head = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({

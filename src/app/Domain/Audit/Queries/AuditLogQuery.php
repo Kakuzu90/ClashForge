@@ -87,7 +87,7 @@ class AuditLogQuery
         }
 
         if ($filters->subjectId !== null) {
-            $query->where('audit_logs.auditable_type', AuditSubject::User->value)
+            $query->where('audit_logs.auditable_type', $filters->subject->value)
                 ->where('audit_logs.auditable_id', $filters->subjectId);
         }
 

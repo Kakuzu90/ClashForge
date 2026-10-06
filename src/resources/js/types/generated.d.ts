@@ -417,6 +417,7 @@ side: string,
 status: App.Domain.PlayerAccounts.Enums.DisputeStatus,
 statusLabel: string,
 openedAt: string,
+reviewable: boolean,
 };
 export type DisputeQueueData = {
 entries: App.Domain.PlayerAccounts.Data.DisputeQueueRowData[],
@@ -433,7 +434,7 @@ statusLabel: string,
 waitingSince: string,
 openedAt: string,
 assignedTo: string | null,
-needsSuperAdmin: boolean,
+blockedReason: string | null,
 };
 export type DisputeResultData = {
 disputeUlid: string | null,
@@ -683,6 +684,8 @@ export type AdminDisputeShowPageData = {
 dispute: App.Domain.PlayerAccounts.Data.DisputeReviewData,
 claimantSanctions: App.Domain.Moderation.Data.SanctionData[],
 holderSanctions: App.Domain.Moderation.Data.SanctionData[],
+auditTrail: App.Http.Data.Admin.AuditTrailEntryData[],
+moreAuditEntries: boolean,
 };
 export type AdminUserFiltersData = {
 search: string | null,

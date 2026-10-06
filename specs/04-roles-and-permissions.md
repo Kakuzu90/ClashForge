@@ -87,8 +87,10 @@ commenting, attaching CoC accounts, uploads; FR-AUTH-4),
   row, `feature`: their own `verified` or `disputed` row, both with account writes, P2-14; `view`: the account page, P2-04: the owner sees
   their own rows except `released`, anyone else only a `verified` or `disputed` row whose owner's profile they may
   see with `show_coc_accounts` on and who is not banned or pending deletion; every other case is the unknown-ulid 404), `CocAccountDisputePolicy` (open as attach;
-  respond / release / withdraw: the party, with account writes; decide: `resolve-disputes` and not a party;
-  without the ability a dispute is a 404),
+  respond / release / withdraw: the party, with account writes; review: `resolve-disputes` and no stake in the tag
+  (a party, a row on it, a claim attempt on it or a side in any dispute over it, owner decision 2026-10-06);
+  decide: review and strictly outranking both parties, rule 1 below, P2-17; without the ability, or with a
+  stake, a dispute is a 404 in the admin pages),
   `BaseLayoutPolicy`, `BaseCommentPolicy`, `RecruitmentPostPolicy`, `ApplicationPolicy`,
   `ListingPolicy`, `OrderPolicy`, `ReportPolicy`, `MediaPolicy`, `NotificationPolicy` (a notification is
   its recipient's alone; staff have no reach into it).

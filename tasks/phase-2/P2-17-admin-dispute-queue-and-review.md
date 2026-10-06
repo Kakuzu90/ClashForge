@@ -2,7 +2,7 @@
 id: P2-17
 title: Give admins a dispute queue, a review page with a decision form, and a pending-disputes panel
 phase: 2
-status: in-progress
+status: done
 depends_on: [P2-03]
 ---
 
@@ -20,7 +20,7 @@ depends_on: [P2-03]
   - `review(admin, ulid)`: both statements and every evidence entry side by side, with images as signed private URLs (specs/10). Each party's account age, status, verified accounts, prior sanctions (Moderation `SanctionService`/read surface), and prior disputes on either side with their outcomes. The tag's claim history (`coc_account_claims`) and snapshot history (IGN, clan and TH changes with dates). The current row state.
 - **Evidence access audit:** every review render that includes evidence writes `audit_logs` `coc_dispute.evidence_viewed` (new `AuditAction`) with the media ULIDs. It is written before the URLs are returned.
 - **Decision form:** transfer / deny / ask claimant / ask holder / suspend, with a required internal note, through `DisputeService::decide`. The service's refusals (`holder_cannot_keep`, `claimant_unavailable`, not yet `awaiting_admin`, closed) show inline. Destructive choices confirm in a `UiModal` that names who gets the tag. `can.decide` and the allowed decisions come from the policy and the service.
-- **Policy:** queue and review need `resolve-disputes`. An admin who is a party gets a 404 and does not see the dispute in the queue (Open question 1). Deciding also needs to strictly outrank both parties (specs/04 §2 rule 1): an admin party shows "Needs a super admin", and a super admin party has nobody in-app (Open question 2).
+- **Policy:** queue and review need `resolve-disputes`. Staff with a stake in the tag (the parties included) get a 404 and do not see the dispute in the queue (Open question 1, widened 2026-10-06). Deciding also needs to strictly outrank both parties (specs/04 §2 rule 1): with an admin party only a super admin can decide, and a super admin party has nobody in-app (Open question 2).
 - **Dashboard panel** (FR-ADMIN-5, from P1-13): pending disputes, meaning the `awaiting_admin` count, the oldest wait, and how many are past the holder's window. A deferred group with its own skeleton, empty state and error, linking to the queue.
 - **UI:** `/admin/disputes` (`Admin/Disputes/Index`) and `/admin/disputes/{ulid}` (`Admin/Disputes/Show`), built from `AdminTable`, `AdminFilterBar`, `AdminPanel`, `AdminActionPanel`, `AdminSanctionHistory` and `AdminAuditTrailList`. The "Disputes" nav item sits between Reports and Users (specs/18 §6). No SSR, as for every `/admin` page.
 - Config: `coc.disputes.queue_per_page`.
@@ -31,8 +31,8 @@ depends_on: [P2-03]
 
 ## Acceptance criteria
 - Functional: FR-ADMIN-2 disputes and FR-ADMIN-5 panel; every 13 §5 step 4 input on one screen; decisions go only through `DisputeService::decide`.
-- Authorization: moderators and users get a 404 on both pages; an admin party gets a 404 and an outranked one sees "Needs a super admin"; evidence URLs only on the review page, never in the queue.
-- Edge cases: the 13 §9 rows; a dispute closed by a token while it is open on screen refuses the decision with "This dispute is already closed".
+- Authorization: moderators and users stop at the `/admin` gate (403); an admin without `resolve-disputes` gets a 403 queue and a 404 dispute; staff with a stake in the tag get a 404, and an outranked admin sees why only a super admin can decide; evidence URLs only on the review page, never in the queue.
+- Edge cases: the 13 §9 rows; a dispute closed by a token while it is open on screen refuses the decision with "This dispute is closed."
 - States: queue empty ("No disputes waiting"), loading skeleton rows, inline error with request id; panel empty / loading / error.
 
 ## Tests
@@ -53,17 +53,33 @@ Resolved by the owner, 2026-10-05 (all as recommended). Q3 synced → tasks/BOAR
    - `Queries\DisputeAdminQuery` (`queue`, `pending`) serves the queue and the panel.
    - `Services\DisputeReviewService::review()` writes the evidence audit, so it is a service.
    - `review()` returns `DisputeReviewResult`: the page data plus both party `User`s. The controller passes those users to Moderation's `SanctionHistoryQuery` for the sanctions list, as on the admin user detail.
-   → specs/05 §2.
-2. Policy: `CocAccountDisputePolicy::review` requires `resolve-disputes` and not being a party. `decide` = `review` + `outranksParties`. A party admin gets a 404 on the review page and is left out of the queue. `DisputeService::decide` still answers a party with 403, unchanged from P2-03. → specs/04 §3, specs/13 §5 guardrails.
+   synced → specs/05 §2.
+2. Policy: `CocAccountDisputePolicy::review` requires `resolve-disputes` and not being a party. `decide` = `review` + `outranksParties`. A party admin gets a 404 on the review page and is left out of the queue. `DisputeService::decide` still answers a party with 403, unchanged from P2-03. synced → specs/04 §3, specs/13 §5 guardrails.
 3. Blocked reasons:
-   - An admin party: "Needs a super admin: an admin is part of this dispute."
+   - An admin party: "An admin is a party to this dispute, so only a super admin can decide it." (antislop audit-037, finding 2)
    - A super admin party: "A super admin is part of this dispute, so it cannot be decided here."
    - A closed dispute: "This dispute is closed."
-   Each unavailable option also states its own reason (the holder's window, a claimant who cannot receive the account, a banned holder, no holder to ask). The service decides again on submit. → specs/13 §5.
-4. Evidence images come from Media's new `MediaReadService::readyVariantUrlsByUlid` (`full` and `thumb`). The `evidence` collection has no variants and takes no uploads yet, so the page shows "Image not available" until P2-16 opens evidence uploads with `full` and `thumb` variants (follow-up for P2-16). → specs/10 §8.
-5. The evidence access audit is `coc_dispute.evidence_viewed`: one entry per review render that includes any image, with `context.media`, written before the URLs are built. A page with no images writes none. → specs/12 §9, specs/13 §5 guardrails.
-6. Snapshot history shows clan and Town Hall changes only. In-game names have no history by design (23 §2), so the "name changes" input of 13 §5 step 4 is not available. → specs/13 §5 step 4.
-7. Queue views: `DisputeQueueView` (all running, waiting for an admin / the holder / the claimant, closed). Running disputes sort oldest wait first, closed ones newest first. Pages use cursors. "Assigned to me" filters on `assigned_admin_id`. → specs/18 §6 Admin.
-8. Dashboard: `AdminDashboardPageData.disputes` (`resolve-disputes`) adds the deferred `pendingDisputes` panel: waiting for an admin with the oldest wait, `open` past the holder's window, and running. A retry reloads only the panels the viewer has. The shared `auth.can.resolveDisputes` drives the "Disputes" nav item after Dashboard (Reports is not built yet). → specs/18 §6.
-9. Decision form: radios for the available decisions and a required internal note. Transfer, suspend and deny confirm in a `UiModal` that states the outcome; the two questions are sent directly. Routes: `GET /admin/disputes`, `GET /admin/disputes/{ulid}`, `POST /admin/disputes/{ulid}/decision` (`global-write`). → specs/19 §4.
-10. Config: `coc.disputes.queue_per_page` (25), `coc.disputes.review_history_limit` (20 claims and snapshots).
+   Each unavailable option also states its own reason (the holder's window, a claimant who cannot receive the account, a banned holder, no holder to ask). The service decides again on submit. synced → specs/13 §5.
+4. Evidence images come from Media's new `MediaReadService::readyVariantUrlsByUlid` (`full` and `thumb`). The `evidence` collection has no variants and takes no uploads yet, so the page shows "Image not available" until P2-16 opens evidence uploads with `full` and `thumb` variants (follow-up for P2-16). synced → specs/10 §8.
+5. The evidence access audit is `coc_dispute.evidence_viewed`: one entry per review render that includes any image, with `context.media`, written before the URLs are built. A page with no images writes none. synced → specs/12 §9, specs/13 §5 guardrails.
+6. Snapshot history shows clan and Town Hall changes only. In-game names have no history by design (23 §2), so the "name changes" input of 13 §5 step 4 is not available. synced → specs/13 §5 step 4.
+7. Queue views: `DisputeQueueView` (all running, waiting for an admin / the holder / the claimant, closed). Running disputes sort oldest wait first, closed ones newest first. Pages use cursors. "Assigned to me" filters on `assigned_admin_id`. synced → specs/18 §6 Admin.
+8. Dashboard: `AdminDashboardPageData.disputes` (`resolve-disputes`) adds the deferred `pendingDisputes` panel: waiting for an admin with the oldest wait, `open` past the holder's window, and running. A retry reloads only the panels the viewer has. The shared `auth.can.resolveDisputes` drives the "Disputes" nav item after Dashboard (Reports is not built yet). synced → specs/18 §6.
+9. Decision form (built from `UiRadioGroup`, `UiTextarea`, `UiModal`; `AdminActionPanel` is the sanctions panel and does not fit): radios for the available decisions and a required internal note. Transfer, suspend and deny confirm in a `UiModal` that states the outcome; the two questions are sent directly. Routes: `GET /admin/disputes`, `GET /admin/disputes/{ulid}`, `POST /admin/disputes/{ulid}/decision` (`global-write`). synced → specs/19 §4.
+10. Config: `coc.disputes.queue_per_page` (25), `coc.disputes.review_history_limit` (20 claims and snapshots). No spec change.
+
+### Review fixes (verify, 2026-10-06)
+- antislop audit-037: both findings approved by the owner (2026-10-06) and fixed:
+  - 1: each decision has its own success message ("Claim denied. The holder keeps the account.").
+  - 2: the admin-party reason reads "An admin is a party to this dispute, so only a super admin can decide it."
+- Spec (medium): the acceptance said 404 for moderators and users, while the controller's `Gate::authorize` made it 403 even for an admin without the ability. The review route now leaves that to `DisputeReviewService`, so a dispute is a 404 without `resolve-disputes` or for a party (specs/04 §3). The queue stays a 403. Moderators and users stop at the `/admin` gate. The acceptance text is updated; tested.
+- Spec (medium): every decision (transfer, deny, suspend, ask either party) and the `holder_cannot_keep` and `claimant_unavailable` refusals are now tested through the controller. The submit button waits for a note (Vitest).
+- Spec (low): the queue row now carries the review page's `blockedReason`, from a shared `Support\DisputeRank`, so a super admin is no longer told to find a super admin. The policy's `outranksParties` delegates to it.
+- Spec (low): the review page shows the dispute's own audit trail (`AdminAuditTrailList`), evidence views included. `AuditLogFilterData` gains `subject` (default: account).
+- Spec (low): the panel leaves out disputes the viewer is part of, as the queue does. "Past the holder's time" counts `open` and `awaiting_holder`, which is what the sweep escalates.
+- Spec (low): an earlier dispute the viewer is part of is listed without a link (`DisputePriorData.reviewable`).
+- Spec (nit): the closed-dispute text matches the code; the board row's File column is trimmed.
+- Security (low): queue cursors are checked (`DisputeAdminQuery::acceptsCursor`: the paginator's shape, an integer id, a timestamp in the view's sort column). A tampered or other-view cursor is a validation error instead of a 500; tested with four shapes.
+- Security (low): `MediaReadService::readyVariantUrlsByUlid` now requires the parent and the collection, so only evidence attached to this dispute is signed.
+- Security (low), owner decision 2026-10-06 (as recommended): staff with a stake in the tag count as a party. A stake is a row on the tag, any claim attempt on it, or a side in any dispute over it. `Support\DisputeStake` feeds the policy's `review`/`decide`, the queue and panel filter, and the review page's prior-dispute links. Tested for each kind of stake. synced → specs/04 §3, specs/13 §5.
+- Side effect: a debugging `tinker` run created three users, two accounts and two disputes in the local dev database (reported to the owner).

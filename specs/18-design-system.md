@@ -560,6 +560,16 @@ a failed panel's "Try again" reloads every panel still missing. The Clash of Cla
 `view-platform-stats` (admin+) and are left out of the response for anyone else; moderators see an
 empty state until the report queue lands (P3-06). Sizes in decimal units (1 GB = 1000 MB), as
 the bucket bills. Nothing on it is cached or polled. Its failed-jobs panel links to System Health.
+*Disputes (`/admin/disputes`, P2-17):* behind `resolve-disputes`; the nav item follows Dashboard
+until Reports exists. The queue is an AdminTable with a filter bar (who it waits on, closed,
+assigned to me), rows deferred with their skeleton, "No disputes waiting" when empty, cursor pages.
+The review page (`/admin/disputes/{ulid}`) stacks a summary list, the two parties side by side
+(sanction history included), statements and evidence side by side (thumbnails open the signed
+image; "Image not available" until it has a rendition), the decision form (radios for what is
+possible now, the rest listed with their reason, a required internal note, a confirm modal naming
+who keeps the account), the audit trail, the claim history and the snapshots. The dashboard's
+"Pending disputes" panel (its own deferred group) counts disputes waiting for an admin with the
+oldest wait, those past the holder's time and all running ones, and links to the queue.
 *System Health (`/admin/system`, P2-06):* the same panel pattern behind `view-platform-stats`, one
 deferred group per panel: Queues (waiting, delayed, running, oldest wait, alerts as text pills),
 Scheduler (heartbeat age; no heartbeat reads as "No heartbeat recorded", not stopped), Clash of

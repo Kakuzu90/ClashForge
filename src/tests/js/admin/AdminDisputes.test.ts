@@ -106,7 +106,7 @@ const review = (overrides: Partial<Review> = {}): Review => ({
 
 const renderShow = (dispute: Review) =>
     mount(Show, {
-        props: { dispute, claimantSanctions: [], holderSanctions: [] },
+        props: { dispute, claimantSanctions: [], holderSanctions: [], auditTrail: [], moreAuditEntries: false },
         attachTo: document.body,
         global: { stubs: { AdminLayout: true } },
     });
@@ -178,10 +178,34 @@ describe('Admin/Disputes/Show', () => {
     });
 
     it('replaces the form with the reason when this admin cannot decide', () => {
-        const wrapper = renderShow(review({ blockedReason: 'Needs a super admin: an admin is part of this dispute.' }));
+        const wrapper = renderShow(review({ blockedReason: 'An admin is a party to this dispute, so only a super admin can decide it.' }));
 
-        expect(wrapper.text()).toContain('Needs a super admin');
+        expect(wrapper.text()).toContain('only a super admin can decide it');
         expect(wrapper.find('form').exists()).toBe(false);
+    });
+});
+
+describe('Admin/Disputes/Show, the form state', () => {
+    it('keeps the decision unsent until a note is written', async () => {
+        const wrapper = renderShow(review());
+        await wrapper.find('input[type="radio"][value="ask_holder"]').setValue(true);
+        const submit = () => wrapper.findAll('button[type="submit"]').at(-1)!;
+
+        expect(submit().attributes('disabled')).toBeDefined();
+        await wrapper.find('textarea').setValue('Send a screenshot.');
+        expect(submit().attributes('disabled')).toBeUndefined();
+    });
+
+    it('links earlier disputes only where the admin may review them', () => {
+        const holder = { ...party('holder'), priorDisputes: [
+            { ulid: 'P1', tag: '#8LQ9JPYC', side: 'holder', status: 'resolved_denied' as const, statusLabel: 'Denied', openedAt: '2026-09-01T00:00:00+00:00', reviewable: true },
+            { ulid: 'P2', tag: '#8LQ9JPYG', side: 'claimant', status: 'withdrawn' as const, statusLabel: 'Withdrawn', openedAt: '2026-09-02T00:00:00+00:00', reviewable: false },
+        ] };
+        const wrapper = renderShow(review({ holder }));
+
+        expect(wrapper.find('a[href="/admin/disputes/P1"]').exists()).toBe(true);
+        expect(wrapper.find('a[href="/admin/disputes/P2"]').exists()).toBe(false);
+        expect(wrapper.text()).toContain('#8LQ9JPYG');
     });
 });
 
@@ -204,7 +228,7 @@ describe('Admin/Disputes/Index', () => {
         waitingSince: '2026-10-02T00:00:00+00:00',
         openedAt: '2026-10-01T00:00:00+00:00',
         assignedTo: null,
-        needsSuperAdmin: true,
+        blockedReason: 'An admin is a party to this dispute, so only a super admin can decide it.',
     };
 
     it('lists disputes linking to their review, with the rank note', () => {
@@ -214,7 +238,7 @@ describe('Admin/Disputes/Index', () => {
         });
 
         expect(wrapper.find('a[href="/admin/disputes/01J0000000000000000000DISP"]').exists()).toBe(true);
-        expect(wrapper.text()).toContain('Needs a super admin');
+        expect(wrapper.text()).toContain('only a super admin can decide it');
     });
 
     it('says when nothing waits', () => {

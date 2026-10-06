@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::store
-* @see app/Http/Controllers/Admin/DisputeController.php:65
+* @see app/Http/Controllers/Admin/DisputeController.php:74
 * @route '/admin/disputes/{ulid}/decision'
 */
 export const store = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::store
-* @see app/Http/Controllers/Admin/DisputeController.php:65
+* @see app/Http/Controllers/Admin/DisputeController.php:74
 * @route '/admin/disputes/{ulid}/decision'
 */
 store.url = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -43,7 +43,7 @@ store.url = (args: { ulid: string | number } | [ulid: string | number ] | string
 
 /**
 * @see \App\Http\Controllers\Admin\DisputeController::store
-* @see app/Http/Controllers/Admin/DisputeController.php:65
+* @see app/Http/Controllers/Admin/DisputeController.php:74
 * @route '/admin/disputes/{ulid}/decision'
 */
 store.post = (args: { ulid: string | number } | [ulid: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({

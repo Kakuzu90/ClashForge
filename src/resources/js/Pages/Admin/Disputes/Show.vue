@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AdminAuditTrailList from '@/Components/admin/AdminAuditTrailList.vue';
 import AdminSanctionHistory from '@/Components/admin/AdminSanctionHistory.vue';
 import AdminTable, { type AdminColumn } from '@/Components/admin/AdminTable.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
@@ -9,6 +10,7 @@ import UiRadioGroup from '@/Components/ui/UiRadioGroup.vue';
 import UiTextarea from '@/Components/ui/UiTextarea.vue';
 import { formatDateTime } from '@/Composables/useDateTime';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { audit } from '@/routes/admin';
 import { index, show } from '@/routes/admin/disputes';
 import { store as decisionStore } from '@/routes/admin/disputes/decision';
 import { show as adminUser } from '@/routes/admin/users';
@@ -28,6 +30,8 @@ const props = defineProps<{
     dispute: Props['dispute'];
     claimantSanctions: Props['claimantSanctions'];
     holderSanctions: Props['holderSanctions'];
+    auditTrail: Props['auditTrail'];
+    moreAuditEntries: Props['moreAuditEntries'];
 }>();
 
 const d = computed<Review>(() => props.dispute);
@@ -192,7 +196,10 @@ const snapshotColumns: AdminColumn[] = [
                         <p v-if="side.party.priorDisputes.length === 0" class="text-fg-secondary">None.</p>
                         <ul v-else class="flex flex-col gap-1">
                             <li v-for="prior in side.party.priorDisputes" :key="prior.ulid" class="flex flex-wrap items-center gap-2">
-                                <Link :href="show(prior.ulid).url" class="font-mono text-fg underline-offset-2 hover:underline">{{ prior.tag }}</Link>
+                                <Link v-if="prior.reviewable" :href="show(prior.ulid).url" class="font-mono text-fg underline-offset-2 hover:underline">{{
+                                    prior.tag
+                                }}</Link>
+                                <span v-else class="font-mono text-fg">{{ prior.tag }}</span>
                                 <span class="text-fg-secondary">as {{ prior.side }}</span>
                                 <UiPill :label="prior.statusLabel" :tone="STATUS_TONE[prior.status] ?? 'neutral'" />
                                 <time class="text-fg-muted" :datetime="prior.openedAt">{{ formatDateTime(prior.openedAt) }}</time>
@@ -267,9 +274,17 @@ const snapshotColumns: AdminColumn[] = [
                     :error="form.errors.note"
                 />
                 <div>
-                    <UiButton type="submit" :disabled="form.decision === ''" :loading="form.processing && !confirming">Record the decision</UiButton>
+                    <UiButton type="submit" :disabled="form.decision === '' || form.note.trim() === ''" :loading="form.processing && !confirming">Record the decision</UiButton>
                 </div>
             </form>
+        </section>
+
+        <section aria-labelledby="trail-heading" class="flex flex-col gap-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 id="trail-heading" class="text-h3 font-semibold">Audit trail</h2>
+                <UiButton v-if="moreAuditEntries" variant="ghost" size="sm" :href="audit().url">Open the audit log</UiButton>
+            </div>
+            <AdminAuditTrailList :entries="auditTrail" />
         </section>
 
         <section aria-labelledby="claims-heading" class="flex flex-col gap-3">

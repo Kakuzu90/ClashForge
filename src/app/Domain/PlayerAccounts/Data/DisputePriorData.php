@@ -21,5 +21,6 @@ class DisputePriorData extends Data
         public string $statusLabel,
         /** ISO 8601 */
         public string $openedAt,
+        public bool $reviewable,
     ) {}
 }

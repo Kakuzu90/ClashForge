@@ -4,6 +4,8 @@ namespace App\Domain\PlayerAccounts\Policies;
 
 use App\Domain\Auth\Enums\StaffAbility;
 use App\Domain\PlayerAccounts\Models\CocAccountDispute;
+use App\Domain\PlayerAccounts\Support\DisputeRank;
+use App\Domain\PlayerAccounts\Support\DisputeStake;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
@@ -41,12 +43,12 @@ class CocAccountDisputePolicy
     }
 
     /**
-     * The staff review page: the other party's private evidence and history, so never a party's
-     * (owner decision 2026-10-05, P2-17).
+     * The staff review page: the parties' private evidence and history, so never for staff with a
+     * stake in the tag, the parties included (owner decisions 2026-10-05 and 2026-10-06, P2-17).
      */
     public function review(User $user, CocAccountDispute $dispute): bool
     {
-        return Gate::forUser($user)->allows(StaffAbility::ResolveDisputes->value) && ! $this->isParty($user, $dispute);
+        return Gate::forUser($user)->allows(StaffAbility::ResolveDisputes->value) && ! DisputeStake::involves($user, $dispute);
     }
 
     public function decide(User $user, CocAccountDispute $dispute): bool
@@ -56,11 +58,7 @@ class CocAccountDisputePolicy
 
     public function outranksParties(User $user, CocAccountDispute $dispute): bool
     {
-        $claimant = $dispute->claimant;
-        $holder = $dispute->holder;
-
-        return ($claimant === null || $user->role->outranks($claimant->role))
-            && ($holder === null || $user->role->outranks($holder->role));
+        return DisputeRank::outranksParties($user, $dispute);
     }
 
     private function isParty(User $user, CocAccountDispute $dispute): bool

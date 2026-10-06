@@ -25,6 +25,7 @@ class DisputeQueueRowData extends Data
         /** ISO 8601 */
         public string $openedAt,
         public ?string $assignedTo,
-        public bool $needsSuperAdmin,
+        /** Why this admin cannot decide it (a party they do not outrank), as on the review page */
+        public ?string $blockedReason,
     ) {}
 }

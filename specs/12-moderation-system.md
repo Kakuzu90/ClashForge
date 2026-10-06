@@ -186,7 +186,9 @@ below 70% precision is tuned or disabled. Rules live in config, not code.
 **Moderation log** (`moderation_actions`): every action, immutable, filterable by actor, target,
 type and date. Moderators see their own; admins see everything.
 
-**Audit log** (`audit_logs`): every privileged action, including read access to report evidence,
+**Audit log** (`audit_logs`): every privileged action, including read access to report evidence
+(ownership dispute evidence since P2-17: `coc_dispute.evidence_viewed`, one entry per review page view
+that shows images),
 ownership transfers, role changes and data exports. Two-year retention, never edited.
 
 **User-facing transparency:**
