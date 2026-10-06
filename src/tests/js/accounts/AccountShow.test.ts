@@ -52,6 +52,7 @@ const detail = (card: Partial<Detail['card']> = {}, rest: Partial<Detail> = {}):
         builderHallLevel: null,
         xpLevel: 231,
         trophies: 5124,
+        bestTrophies: 5524,
         warStars: 1480,
         leagueName: null,
         league: null,

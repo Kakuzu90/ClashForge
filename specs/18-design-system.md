@@ -287,15 +287,19 @@ Implemented as one component reading a tier map, so a new TH level is a config l
 **PlayerCard** — a CoC account rendered like a collectible card.
 Variants: `hero` (profile header, full art treatment), `standard` (grid), `compact` (list row),
 `mini` (inline attribution on a base card).
-Anatomy: TH badge (corner, tier-coloured), avatar/IGN, player tag in mono, league emblem,
+Anatomy: TH badge (corner, tier-coloured), IGN (the owner's avatar only on `mini`), player tag in mono, league emblem,
 trophy/war-star/XP stat blocks, clan chip with role, verified badge, featured star, last-synced
 timestamp.
 States: verified · unverified (desaturated, "unverified" label) · disputed ("under review" ribbon) ·
 stale (dimmed with "data from 3 days ago") · suspended (owner only, danger pill) · loading skeleton.
 Desaturating and dimming apply to our frame and text only; game assets on the card are never
 filtered or faded (§2.1). The clan row reads "No clan" outside a clan and "Clan not shared" when the
-owner hides it (P2-04). `hero`, `standard` and `compact` shipped with P2-04; `mini` comes with base
-cards (P3-01) and the avatar with profiles (P2-22).
+owner hides it (P2-04). `hero`, `standard` and `compact` shipped with P2-04; `mini`, with the
+owner's avatar for base attribution, comes with base cards (P3-01). Profile cards carry no avatar:
+the cover band already shows it (P2-22). `standard` is the list card (owner decision 2026-10-06,
+P2-22): the XP level burst in place of the Town Hall badge, no stat blocks and no clan row, the
+name on one line, the disputed state as an "Under review" pill instead of the ribbon, and an
+`actions` slot above the link overlay, so every card in a list has the same height.
 
 **BaseCard** — screenshot-led.
 Anatomy: 16:9 screenshot with a subtle top-to-bottom scrim, TH badge (top-left), category pill
@@ -324,7 +328,10 @@ clan name, role label, level. Falls back to a generated initial tile when no bad
 language, war frequency), status indicator dot + label, bumped-at, primary action.
 
 **VerifiedBadge** — gold check in a chunky circle, with a tooltip explaining what verification
-means. Never rendered without an accessible label.
+means. Never rendered without an accessible label; the profile cover band passes its own, since it
+marks the person rather than one account (P2-22). **FeaturedBadge** is its pair on PlayerCards and the account
+panel: the purple star in the same circle, icon only with an accessible label and tooltip, in place
+of the "Featured" text badge (owner decision 2026-10-06). League names never wrap.
 
 **RewardToast** — gold-bordered toast with an overshoot entrance and a subtle glow, used **only**
 for genuine achievements: first verification, first base published, milestone reached, badge
@@ -399,15 +406,23 @@ which.
 
 ### Player profile (`/u/{username}`)
 Cover band with avatar, display name, username, verified badge, member-since, country flag,
-follow button (P2) → featured PlayerCard (hero variant) → stat blocks (bases, likes received,
+follow button (P2) → featured account (the account page's profile panel without the donation strip,
+values from the card without deltas, the name linking to the account page; owner decision
+2026-10-06) → stat blocks (bases, likes received,
 copies, war stars across accounts) → tabs: Accounts · Bases · Activity (P2) · Bookmarks (own only)
 → tab content.
+*Accounts (P2-22):* the cards follow `CocAccountPolicy::view`: the owner sees every row but
+`released`, anyone else the `verified` / `disputed` rows while `show_coc_accounts` is on, with
+"Clan not shared" when `show_clan` is off. `standard` cards, 1 column, 2 from `md`, all the same
+height, featured first then newest; the featured row also leads the tab. The owner gets a "Verify"
+link inside each unverified card and "Attach another account". The verified badge shows when the viewer sees at least
+one `verified` / `disputed` card (the owner always sees theirs), so hiding accounts hides it. The
+hero is the featured row when the viewer may see it, with no substitute. War stars add up the
+viewer-visible `verified` / `disputed` rows (a missing value counts as 0) and the block is left out
+when there are none; stats run 3 across without it, 2 × 2 then 4 across from `sm` with it.
 *Empty (no accounts):* prompt to attach an account (own profile) / "no public accounts" (others).
-Until PlayerCards (P2-04), the own Accounts tab lists the owner's rows (name, tag, status, a
-"Verify" link on unverified ones) and shows the attach prompt only when there are none; other
-viewers see nothing there yet (P2-11).
 *Empty (no bases):* own → "publish your first base" CTA; others → muted message.
-*Loading:* cover + avatar skeleton, then tab content skeletons.
+*Loading:* cover + avatar skeleton, then the featured panel, stat and account card skeletons.
 *Error (hidden profile):* a `private` profile (to anyone but the owner), a `members` profile (to a
 guest) and a banned or pending-deletion owner render the same 404 as an unknown username, so the
 page never confirms the account exists ([11](11-security.md)). That page is `Profile/NotFound`:

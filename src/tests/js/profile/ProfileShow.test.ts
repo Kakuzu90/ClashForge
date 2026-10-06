@@ -19,6 +19,8 @@ vi.mock('@inertiajs/vue3', () => ({
 }));
 
 type Profile = App.Domain.Users.Data.PublicProfileData;
+type Accounts = App.Domain.PlayerAccounts.Data.ProfileAccountsData;
+type Card = App.Domain.PlayerAccounts.Data.PlayerCardData;
 
 const profile = (overrides: Partial<Profile> = {}): Profile => ({
     username: 'chief',
@@ -38,7 +40,33 @@ const profile = (overrides: Partial<Profile> = {}): Profile => ({
     ...overrides,
 });
 
-const ssr = (props: Profile) => renderToString(createSSRApp({ render: () => h(Show, { profile: props }) }));
+const card = (overrides: Partial<Card> = {}): Card => ({
+    ulid: '01J00000000000000000000001',
+    tag: '#2PQ8GRJC',
+    name: 'Main',
+    status: 'verified',
+    statusLabel: 'Verified',
+    townHallLevel: 16,
+    townHall: null,
+    builderHallLevel: null,
+    xpLevel: 231,
+    trophies: 5124,
+    bestTrophies: 5524,
+    warStars: 1480,
+    leagueName: null,
+    league: null,
+    clan: null,
+    clanHidden: false,
+    featured: false,
+    stale: false,
+    syncedAt: '2026-10-06T11:48:00+00:00',
+    syncedAgeSeconds: 720,
+    ...overrides,
+});
+
+const none: Accounts = { cards: [], featured: null, warStars: null, verified: false };
+
+const ssr = (props: Profile, accounts: Accounts = none) => renderToString(createSSRApp({ render: () => h(Show, { profile: props, accounts }) }));
 
 beforeEach(() => Object.keys(listeners).forEach((key) => delete listeners[key]));
 
@@ -64,7 +92,7 @@ describe('Profile/Show', () => {
     });
 
     it('links socials with rel="nofollow ugc noopener" and shows Discord as text', () => {
-        const wrapper = mount(Show, { props: { profile: profile() } });
+        const wrapper = mount(Show, { props: { profile: profile(), accounts: none } });
         const link = wrapper.get('a[href="https://www.youtube.com/@clashchief"]');
 
         expect(link.attributes('rel')).toBe('nofollow ugc noopener');
@@ -73,52 +101,80 @@ describe('Profile/Show', () => {
     });
 
     it('offers the owner the edit links and setup prompts, and others muted empty text', () => {
-        const own = mount(Show, { props: { profile: profile({ isOwn: true }), ownAccounts: [] } });
+        const own = mount(Show, { props: { profile: profile({ isOwn: true }), accounts: none } });
         expect(own.text()).toContain('Edit profile');
         expect(own.text()).toContain('No accounts yet');
         expect(own.find('a[href="/accounts/attach"]').text()).toBe('Attach an account');
 
-        const other = mount(Show, { props: { profile: profile() } });
+        const other = mount(Show, { props: { profile: profile(), accounts: none } });
         expect(other.text()).not.toContain('Edit profile');
         expect(other.text()).toContain('No public accounts.');
     });
 
-    it("lists the owner's accounts with a verify link on unverified ones", () => {
-        const account = (overrides: Partial<App.Domain.PlayerAccounts.Data.OwnCocAccountData>): App.Domain.PlayerAccounts.Data.OwnCocAccountData => ({
-            ulid: '01J00000000000000000000001',
-            tag: '#2PQ8GRJC',
-            name: 'Main',
-            status: 'verified',
-            statusLabel: 'Verified',
-            townHallLevel: 16,
-            featured: true,
-            canFeature: false,
-            ...overrides,
-        });
+    it("shows the owner's cards with a verify link under unverified ones", () => {
         const wrapper = mount(Show, {
             props: {
                 profile: profile({ isOwn: true }),
-                ownAccounts: [account({}), account({ ulid: '01J00000000000000000000002', tag: '#GRJ0P8UV', name: 'Alt', status: 'unverified', statusLabel: 'Unverified', featured: false })],
+                accounts: {
+                    cards: [card({ featured: true }), card({ ulid: '01J00000000000000000000002', tag: '#GRJ0P8UV', name: 'Alt', status: 'unverified', statusLabel: 'Unverified' })],
+                    featured: card({ featured: true }),
+                    warStars: 1480,
+                    verified: true,
+                },
             },
         });
 
         expect(wrapper.text()).not.toContain('No accounts yet');
-        expect(wrapper.findAll('li').filter((item) => item.text().includes('#2PQ8GRJC'))[0]!.text()).not.toContain('Verify');
-        const verify = wrapper.find('a[href="/accounts/01J00000000000000000000002/verify"]');
+        expect(wrapper.findAll('a[href$="/verify"]')).toHaveLength(1);
+        const verify = wrapper.get('a[href="/accounts/01J00000000000000000000002/verify"]');
         expect(verify.text()).toBe('Verify');
         expect(verify.attributes('aria-label')).toBe('Verify Alt');
         expect(wrapper.find('a[href="/accounts/attach"]').text()).toBe('Attach another account');
     });
 
+    it('shows the badge, the featured account panel and war stars to others when accounts are visible', () => {
+        const featured = card({ featured: true });
+        const wrapper = mount(Show, { props: { profile: profile(), accounts: { cards: [featured], featured, warStars: 1480, verified: true } } });
+
+        expect(wrapper.get('h1').find('[role="img"]').exists()).toBe(false);
+        expect(wrapper.find('[aria-label^="Verified player"]').exists()).toBe(true);
+        const hero = wrapper.get('section[aria-label="Featured account"]');
+        expect(hero.get('a').text()).toBe('Main');
+        expect(hero.get('a').attributes('href')).toBe('/accounts/01J00000000000000000000001');
+        expect(hero.text()).toContain('5,524');
+        expect(hero.text()).not.toContain('Troops donated');
+        expect(hero.text()).not.toContain('Troops received');
+        expect(wrapper.text()).toContain('War stars');
+        expect(wrapper.text()).not.toContain('No public accounts.');
+        expect(wrapper.find('a[href$="/verify"]').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain('Attach another account');
+    });
+
+    it('leaves out the badge, the hero and war stars when no verified account is visible', () => {
+        const wrapper = mount(Show, { props: { profile: profile(), accounts: none } });
+
+        expect(wrapper.find('[aria-label^="Verified player"]').exists()).toBe(false);
+        expect(wrapper.find('section[aria-label="Featured account"]').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain('War stars');
+        expect(wrapper.findAll('dl > *')).toHaveLength(3);
+    });
+
+    it('lets the bio fill the content width and wrap long words', () => {
+        const bio = mount(Show, { props: { profile: profile(), accounts: none } }).get('section[aria-labelledby="profile-about"] p');
+
+        expect(bio.classes()).not.toContain('max-w-prose');
+        expect(bio.classes()).toContain('break-words');
+    });
+
     it('falls back to the username and leaves out the about section when it is empty', () => {
-        const wrapper = mount(Show, { props: { profile: profile({ displayName: null, bio: null, socials: [] }) } });
+        const wrapper = mount(Show, { props: { profile: profile({ displayName: null, bio: null, socials: [] }), accounts: none } });
 
         expect(wrapper.get('h1').text()).toBe('chief');
         expect(wrapper.text()).not.toContain('About');
     });
 
     it('shows the skeleton while another profile loads', async () => {
-        const wrapper = mount(Show, { props: { profile: profile() } });
+        const wrapper = mount(Show, { props: { profile: profile(), accounts: none } });
 
         listeners.start!.forEach((l) => l({ detail: { visit: { method: 'get', prefetch: false, only: [], url: new URL('https://x.test/u/other') } } }));
         await nextTick();

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import GameAccountProfile from '@/Components/game/GameAccountProfile.vue';
+import GamePlayerCard from '@/Components/game/GamePlayerCard.vue';
+import GameVerifiedBadge from '@/Components/game/GameVerifiedBadge.vue';
 import ProfileSkeleton from '@/Components/profile/ProfileSkeleton.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
-import UiBadge from '@/Components/ui/UiBadge.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiEmptyState from '@/Components/ui/UiEmptyState.vue';
-import UiPill, { type PillTone } from '@/Components/ui/UiPill.vue';
 import UiStatBlock from '@/Components/ui/UiStatBlock.vue';
 import UiTabs, { type TabItem } from '@/Components/ui/UiTabs.vue';
 import { formatMonthYear } from '@/Composables/useDateTime';
@@ -20,15 +21,17 @@ import { computed, ref } from 'vue';
 defineOptions({ layout: AppLayout });
 
 type Props = App.Http.Data.Profile.ProfileShowPageData;
-const props = defineProps<{ profile: Props['profile']; ownAccounts?: Props['ownAccounts'] }>();
+const props = defineProps<{ profile: Props['profile']; accounts: Props['accounts'] }>();
 
 const name = computed(() => props.profile.displayName ?? props.profile.username);
 const memberSince = computed(() => formatMonthYear(props.profile.memberSince));
 const languages = computed(() => props.profile.languages.map((language) => language.label).join(', '));
+// War stars add up the verified accounts this viewer sees; left out when there are none (P2-22).
 const stats = computed(() => [
     { key: 'bases', label: 'Bases', value: props.profile.stats.basesPublished },
     { key: 'likes', label: 'Likes received', value: props.profile.stats.likesReceived },
     { key: 'copies', label: 'Copies', value: props.profile.stats.copies },
+    ...(props.accounts.warStars === null ? [] : [{ key: 'warStars', label: 'War stars', value: props.accounts.warStars }]),
 ]);
 
 // specs/18 §6: Accounts · Bases. Activity (P2) and Bookmarks (own only, P3-04) join with their features.
@@ -37,15 +40,6 @@ const tabs: TabItem[] = [
     { key: 'bases', label: 'Bases' },
 ];
 const tab = ref('accounts');
-
-// The pill colour for a non-verified account; the words come from the server.
-const statusTone: Record<App.Domain.PlayerAccounts.Enums.CocAccountStatus, PillTone> = {
-    unverified: 'neutral',
-    verified: 'success',
-    disputed: 'warning',
-    suspended: 'danger',
-    released: 'neutral',
-};
 
 const profilePrefix = show.definition.url.split('{')[0] ?? '';
 const navigating = useNavigating((url) => url.pathname.startsWith(profilePrefix));
@@ -59,7 +53,14 @@ const navigating = useNavigating((url) => url.pathname.startsWith(profilePrefix)
         >
             <UiAvatar :name="name" :src="profile.avatarUrl128" :size="96" />
             <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <h1 class="font-display text-h1 break-words text-fg">{{ name }}</h1>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h1 class="font-display text-h1 break-words text-fg">{{ name }}</h1>
+                    <GameVerifiedBadge
+                        v-if="accounts.verified"
+                        :size="24"
+                        label="Verified player: owns a Clash of Clans account proven with the in-game API token"
+                    />
+                </div>
                 <p class="text-body text-fg-secondary">@{{ profile.username }}</p>
                 <p class="flex flex-wrap gap-x-3 gap-y-1 text-sm text-fg-secondary">
                     <span v-if="profile.country">{{ profile.country.label }}</span>
@@ -75,16 +76,21 @@ const navigating = useNavigating((url) => url.pathname.startsWith(profilePrefix)
             </div>
         </header>
 
+        <GameAccountProfile v-if="accounts.featured" :card="accounts.featured" :donations="false" linked label="Featured account" />
+
         <section aria-labelledby="profile-stats">
             <h2 id="profile-stats" class="sr-only">Stats</h2>
-            <dl class="grid grid-cols-3 gap-4 rounded-lg border border-line bg-surface p-4">
+            <dl
+                class="grid gap-4 rounded-lg border border-line bg-surface p-4"
+                :class="stats.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'"
+            >
                 <UiStatBlock v-for="stat in stats" :key="stat.key" :label="stat.label" :value="stat.value" />
             </dl>
         </section>
 
         <section v-if="profile.bio || profile.socials.length" aria-labelledby="profile-about" class="flex flex-col gap-3">
             <h2 id="profile-about" class="font-display text-h2 text-fg">About</h2>
-            <p v-if="profile.bio" class="max-w-prose text-body whitespace-pre-line text-fg">{{ profile.bio }}</p>
+            <p v-if="profile.bio" class="text-body break-words whitespace-pre-line text-fg">{{ profile.bio }}</p>
             <ul v-if="profile.socials.length" class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
                 <li v-for="link in profile.socials" :key="link.network">
                     <a
@@ -102,38 +108,35 @@ const navigating = useNavigating((url) => url.pathname.startsWith(profilePrefix)
 
         <UiTabs v-model="tab" :tabs="tabs" label="Profile sections">
             <template #accounts>
-                <template v-if="profile.isOwn">
-                    <!-- A plain list until PlayerCards (P2-04); only the owner gets it. -->
-                    <div v-if="ownAccounts && ownAccounts.length > 0" class="flex flex-col gap-4 py-4">
-                        <ul class="flex flex-col divide-y divide-line-subtle rounded-lg border border-line-subtle bg-surface">
-                            <li v-for="account in ownAccounts" :key="account.ulid" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-semibold break-all text-fg">{{ account.name }}</p>
-                                    <p class="font-mono text-sm text-fg-secondary">{{ account.tag }}</p>
-                                </div>
-                                <UiBadge v-if="account.featured" kind="featured" />
-                                <UiBadge v-if="account.status === 'verified'" kind="verified" />
-                                <UiPill v-else :label="account.statusLabel" :tone="statusTone[account.status]" />
-                                <Link
-                                    v-if="account.status === 'unverified'"
-                                    :href="verify(account.ulid).url"
-                                    :aria-label="`Verify ${account.name}`"
-                                    class="text-sm font-medium text-brand underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                                >
-                                    Verify
-                                </Link>
-                            </li>
-                        </ul>
-                        <div>
-                            <UiButton :href="attach().url" variant="secondary" size="sm">Attach another account</UiButton>
-                        </div>
+                <div v-if="accounts.cards.length > 0" class="flex flex-col gap-4 py-4">
+                    <ul class="grid gap-4 md:grid-cols-2">
+                        <li v-for="card in accounts.cards" :key="card.ulid">
+                            <GamePlayerCard :card="card">
+                                <template v-if="profile.isOwn && card.status === 'unverified'" #actions>
+                                    <Link
+                                        :href="verify(card.ulid).url"
+                                        :aria-label="`Verify ${card.name}`"
+                                        class="text-sm font-medium text-brand underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                                    >
+                                        Verify
+                                    </Link>
+                                </template>
+                            </GamePlayerCard>
+                        </li>
+                    </ul>
+                    <div v-if="profile.isOwn">
+                        <UiButton :href="attach().url" variant="secondary" size="sm">Attach another account</UiButton>
                     </div>
-                    <UiEmptyState v-else title="No accounts yet" body="Attach your Clash of Clans account and verify it with an in-game token.">
-                        <template #action>
-                            <UiButton :href="attach().url">Attach an account</UiButton>
-                        </template>
-                    </UiEmptyState>
-                </template>
+                </div>
+                <UiEmptyState
+                    v-else-if="profile.isOwn"
+                    title="No accounts yet"
+                    body="Attach your Clash of Clans account and verify it with an in-game token."
+                >
+                    <template #action>
+                        <UiButton :href="attach().url">Attach an account</UiButton>
+                    </template>
+                </UiEmptyState>
                 <p v-else class="py-6 text-body text-fg-muted">No public accounts.</p>
             </template>
             <template #bases>

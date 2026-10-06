@@ -41,7 +41,7 @@ Authentication identity and platform-level status. Deliberately thin — profile
 | status | varchar(20) | `active`\|`restricted`\|`suspended`\|`banned`\|`pending_deletion` |
 | status_reason | varchar(255) null | user-visible sanction reason |
 | status_expires_at | timestamptz null | timed restriction/suspension |
-| verified_accounts_count | int default 0 | denormalised, drives the verified badge; counts the user's `verified` and `disputed` rows. Written only by Auth's `UserStatusService::syncVerifiedAccounts()` (P2-02). The featured account is `coc_accounts.is_featured`, not a column here |
+| verified_accounts_count | int default 0 | denormalised; counts the user's `verified` and `disputed` rows. Written only by Auth's `UserStatusService::syncVerifiedAccounts()` (P2-02). Not the profile's verified badge, which follows the cards the viewer may see (P2-22). The featured account is `coc_accounts.is_featured`, not a column here |
 | last_login_at / last_login_ip_hash | timestamptz / varchar(64) null | IP stored as HMAC-SHA256 keyed by `IP_HASH_SALT` (`App\Support\Privacy\IpHash`) |
 | username_changed_at | timestamptz null | enforces the 30-day rule |
 | verification_notice_key | char(26) null | P1-16: guarded/hidden dispatch ULID; changes per queued notice so stale jobs cannot clear or send a newer dispatch; cleared on anonymisation |

@@ -48,11 +48,16 @@ const description = computed(() => {
             <span v-if="!unit.locked" class="absolute -bottom-2 -left-2">
                 <span v-if="unit.maxed" class="relative block">
                     <GameFireRing />
-                    <span class="relative grid h-5 w-7 place-items-center rounded-sm border border-brand-shadow bg-surface font-display text-sm text-brand tabular-nums">
+                    <span
+                        class="relative grid h-5 w-7 place-items-center rounded-sm border border-brand-shadow bg-surface font-display text-sm text-brand tabular-nums"
+                    >
                         {{ unit.level }}
                     </span>
                 </span>
-                <span v-else class="grid h-5 min-w-6 place-items-center rounded-sm border border-line-strong bg-surface px-1 text-xs font-bold text-fg tabular-nums">
+                <span
+                    v-else
+                    class="grid h-5 min-w-6 place-items-center rounded-sm border border-line-strong bg-surface px-1 text-xs font-bold text-fg tabular-nums"
+                >
                     {{ unit.level }}
                 </span>
             </span>

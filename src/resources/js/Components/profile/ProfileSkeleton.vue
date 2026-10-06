@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import GamePlayerCard from '@/Components/game/GamePlayerCard.vue';
 import UiAvatar from '@/Components/ui/UiAvatar.vue';
 import UiSkeleton from '@/Components/ui/UiSkeleton.vue';
 
-// specs/18 §6 Player profile, loading: cover and avatar first, then the tab content.
+// specs/18 §6 Player profile, loading: cover and avatar first, then the featured card, the stats
+// and the account cards.
 </script>
 
 <template>
@@ -12,9 +14,12 @@ import UiSkeleton from '@/Components/ui/UiSkeleton.vue';
             <UiAvatar name="" :size="96" loading />
             <div class="flex-1"><UiSkeleton :lines="2" /></div>
         </div>
+        <div aria-hidden="true"><UiSkeleton variant="card" /></div>
         <div class="grid grid-cols-3 gap-4" aria-hidden="true">
             <UiSkeleton v-for="n in 3" :key="n" variant="stat" />
         </div>
-        <UiSkeleton variant="card" />
+        <div class="grid gap-4 md:grid-cols-2" aria-hidden="true">
+            <GamePlayerCard v-for="n in 2" :key="n" :card="null" />
+        </div>
     </div>
 </template>

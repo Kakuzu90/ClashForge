@@ -7,7 +7,6 @@ use App\Domain\Users\Data\PublicProfileData;
 use App\Domain\Users\Queries\PublicProfileReadModel;
 use App\Http\Controllers\Controller;
 use App\Http\Data\Profile\ProfileShowPageData;
-use App\Models\User;
 use App\Support\Seo\PageMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -37,10 +36,9 @@ class ProfileController extends Controller
                 ->setStatusCode(404);
         }
 
-        $viewer = $request->user();
         $page = new ProfileShowPageData(
             profile: $view->profile,
-            ownAccounts: $view->profile->isOwn && $viewer instanceof User ? $accounts->own($viewer) : null,
+            accounts: $accounts->forProfile($request->user(), $view->ownerId),
         );
 
         return PageMeta::page('Profile/Show', $page->toArray(), $this->meta($view->profile, $view->indexable))->toResponse($request);

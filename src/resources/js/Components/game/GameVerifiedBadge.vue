@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // VerifiedBadge (specs/18 §4): a gold check in a chunky circle. The label says what verification
-// means, for screen readers and as the hover tooltip; never rendered without it.
-withDefaults(defineProps<{ size?: 16 | 20 | 24 }>(), { size: 20 });
-
-const label = 'Verified: the owner proved it with the in-game API token';
+// means, for screen readers and as the hover tooltip; never rendered without it. A profile's cover
+// band passes its own label, since there it marks the person, not one account (P2-22).
+withDefaults(defineProps<{ size?: 16 | 20 | 24; label?: string }>(), {
+    size: 20,
+    label: 'Verified: the owner proved it with the in-game API token',
+});
 </script>
 
 <template>

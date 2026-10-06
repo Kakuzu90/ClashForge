@@ -29,6 +29,7 @@ class PlayerCardData extends Data
         public ?int $builderHallLevel,
         public ?int $xpLevel,
         public ?int $trophies,
+        public ?int $bestTrophies,
         public ?int $warStars,
         public ?string $leagueName,
         public ?GameAssetData $league,

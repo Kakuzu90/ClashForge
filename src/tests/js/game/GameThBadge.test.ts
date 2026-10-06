@@ -44,8 +44,16 @@ describe('GameThBadge', () => {
     it('shows the Town Hall image only at lg, and reads the same without it', () => {
         const asset = { kind: 'town_hall' as const, url: 'https://cdn.test/th16.png', alt: 'Town Hall 16', short: '16', width: 64, height: 64 };
 
-        expect(mount(GameThBadge, { props: { level: 16, size: 'lg', asset } }).find('img').exists()).toBe(true);
-        expect(mount(GameThBadge, { props: { level: 16, size: 'md', asset } }).find('img').exists()).toBe(false);
+        expect(
+            mount(GameThBadge, { props: { level: 16, size: 'lg', asset } })
+                .find('img')
+                .exists(),
+        ).toBe(true);
+        expect(
+            mount(GameThBadge, { props: { level: 16, size: 'md', asset } })
+                .find('img')
+                .exists(),
+        ).toBe(false);
         expect(mount(GameThBadge, { props: { level: 16, size: 'lg', asset: { ...asset, url: null } } }).text()).toBe('16');
     });
 });

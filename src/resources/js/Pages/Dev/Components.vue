@@ -14,6 +14,7 @@ import GameClanChip from '@/Components/game/GameClanChip.vue';
 import GamePlayerCard, { type PlayerCardVariant } from '@/Components/game/GamePlayerCard.vue';
 import GameProgressionGrid from '@/Components/game/GameProgressionGrid.vue';
 import GameThBadge, { type ThBadgeSize } from '@/Components/game/GameThBadge.vue';
+import GameFeaturedBadge from '@/Components/game/GameFeaturedBadge.vue';
 import GameVerifiedBadge from '@/Components/game/GameVerifiedBadge.vue';
 import GameVillageBase from '@/Components/game/GameVillageBase.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';
@@ -71,7 +72,13 @@ type PlayerCard = App.Domain.PlayerAccounts.Data.PlayerCardData;
 const thLevels = [3, 6, 9, 12, 14, 16, 17, 18];
 const thSizes: ThBadgeSize[] = ['sm', 'md', 'lg'];
 const cardVariants: PlayerCardVariant[] = ['hero', 'standard', 'compact'];
-const sampleClan: App.Domain.PlayerAccounts.Data.AccountClanData = { tag: '#2Q8URJ9L', name: 'Night Owls', level: 22, roleLabel: 'Co-leader', badge: fallbackAssets[3] };
+const sampleClan: App.Domain.PlayerAccounts.Data.AccountClanData = {
+    tag: '#2Q8URJ9L',
+    name: 'Night Owls',
+    level: 22,
+    roleLabel: 'Co-leader',
+    badge: fallbackAssets[3],
+};
 const sampleCard: PlayerCard = {
     ulid: '01J0000000000000000000SAMP',
     tag: '#2PQ8GRJC',
@@ -83,6 +90,7 @@ const sampleCard: PlayerCard = {
     builderHallLevel: 10,
     xpLevel: 231,
     trophies: 5124,
+    bestTrophies: 5524,
     warStars: 1480,
     leagueName: 'Legend League',
     league: fallbackAssets[2],
@@ -95,10 +103,22 @@ const sampleCard: PlayerCard = {
 };
 const cardStates: { label: string; card: PlayerCard }[] = [
     { label: 'Verified', card: sampleCard },
-    { label: 'Unverified', card: { ...sampleCard, ulid: '01J0000000000000000000UNVF', status: 'unverified', statusLabel: 'Unverified', featured: false } },
-    { label: 'Disputed', card: { ...sampleCard, ulid: '01J0000000000000000000DISP', status: 'disputed', statusLabel: 'Under review', featured: false } },
-    { label: 'Stale, clan hidden', card: { ...sampleCard, ulid: '01J0000000000000000000STAL', stale: true, syncedAgeSeconds: 259200, clan: null, clanHidden: true } },
-    { label: 'No clan, fields not available', card: { ...sampleCard, ulid: '01J0000000000000000000NULL', clan: null, trophies: null, xpLevel: null, league: null, leagueName: null } },
+    {
+        label: 'Unverified',
+        card: { ...sampleCard, ulid: '01J0000000000000000000UNVF', status: 'unverified', statusLabel: 'Unverified', featured: false },
+    },
+    {
+        label: 'Disputed',
+        card: { ...sampleCard, ulid: '01J0000000000000000000DISP', status: 'disputed', statusLabel: 'Under review', featured: false },
+    },
+    {
+        label: 'Stale, clan hidden',
+        card: { ...sampleCard, ulid: '01J0000000000000000000STAL', stale: true, syncedAgeSeconds: 259200, clan: null, clanHidden: true },
+    },
+    {
+        label: 'No clan, fields not available',
+        card: { ...sampleCard, ulid: '01J0000000000000000000NULL', clan: null, trophies: null, xpLevel: null, league: null, leagueName: null },
+    },
 ];
 const sampleEquipment: App.Domain.PlayerAccounts.Data.ProgressionUnitData[] = [
     { name: 'Archer Puppet', asset: loadedAsset, level: 18, maxLevel: 18, maxed: true, locked: false, equipment: [] },
@@ -534,7 +554,15 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     Opens on a picked file. Drag, pinch, scroll or use arrow keys and +/- to frame; Save emits the cropped square.
                 </p>
                 <div class="mt-4 flex flex-wrap items-center gap-3">
-                    <input ref="cropPicker" type="file" class="sr-only" tabindex="-1" aria-hidden="true" accept="image/jpeg,image/png,image/webp" @change="pickCropPhoto" />
+                    <input
+                        ref="cropPicker"
+                        type="file"
+                        class="sr-only"
+                        tabindex="-1"
+                        aria-hidden="true"
+                        accept="image/jpeg,image/png,image/webp"
+                        @change="pickCropPhoto"
+                    />
                     <UiButton variant="secondary" @click="cropPicker?.click()">Crop a photo</UiButton>
                     <UiButton variant="ghost" @click="openCropSample">Crop a sample image</UiButton>
                 </div>
@@ -660,6 +688,9 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                         <GameThBadge :level="10" size="md" builder />
                         <GameVerifiedBadge :size="16" />
                         <GameVerifiedBadge :size="24" />
+                        <GameFeaturedBadge :size="16" />
+                        <GameFeaturedBadge :size="24" />
+                        <GameVerifiedBadge :size="24" label="Verified player: owns a Clash of Clans account proven with the in-game API token" />
                         <GameClanChip :clan="sampleClan" />
                         <GameClanChip :clan="{ ...sampleClan, roleLabel: null, level: null }" />
                     </div>
@@ -693,6 +724,10 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                 <h3 class="mt-6 font-display text-h3">Account profile</h3>
                 <div class="mt-3">
                     <GameAccountProfile :card="sampleCard" :stats="sampleStats" delta-label="Change over the last 7 days" />
+                </div>
+                <h3 class="mt-6 font-display text-h3">Featured account on a user profile (linked, no donations)</h3>
+                <div class="mt-3">
+                    <GameAccountProfile :card="sampleCard" :donations="false" linked label="Featured account" />
                 </div>
                 <h3 class="mt-6 font-display text-h3">Village base, loaded and loading</h3>
                 <div class="mt-3 flex flex-col gap-4">

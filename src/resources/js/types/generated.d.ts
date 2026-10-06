@@ -546,6 +546,7 @@ townHall: App.Domain.GameAssets.Data.GameAssetData | null,
 builderHallLevel: number | null,
 xpLevel: number | null,
 trophies: number | null,
+bestTrophies: number | null,
 warStars: number | null,
 leagueName: string | null,
 league: App.Domain.GameAssets.Data.GameAssetData | null,
@@ -555,6 +556,12 @@ featured: boolean,
 stale: boolean,
 syncedAt: string | null,
 syncedAgeSeconds: number | null,
+};
+export type ProfileAccountsData = {
+cards: App.Domain.PlayerAccounts.Data.PlayerCardData[],
+featured: App.Domain.PlayerAccounts.Data.PlayerCardData | null,
+warStars: number | null,
+verified: boolean,
 };
 export type ProgressionGroupData = {
 key: string,
@@ -887,7 +894,7 @@ confirmUrl: string | null,
 namespace Profile {
 export type ProfileShowPageData = {
 profile: App.Domain.Users.Data.PublicProfileData,
-ownAccounts: App.Domain.PlayerAccounts.Data.OwnCocAccountData[] | null,
+accounts: App.Domain.PlayerAccounts.Data.ProfileAccountsData,
 };
 }
 namespace Settings {

@@ -49,6 +49,7 @@ class PublicProfileReadModel
         return new PublicProfileViewData(
             profile: PublicProfileData::from([...$cached, 'isOwn' => $viewer !== null && $viewer->id === $owner->id]),
             indexable: $this->privacy->isIndexable($owner),
+            ownerId: $owner->id,
         );
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Domain\PlayerAccounts\Queries;
 
+use App\Domain\Clans\Data\ClanSummaryData;
 use App\Domain\Clans\Enums\ClanRole;
 use App\Domain\Clans\Services\ClanReadModel;
 use App\Domain\GameAssets\Enums\Village;
@@ -11,6 +12,7 @@ use App\Domain\PlayerAccounts\Data\AccountDetailData;
 use App\Domain\PlayerAccounts\Data\AccountStatData;
 use App\Domain\PlayerAccounts\Data\OwnCocAccountData;
 use App\Domain\PlayerAccounts\Data\PlayerCardData;
+use App\Domain\PlayerAccounts\Data\ProfileAccountsData;
 use App\Domain\PlayerAccounts\Data\ProgressionGroupData;
 use App\Domain\PlayerAccounts\Enums\CocAccountStatus;
 use App\Domain\PlayerAccounts\Models\CocAccount;
@@ -24,9 +26,9 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Reads of CoC accounts for pages. The owner's own lists are scoped to the owner, so another
- * user's ulid finds nothing; the account page asks `CocAccountPolicy::view` and answers an unknown
- * and a hidden account alike (specs/04 §3, 404 first).
+ * Reads of CoC accounts for pages. The owner's own row is scoped to the owner, so another user's
+ * ulid finds nothing; the account page and the profile cards ask `CocAccountPolicy::view`, and the
+ * page answers an unknown and a hidden account alike (specs/04 §3, 404 first).
  */
 class AccountReadModel
 {
@@ -57,22 +59,8 @@ class AccountReadModel
     ) {}
 
     /**
-     * The owner's rows still tied to them, featured first, then newest. Released rows are gone
-     * from their list (specs/13 §6).
-     *
-     * @return list<OwnCocAccountData>
+     * One of the owner's rows, for the verify pages; another user's ulid finds nothing.
      */
-    public function own(User $user): array
-    {
-        return array_values(CocAccount::query()
-            ->where('user_id', $user->id)
-            ->where('status', '!=', CocAccountStatus::Released)
-            ->orderByDesc('is_featured')->orderByDesc('id')
-            ->get()
-            ->map(fn (CocAccount $account): OwnCocAccountData => $this->data($user, $account))
-            ->all());
-    }
-
     public function ownRow(User $user, string $ulid): ?OwnCocAccountData
     {
         $account = CocAccount::query()->where('ulid', $ulid)->where('user_id', $user->id)->first();
@@ -91,6 +79,41 @@ class AccountReadModel
             townHallLevel: $account->th_level,
             featured: $account->is_featured,
             canFeature: ! $account->is_featured && Gate::forUser($user)->allows('feature', $account),
+        );
+    }
+
+    /**
+     * The accounts on a profile this viewer may already see (P2-22). The owner gets every row but
+     * `released`; anyone else gets the verified and disputed rows behind `show_coc_accounts`, each
+     * also passed through `CocAccountPolicy::view` so no card links to a page that 404s. Featured
+     * first, then newest. Three queries: the rows, their owner and the clans.
+     */
+    public function forProfile(?User $viewer, int $ownerId): ProfileAccountsData
+    {
+        $isOwn = $viewer !== null && $viewer->id === $ownerId;
+        $settings = $this->privacy->settingsFor($ownerId);
+
+        $accounts = $isOwn || $settings->showCocAccounts
+            ? CocAccount::query()
+                ->with('user')
+                ->where('user_id', $ownerId)
+                ->when($isOwn, fn ($query) => $query->where('status', '!=', CocAccountStatus::Released), fn ($query) => $query->whereIn('status', CocAccountStatus::HOLDING))
+                ->orderByDesc('is_featured')->orderByDesc('id')
+                ->get()
+                ->filter(fn (CocAccount $account): bool => Gate::forUser($viewer)->allows('view', $account))
+                ->values()
+            : collect();
+
+        $clanHidden = ! $isOwn && ! $settings->showClan;
+        $clans = $clanHidden ? [] : $this->clans->summaries(array_values(array_filter($accounts->pluck('clan_id')->all())));
+        $cards = array_values($accounts->map(fn (CocAccount $account): PlayerCardData => $this->card($account, $clanHidden, $clans))->all());
+        $holding = array_values(array_filter($cards, fn (PlayerCardData $card): bool => in_array($card->status, CocAccountStatus::HOLDING, true)));
+
+        return new ProfileAccountsData(
+            cards: $cards,
+            featured: array_values(array_filter($cards, fn (PlayerCardData $card): bool => $card->featured))[0] ?? null,
+            warStars: $holding === [] ? null : array_sum(array_map(fn (PlayerCardData $card): int => $card->warStars ?? 0, $holding)),
+            verified: $holding !== [],
         );
     }
 
@@ -221,7 +244,10 @@ class AccountReadModel
         return $account !== null && Gate::forUser($viewer)->allows('view', $account) ? $account : null;
     }
 
-    private function card(CocAccount $account, bool $clanHidden): PlayerCardData
+    /**
+     * @param  array<int, ClanSummaryData>|null  $clans  preloaded summaries by clan id, or null to read this one
+     */
+    private function card(CocAccount $account, bool $clanHidden, ?array $clans = null): PlayerCardData
     {
         $synced = $account->api_synced_at;
         $tier = $this->leagueTier($account);
@@ -238,6 +264,7 @@ class AccountReadModel
             builderHallLevel: $account->builder_hall_level,
             xpLevel: $account->xp_level,
             trophies: $account->trophies,
+            bestTrophies: $account->best_trophies,
             warStars: $account->war_stars,
             leagueName: $tier['name'] ?? $account->league_name,
             league: match (true) {
@@ -245,7 +272,7 @@ class AccountReadModel
                 $account->league_name !== null => $this->assets->league($account->league_id, $account->league_name, $account->league_icon_url),
                 default => null,
             },
-            clan: $clanHidden ? null : $this->clan($account),
+            clan: $clanHidden ? null : $this->clan($account, $clans),
             clanHidden: $clanHidden,
             featured: $account->is_featured,
             stale: $account->api_sync_failures >= (int) config('coc.sync.not_found_stale') || $synced === null || $synced->lessThan($staleAfter),
@@ -254,13 +281,16 @@ class AccountReadModel
         );
     }
 
-    private function clan(CocAccount $account): ?AccountClanData
+    /**
+     * @param  array<int, ClanSummaryData>|null  $clans
+     */
+    private function clan(CocAccount $account, ?array $clans): ?AccountClanData
     {
         if ($account->clan_id === null) {
             return null;
         }
 
-        $clan = $this->clans->summaries([$account->clan_id])[$account->clan_id] ?? null;
+        $clan = ($clans ?? $this->clans->summaries([$account->clan_id]))[$account->clan_id] ?? null;
 
         return $clan === null ? null : new AccountClanData(
             tag: $clan->tag,

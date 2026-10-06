@@ -80,10 +80,10 @@ it("hides another user's rows behind a 404 (IDOR)", function () {
     expect($unverified->refresh()->status->value)->toBe('unverified');
 });
 
-it("never shows the owner's account list to anyone else", function () {
-    CocAccount::factory()->for($this->holder)->forTag('#2PQ8GRJC')->verified()->create();
+it("never shows the owner's unverified rows to anyone else", function () {
+    CocAccount::factory()->for($this->holder)->forTag('#2PQ8GRJC')->create();
 
-    $this->actingAs($this->user)->get('/u/holder')->assertInertia(fn (Assert $page) => $page->where('ownAccounts', null));
+    $this->actingAs($this->user)->get('/u/holder')->assertInertia(fn (Assert $page) => $page->where('accounts.cards', []));
     auth()->logout();
-    $this->get('/u/holder')->assertInertia(fn (Assert $page) => $page->where('ownAccounts', null));
+    $this->get('/u/holder')->assertInertia(fn (Assert $page) => $page->where('accounts.cards', []));
 });

@@ -29,7 +29,9 @@ describe('GameProgressionGrid', () => {
     });
 
     it('keeps the flames out of the accessibility tree', () => {
-        const ring = grid([unit('Archer Queen', 95, 95)]).find('canvas').element.closest('[aria-hidden="true"]');
+        const ring = grid([unit('Archer Queen', 95, 95)])
+            .find('canvas')
+            .element.closest('[aria-hidden="true"]');
 
         expect(ring).not.toBeNull();
     });
