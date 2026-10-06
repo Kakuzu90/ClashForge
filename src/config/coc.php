@@ -173,6 +173,15 @@ return [
         'success_alert' => 0.9,
     ],
 
+    // `coc:compact-snapshots` (specs/07 `coc_account_snapshots` retention, P2-21): every snapshot for
+    // `keep_all_days`, then the last one per UTC day until `daily_until_days`, then the last one per
+    // ISO week. Verification snapshots are always kept. Accounts are compacted `batch_size` at a time.
+    'snapshots' => [
+        'keep_all_days' => 90,
+        'daily_until_days' => 365,
+        'batch_size' => 500,
+    ],
+
     // The account page (P2-04). Data older than `stale_hours` shows as stale; stat deltas compare
     // with the newest snapshot at least `delta_days` old.
     'display' => [

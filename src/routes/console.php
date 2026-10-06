@@ -101,6 +101,14 @@ Schedule::command('media:purge-deleted')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'media:purge-deleted']));
 
+// Daily at 02:45 (specs/20 §3): old CoC account snapshots thinned to one per day, then per week.
+Schedule::command('coc:compact-snapshots')
+    ->dailyAt('02:45')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'coc:compact-snapshots']));
+
 Schedule::command('platform:anonymize-deleted')
     ->dailyAt('04:00')
     ->withoutOverlapping()

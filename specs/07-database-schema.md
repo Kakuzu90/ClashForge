@@ -265,8 +265,12 @@ level, XP level, best trophies, war stars, any unit's level, clan tag, league id
 trophies, attack / defense wins or donations alone (owner decision, 2026-10-02), and once at
 verification (`source = verification`).
 **Indexes:** `(coc_account_id, captured_at DESC)`. **Retention:** keep all for 90 days, then one row
-per account per day, then one per week after a year (compaction job). Partition by month once past
-~5M rows.
+per account per day, then one per week after a year (`coc:compact-snapshots`, nightly, P2-21; owner
+decisions 2026-10-06): the **last** row of each UTC day or ISO week (Monday to Sunday, UTC) stays,
+the state the account ended that period in. `source = verification` rows always stay, and so does
+each account's newest row whatever its age. A day or week cut by the 90-day or one-year line is
+split there, so every row falls in exactly one bucket. Windows are `coc.snapshots.*`. Partition by
+month once past ~5M rows.
 
 ### `clans` [P2, read-only stub in M]
 Clans referenced by accounts or recruitment posts. Written from API data only. Until the clan sync

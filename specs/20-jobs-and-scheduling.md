@@ -97,6 +97,7 @@ for a full temp volume does not.
 | `moderation:expire-sanctions` (command, runs inline) | Every 15 min | Ends expired restrictions/suspensions, notifies once; only picks accounts whose status is still set |
 | `EscalateAgingCasesJob` | Hourly | Raises priority on SLA-breaching cases, alerts staff |
 | `DetectAnomaliesJob` | Nightly | Mass-reporting rings, review rings, interaction spikes, ban-evasion candidates |
+| `coc:compact-snapshots` (command, runs inline, `--dry-run`) | Daily 02:45 | Thins `coc_account_snapshots` per the [07](07-database-schema.md) retention (last row per UTC day after `coc.snapshots.keep_all_days`, per ISO week after `daily_until_days`; verification rows and each account's newest stay), `coc.snapshots.batch_size` accounts per delete, so a stopped run is safe to repeat and a second run deletes nothing (P2-21) |
 | `coc:release-banned-tags` (command, runs inline) | Daily 04:15 | Releases tags 30 days after the active ban started (`coc.accounts.ban_release_days`), one transaction per user with the ban re-checked under the lock (P2-24, [13 §6](13-claiming-workflow.md)) |
 
 ### Platform (`low`)
@@ -129,6 +130,7 @@ hourly :30   moderation:escalate-aging-cases
 daily  02:00 platform:prune-operational-tables
 daily  02:15 notifications:prune
 daily  02:30 media:purge-deleted
+daily  02:45 coc:compact-snapshots
 daily  03:00 stats:reconcile
 daily  03:30 moderation:detect-anomalies
 daily  04:00 platform:anonymize-deleted
