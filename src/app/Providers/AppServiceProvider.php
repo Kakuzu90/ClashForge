@@ -62,6 +62,10 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
+        // The public feeds (P3-03): filters that miss the cache run live, so they are bounded too.
+        RateLimiter::for('feed', fn (Request $request): Limit => Limit::perMinute((int) config('bases.feed.requests_per_minute'))
+            ->by($request->user() === null ? 'ip:'.$request->ip() : 'user:'.$request->user()->getAuthIdentifier()));
+
         RateLimiter::for('upload-intent', fn (Request $request): Limit => Limit::perHour((int) config('media.rate_limits.intents_per_hour'))
             ->by('user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
 

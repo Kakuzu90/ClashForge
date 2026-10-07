@@ -159,6 +159,10 @@ below 70% precision is tuned or disabled. Rules live in config, not code.
   of accounts past their end, writes a `sanction.expired` audit entry with the scheduler as actor,
   and notifies the user once. The per-request status check already treats them as ended.
 - Lifting a sanction requires a reason and is itself audited.
+- "Content hidden" is a read-time rule, so lifting or expiring a sanction restores everything
+  untouched: feeds drop the bases of authors suspended (while the suspension runs), banned or with
+  deletion requested through Auth's `UserStatusService::hiddenAuthorIds()`; restricted authors'
+  bases stay. `SanctionApplied` / `SanctionLifted` drop the cached feed pages at once (P3-03).
 - **Ban evasion:** new accounts matching a banned user's email domain pattern, IP hash or verified
   CoC tag are flagged for review, not auto-banned (shared IPs are common in this audience, and
   households share connections).

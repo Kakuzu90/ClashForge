@@ -278,7 +278,9 @@ user input, files, or crosses a trust boundary.
 |---|---|---|
 | Publishing + composer | [07](07-database-schema.md) (bases), [10](10-media-storage.md), [18 §6](18-design-system.md) | [23 §3](23-edge-cases.md) |
 | Video processing | [10 §6, §11](10-media-storage.md), [20](20-jobs-and-scheduling.md) | [03 §1](03-non-functional-requirements.md) |
-| Feed, trending, landing pages | [17](17-search-and-discovery.md), [21](21-caching-strategy.md) | [20](20-jobs-and-scheduling.md), [22 §6](22-scaling.md) |
+| Feed, trending (P3-03) | [17](17-search-and-discovery.md), [21](21-caching-strategy.md) | [20](20-jobs-and-scheduling.md), [22 §6](22-scaling.md), [18 §6](18-design-system.md) |
+| Landing pages + the profile's Bases tab (P3-10, split from P3-03) | [17 §6](17-search-and-discovery.md), [21](21-caching-strategy.md) | [18 §6](18-design-system.md) |
+| Base detail, copy-link and view counters (P3-11, split from P3-03) | [18 §6](18-design-system.md), [07](07-database-schema.md) (`base_view_events`, metrics), [20](20-jobs-and-scheduling.md) (aggregation) | [21](21-caching-strategy.md), [23 §3](23-edge-cases.md) |
 | Likes, bookmarks, comments, counters | [07](07-database-schema.md), [08 §5](08-entity-relationships.md) | [16](16-notifications.md) |
 | Search v1 | [17](17-search-and-discovery.md), [07](07-database-schema.md) | [21](21-caching-strategy.md) |
 | Moderation v1 | [12](12-moderation-system.md), [07](07-database-schema.md) (moderation) | [16](16-notifications.md), [04](04-roles-and-permissions.md) |

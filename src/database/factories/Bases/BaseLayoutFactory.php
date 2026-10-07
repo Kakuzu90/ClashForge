@@ -7,6 +7,7 @@ use App\Domain\Bases\Enums\BaseModerationState;
 use App\Domain\Bases\Enums\BaseStatus;
 use App\Domain\Bases\Enums\BaseVisibility;
 use App\Domain\Bases\Models\BaseLayout;
+use App\Domain\Bases\Models\BaseMetric;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Date;
@@ -47,6 +48,18 @@ class BaseLayoutFactory extends Factory
             'moderation_state' => BaseModerationState::Clean,
             'flagged_reason' => null,
         ];
+    }
+
+    /**
+     * With its `base_metrics` row, as publishing creates it, and these counters (P3-03).
+     *
+     * @param  array<string, int|float>  $counts
+     */
+    public function withMetrics(array $counts = []): static
+    {
+        return $this->afterCreating(function (BaseLayout $base) use ($counts): void {
+            (new BaseMetric)->forceFill(['base_layout_id' => $base->id, ...$counts])->save();
+        });
     }
 
     public function processing(): static

@@ -33,6 +33,21 @@ Schedule::command('assets:verify-pack')
     ->runInBackground()
     ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'assets:verify-pack']));
 
+// specs/20 §3: recent bases every 15 minutes (off :00), every published base nightly (P3-03).
+Schedule::command('bases:recompute-trending')
+    ->cron('11-59/15 * * * *')
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'bases:recompute-trending']));
+
+Schedule::command('bases:recompute-trending --all')
+    ->dailyAt('03:15')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->onFailure(fn () => Log::error('schedule.failed', ['command' => 'bases:recompute-trending --all']));
+
 // Every 15 minutes (specs/20 §3), offset to :07 so it never starts at :00.
 Schedule::command('moderation:expire-sanctions')
     ->cron('7-59/15 * * * *')

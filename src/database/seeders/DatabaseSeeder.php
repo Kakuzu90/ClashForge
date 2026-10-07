@@ -31,5 +31,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->moderator()->create(['username' => 'test_moderator', 'email' => 'moderator@example.com']);
         User::factory()->admin()->create(['username' => 'test_admin', 'email' => 'admin@example.com']);
         User::factory()->superAdmin()->create(['username' => 'test_super_admin', 'email' => 'superadmin@example.com']);
+
+        $this->call(BaseFeedSeeder::class);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Domain\Users\Services;
 
 use App\Domain\Users\Data\UpdatePrivacyData;
+use App\Domain\Users\Events\PrivacySettingsChanged;
 use App\Domain\Users\Models\PrivacySettings;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,7 @@ class PrivacySettingsService
                 ])->save();
 
                 $this->resolver->refresh($user->id);
+                PrivacySettingsChanged::dispatch($user->id);
             });
         } catch (Throwable $e) {
             // A rolled-back save must not leave its row in the cache.

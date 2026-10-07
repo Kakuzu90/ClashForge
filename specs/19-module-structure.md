@@ -64,21 +64,23 @@ src/
 ```
 app/Domain/Bases/
 ├── Actions/          PublishBase.php, ToggleLike.php, RecordView.php
-├── Contracts/        BaseRepository.php, TrendingScorer.php     ← what others may depend on
-├── Data/             PublishBaseData.php, BaseCardData.php      ← readonly DTOs (plus, where Http must
-│                     validate against Support value objects, a static `*FieldRules` facade, e.g. Users `ProfileFieldRules`;
-│                     Bases' `BaseLink`/`LayoutHash`/`TagName`/`ThLevel` get theirs with the composer, P3-08)
-├── Enums/            BaseCategory.php, BaseStatus.php, BaseVisibility.php, BaseModerationState.php
+├── Contracts/        (none yet)                                 ← what others may depend on
+├── Data/             PublishBaseData.php, BaseCardData.php, FeedFiltersData.php, FeedPageData.php
+│                     ← readonly DTOs (plus, where Http must validate against Support value objects, a static
+│                     `*FieldRules` facade, e.g. Users `ProfileFieldRules`; Bases' `BaseFieldRules` has the feed's
+│                     `tag` rule since P3-03, the composer adds the rest, P3-08)
+├── Enums/            BaseCategory.php, BaseStatus.php, BaseVisibility.php, BaseModerationState.php, FeedSort.php
 ├── Events/           BasePublished.php, BaseLiked.php
 ├── Exceptions/       (none yet: publish refusals are field errors, P3-01)
-├── Jobs/             AggregateBaseMetrics.php, RecomputeTrending.php
-├── Listeners/        PublishWhenMediaReady.php, DropLostCredits.php
+├── Jobs/             AggregateBaseMetrics.php
+├── Listeners/        PublishWhenMediaReady.php, DropLostCredits.php, ForgetCachedFeeds.php
 ├── Models/           BaseLayout.php, BaseComment.php, BaseMetric.php   ← INTERNAL
 ├── Notifications/    NewCommentNotification.php
 ├── Policies/         BaseLayoutPolicy.php, BaseCommentPolicy.php
 ├── Queries/          BaseFeedQuery.php, RelatedBasesQuery.php   ← cross-table reads → DTOs
-├── Services/         PublishBaseService.php, BaseInteractionService.php
-├── Support/          BaseLink.php, LayoutHash.php, TagName.php, ThLevel.php
+├── Services/         PublishBaseService.php, TrendingService.php, FeedDefaults.php, CacheInvalidator.php,
+│                     BaseInteractionService.php
+├── Support/          BaseLink.php, LayoutHash.php, TagName.php, ThLevel.php, FeedCursor.php, FeedCache.php
 └── BasesServiceProvider.php    (optional: bindings, policy registration, event wiring)
 ```
 
@@ -166,7 +168,7 @@ require __DIR__.'/web/accounts.php';
 | `DELETE /accounts/{ulid}` · `PUT /accounts/{ulid}/featured` | detach (current password inline, `password-confirm` limiter) and make featured, the owner's row only (P2-14) |
 | `POST /accounts/{ulid}/refresh` | manual refresh, the owner's row only, `coc-refresh` cooldown (P2-20) |
 | `POST /accounts/{ulid}/images` · `DELETE /accounts/{ulid}/images/{media}` | add a finished upload / remove one, the owner's `verified` or `disputed` row only, `account.active:content`, `coc-account-images` limiter (P2-23) |
-| `/bases` `/bases/th{n}` `/bases/{category}` `/bases/th{n}/{category}` | discovery |
+| `/bases` `/bases/th{n}` `/bases/{category}` `/bases/th{n}/{category}` | discovery: `/bases` with every filter and sort (P3-03), the landing pages with P3-10 |
 | `/bases/{slug}` | base detail (`{ulid}-{title-slug}`) |
 | `/bases/{slug}/copy` | server-side copy-click redirect |
 | `/recruit` `/recruit/clans` `/recruit/players` `/recruit/{ulid}` | recruitment |
@@ -194,7 +196,7 @@ config/
 ├── coc.php        # API: base url, tokens, timeouts, cache TTLs, rate budget, sync tiers
 ├── media.php      # collections, size/dimension/duration limits, video, variants, quotas, sweep windows, health
 ├── moderation.php # reason codes, priority weights, auto-action rules, SLA targets
-├── bases.php      # categories, TH range, trending weights, publish quotas
+├── bases.php      # categories, TH range, publish quotas, feed (page size, caps, cache TTLs, limiter), trending weights
 ├── recruitment.php# activity levels, war preferences, expiry and bump windows
 ├── platform.php   # feature flags defaults, trust-ramp thresholds, reserved usernames, auth limiters, IP-hash key, profile limits + cache TTLs
 ├── assets.php     # pack_version, manifest path, CDN base, enabled flag, placeholder + fallback rules, max_bytes per packed file, catalogue display order

@@ -1,4 +1,5 @@
 import { home } from '@/routes';
+import { index as bases } from '@/routes/bases';
 import { audit as adminAudit, dashboard as adminDashboard, system as adminSystem } from '@/routes/admin';
 import { index as adminDisputes } from '@/routes/admin/disputes';
 import { index as adminUsers } from '@/routes/admin/users';
@@ -25,7 +26,7 @@ export interface NavItem {
 // When a page ships, its task adds the Wayfinder import and `href` here.
 export const primaryNav: NavItem[] = [
     { key: 'home', label: 'Home', icon: 'home', href: () => home().url },
-    { key: 'bases', label: 'Bases', icon: 'bases' },
+    { key: 'bases', label: 'Bases', icon: 'bases', href: () => bases().url },
     { key: 'recruit', label: 'Recruit', icon: 'recruit' },
     { key: 'search', label: 'Search', icon: 'search' },
     { key: 'profile', label: 'Profile', icon: 'profile' },

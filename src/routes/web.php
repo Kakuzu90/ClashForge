@@ -6,7 +6,7 @@ use App\Http\Controllers\Dev\MediaPreviewController;
 use App\Http\Controllers\Home\HomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', HomeController::class)->name('home');
+Route::get('/', HomeController::class)->middleware('throttle:feed')->name('home');
 
 Route::get('/dev/components', ComponentGalleryController::class)->name('dev.components');
 Route::get('/dev/layouts/{layout}', LayoutPreviewController::class)
@@ -15,6 +15,7 @@ Route::get('/dev/layouts/{layout}', LayoutPreviewController::class)
 Route::get('/dev/media', MediaPreviewController::class)->name('dev.media');
 
 require __DIR__.'/web/auth.php';
+require __DIR__.'/web/bases.php';
 require __DIR__.'/web/account.php';
 require __DIR__.'/web/profile.php';
 require __DIR__.'/web/accounts.php';

@@ -73,11 +73,53 @@ export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pen
 }
 }
 namespace Bases {
+namespace Data {
+export type BaseCardData = {
+ulid: string,
+slug: string,
+title: string,
+thLevel: number,
+category: App.Domain.Bases.Enums.BaseCategory,
+hasVideo: boolean,
+cover: App.Domain.Media.Data.MediaVariantData | null,
+likes: number,
+copies: number,
+views: number,
+author: App.Domain.Users.Data.AuthorData,
+credit: App.Domain.PlayerAccounts.Data.CreditedAccountData | null,
+};
+export type FeedFiltersData = {
+thMin: number | null,
+thMax: number | null,
+category: App.Domain.Bases.Enums.BaseCategory | null,
+tag: string | null,
+minLikes: number | null,
+hasVideo: boolean,
+sort: App.Domain.Bases.Enums.FeedSort,
+};
+export type FeedOptionData = {
+value: string,
+label: string,
+};
+export type FeedOptionsData = {
+thMin: number,
+thMax: number,
+categories: App.Domain.Bases.Data.FeedOptionData[],
+sorts: App.Domain.Bases.Data.FeedOptionData[],
+suggestedTags: string[],
+};
+export type FeedPageData = {
+cards: App.Domain.Bases.Data.BaseCardData[],
+nextCursor: string | null,
+page: number,
+};
+}
 namespace Enums {
 export type BaseCategory = 'war' | 'cwl' | 'farming' | 'trophy' | 'legend' | 'anti_3_star' | 'anti_2_star' | 'hybrid' | 'progress' | 'troll';
 export type BaseModerationState = 'clean' | 'flagged' | 'under_review' | 'actioned';
 export type BaseStatus = 'draft' | 'processing' | 'published' | 'hidden' | 'removed';
 export type BaseVisibility = 'public' | 'unlisted' | 'private';
+export type FeedSort = 'trending' | 'new' | 'liked' | 'copied';
 }
 }
 namespace Clans {
@@ -418,6 +460,11 @@ leagueName: string | null,
 stale: boolean,
 fetchedAt: string | null,
 };
+export type CreditedAccountData = {
+ulid: string,
+name: string,
+thLevel: number | null,
+};
 export type DisputeClaimData = {
 username: string,
 methodLabel: string,
@@ -639,6 +686,11 @@ export type VerifyOutcome = 'verified' | 'invalid_token' | 'not_found' | 'unavai
 }
 namespace Users {
 namespace Data {
+export type AuthorData = {
+username: string,
+displayName: string | null,
+avatarUrl: string | null,
+};
 export type AvatarData = {
 status: App.Domain.Media.Enums.MediaStatus | null,
 url512: string | null,

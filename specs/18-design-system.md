@@ -295,7 +295,9 @@ stale (dimmed with "data from 3 days ago") · suspended (owner only, danger pill
 Desaturating and dimming apply to our frame and text only; game assets on the card are never
 filtered or faded (§2.1). The clan row reads "No clan" outside a clan and "Clan not shared" when the
 owner hides it (P2-04). `hero`, `standard` and `compact` shipped with P2-04; `mini`, with the
-owner's avatar for base attribution, comes with base cards (P3-01). Profile cards carry no avatar:
+owner's avatar for base attribution, comes with base cards: `GamePlayerMini` (P3-03) takes the
+author (avatar and display name for a public profile, else the username only) and the credited
+account (name and TH badge, linking to its page), on one line. Profile cards carry no avatar:
 the cover band already shows it (P2-22). `standard` is the list card (owner decision 2026-10-06,
 P2-22): the XP level burst in place of the Town Hall badge, no stat blocks and no clan row, the
 name on one line, the disputed state as an "Under review" pill instead of the ribbon, and an
@@ -307,6 +309,10 @@ Anatomy: 16:9 screenshot with a subtle top-to-bottom scrim, TH badge (top-left),
 (likes/copies/views), bookmark toggle (top-right on hover/always on touch).
 States: default · hover (lift 2px, border brightens) · processing (skeleton + "processing video") ·
 hidden-by-moderation (staff only, red border) · no-image fallback (generated gradient + TH numeral).
+P3-03 ships `GameBaseCard` with default, loading and the fallback (the TH tier colour fading into
+the surface); the cover is the first screenshot's `card` rendition, else the video poster. The card
+links to the base page with P3-11; processing and staff-hidden come with P3-08 and P3-06; the
+bookmark toggle with P3-04.
 
 **ThBadge** — hexagon-ish chunky badge (original shape), tier colour, numeral always visible,
 sizes sm/md/lg. Optional unmodified Town Hall image slot resolved through `GameAssetResolver`;
@@ -317,7 +323,8 @@ optional delta chip (`+142` green / `-30` red) comparing to the previous snapsho
 page: the newest snapshot at least `coc.display.delta_days` old; no chip for no change; P2-04). A
 missing value reads "Not available". Counts up on first view (respecting reduced-motion; P3-04).
 
-**ResourceCounter** — small icon + number pill used for likes, copies, views, comments. Uses
+**ResourceCounter** (`UiResourceCounter`, P3-03) — small icon + number pill used for likes, copies, views, comments; the
+accessible name reads the count and the word ("1,240 likes"). Uses
 **our** icon set: these count platform actions, not game entities, so no game asset belongs here.
 Interactive variant (like, bookmark) pops on activation.
 
@@ -387,9 +394,16 @@ Each page below specifies its structure and its three required states
 
 ### Home feed (`/`)
 Hero strip (logged-out: value proposition + register CTA, "Create your account" since P1-08;
-logged-in: featured player card + quick actions) → TH filter chip row (sticky on scroll) → sort tabs (Trending / New / Most Copied) →
-base card grid → load-more.
-*Empty:* "No bases match these filters" + reset-filters action + a "browse all TH levels" link.
+logged-in: featured player card + quick actions) → TH filter chip row (sticky on scroll, under the
+56px header; signed in, it starts at the featured account's TH ±1 as a removable "your Town Hall"
+chip) → sort tabs (Trending / New / Most Copied) → base card grid → load-more (the next page is
+appended, the URL keeps the filters only; P3-03). `/bases` has the same chip row and grid, every
+FR-BASE-13 filter and sort in a sticky 16rem left panel from `lg` and a bottom sheet below it,
+behind a "Filters (n)" button. On `/bases` the panel and the chip row stay put while only the cards
+scroll; panel changes apply at once (text fields on blur or Enter), the sheet's with its "Apply
+filters" button. Every filter, TH or sort change scrolls back to the top.
+*Empty:* "No bases match these filters" + reset-filters action (on `/`, that is every TH level) +
+a "Browse all bases" link to `/bases`.
 *Loading:* 6–9 base-card skeletons in grid; chip row renders immediately.
 *Error:* inline error card with retry; the chrome and navigation stay usable.
 

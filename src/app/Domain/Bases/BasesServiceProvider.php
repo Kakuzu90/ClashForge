@@ -3,6 +3,7 @@
 namespace App\Domain\Bases;
 
 use App\Domain\Bases\Listeners\DropLostCredits;
+use App\Domain\Bases\Listeners\ForgetCachedFeeds;
 use App\Domain\Bases\Listeners\PublishWhenMediaReady;
 use App\Domain\Bases\Models\BaseLayout;
 use App\Domain\Bases\Policies\BaseLayoutPolicy;
@@ -18,5 +19,6 @@ class BasesServiceProvider extends ServiceProvider
         Gate::policy(BaseLayout::class, BaseLayoutPolicy::class);
         Event::listen(MediaReady::class, PublishWhenMediaReady::class);
         Event::subscribe(DropLostCredits::class);
+        Event::subscribe(ForgetCachedFeeds::class);
     }
 }

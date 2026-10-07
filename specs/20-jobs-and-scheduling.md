@@ -69,7 +69,7 @@ for a full temp volume does not.
 | `PublishBaseWhenMediaReadyJob` | `MediaReady` listener | Flips `processing → published` when all attached media are ready |
 | `AggregateBaseViewsJob` | Hourly schedule | Rolls `base_view_events` into `base_metrics.views_count`, then prunes >30d |
 | `AggregateBaseCopiesJob` | Hourly schedule | Same for copy events |
-| `RecomputeTrendingJob` | Every 15 min | Only bases with activity in the last 7 days + a full pass nightly |
+| `bases:recompute-trending` (command, runs inline) | Every 15 min; `--all` nightly | Bases published in the last `bases.trending.active_days` (7), every published base with `--all`; chunked, one upsert per chunk; bumps the feed cache version (P3-03). "Activity in the last 7 days" replaces the publish window with P3-04 |
 | `DetectDuplicateLayoutJob` | `BasePublished` | Cross-author hash match → Low-priority moderation case |
 | `IndexSearchDocumentJob` | `BasePublished`, profile/account updates, moderation actions | No-op on the Postgres driver (generated columns handle it); real work once a search engine exists |
 
@@ -119,7 +119,7 @@ for a full temp volume does not.
 * / 1 min    platform:heartbeat            (the one task allowed at :00; withoutOverlapping(5))
 2-59/5      coc:sync-accounts            (withoutOverlapping, onOneServer; offset off :00)
 * / 5 min    platform:check-health
-* / 15 min   bases:recompute-trending
+11-59/15     bases:recompute-trending      (offset off :00; `--all` daily at 03:15)
 * / 15 min   moderation:expire-sanctions   (at :07, :22, :37, :52, so never at :00)
 hourly :05   coc:sync-clans               (only tracked clans)
 hourly :10   bases:aggregate-metrics       (views + copies)
@@ -132,6 +132,7 @@ daily  02:15 notifications:prune
 daily  02:30 media:purge-deleted
 daily  02:45 coc:compact-snapshots
 daily  03:00 stats:reconcile
+daily  03:15 bases:recompute-trending --all
 daily  03:30 moderation:detect-anomalies
 daily  04:00 platform:anonymize-deleted
 daily  04:10 auth:process-unverified       (platform.auth.unverified_schedule_time)

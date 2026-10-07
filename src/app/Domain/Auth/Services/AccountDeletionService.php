@@ -10,6 +10,7 @@ use App\Domain\Audit\Services\AuditLogger;
 use App\Domain\Auth\Contracts\DeletionHold;
 use App\Domain\Auth\Contracts\DeletionStep;
 use App\Domain\Auth\Enums\UserStatus;
+use App\Domain\Auth\Events\AccountDeletionRequested;
 use App\Domain\Auth\Models\UsernameHistory;
 use App\Domain\Media\Services\MediaLifecycleService;
 use App\Domain\Notifications\Services\NotificationCleanupService;
@@ -58,6 +59,7 @@ class AccountDeletionService
             $this->sessions->endOthers($account, null);
 
             DB::afterCommit(fn () => CacheInvalidator::profile($account->username));
+            AccountDeletionRequested::dispatch($account->id);
         });
 
         Log::channel('security')->info('auth.deletion_requested', ['user' => $actor->ulid]);

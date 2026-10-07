@@ -44,9 +44,8 @@ of defence, not the first.
 | `coc-rate:global:*`, `coc-rate:background:*`, `coc-rate:key:{id}` | Rate budgets (`RateLimiter`) | 1 s / 60 s | Automatic |
 | `coc:key:{id}:unhealthy` | Refused key marker (reason, since) | 1 h (`coc.key_pool.unhealthy_ttl`) | A successful `coc:check-health` probe |
 | `coc:key:cursor` | Round-robin counter | 24 h (`coc.key_pool.cursor_ttl`) | — (losing it restarts the rotation) |
-| `feed:trending:th{n}:p{page}` | Base card DTO list | 5 min | Trending recompute, base publish/hide |
-| `feed:new:p{page}` | Base card DTO list | 60 s | Base publish |
-| `feed:category:{cat}:th{n}:p{page}` | Base card DTO list | 5 min | Trending recompute |
+| `feed:v{n}:{sort}:{th}:{category}:…:p{page}[:{position}]` | One feed page (`FeedPageData`), trending or new orders filtered by TH range and category only, pages 1–`bases.feed.cache_max_page` (5); tag, likes and video filters and deeper pages run live (P3-03) | 5 min (`bases.feed.cache_ttl_trending`), New 60 s (`cache_ttl_new`) | The `feed:version` bump (§4 mechanism 3) by `Bases\Services\CacheInvalidator::baseFeeds()`: base publish, sanction applied or lifted, a credited account released or transferred, a privacy change, a deletion request, every trending run; base hide/remove/visibility change from P3-06/P3-09 |
+| `feed:version` | The feed key version | 30 days | Incremented by the invalidators above |
 | `base:{ulid}:view` | Rendered detail view-model (not HTML) | 5 min | Base update, like, comment, moderation |
 | `base:{ulid}:related` | Related base ids | 15 min | Trending recompute |
 | `profile:{username}` | Public profile view-model (viewer-independent; `user_stats` values up to 5 min old). Holds no CoC account data: the profile's cards are read per request, since syncs change them often (P2-22). Key lowercased (usernames are case-insensitive); stored with the version in `profile:{username}:version`, so a reader that started before a change cannot serve its stale build | 5 min (`platform.profile.cache_ttl`) | Profile update, username change (old and new name), avatar set/remove/ready, privacy update, base publish, `user_stats` writes (P3-04) |
@@ -83,7 +82,8 @@ Three mechanisms, in order of preference:
 3. **Versioned key prefixes** for wide invalidations that would otherwise need tags:
    `feed:v{n}:...` where `{n}` comes from a cached integer. Bumping the version orphans the old keys
    (they expire on their own TTL) and is O(1). Used when the trending algorithm changes or a
-   deploy changes a DTO shape.
+   deploy changes a DTO shape, and for every feed invalidation (P3-03): a feed page depends on
+   too many filter combinations to delete key by key.
 
 **Rule:** a cached view-model that includes user-generated content must be invalidated by the
 moderation action that hides it, with no TTL reliance. Hidden content appearing for five more
@@ -91,9 +91,10 @@ minutes is a moderation failure, not a caching trade-off.
 
 ## 5. What is deliberately not cached
 
-- **The authenticated base feed.** It is personalised (TH preference, bookmarks, likes) and the
-  underlying query is already index-covered and sub-100 ms. Caching it per user would multiply the
-  cache size by the user count for no gain.
+- **The authenticated base feed, per user.** It is personalised (TH preference, bookmarks, likes)
+  and the underlying query is already index-covered and sub-100 ms. Caching it per user would
+  multiply the cache size by the user count for no gain. Its viewer-independent card list shares
+  the anonymous feed keys (§3); only the viewer's own state is added per request (P3-03).
 - **Counters.** They live in `base_metrics`/`user_stats` columns. A cached counter has two sources
   of truth and will drift.
 - **Authorization decisions.** Policies run per request. Only the coarse capability flags

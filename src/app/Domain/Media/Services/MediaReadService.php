@@ -110,6 +110,60 @@ class MediaReadService
     }
 
     /**
+     * One image per parent for a list of many parents (feed cards, P3-03), in one query: the first
+     * `ready` item, by position, of the first source that has one. A source is a collection and
+     * the rendition to show from it, such as a screenshot's `card`, then a video's `poster`.
+     * Parents with none are left out.
+     *
+     * @param  Model  $type  any instance of the parents' model, for its morph class
+     * @param  list<int>  $parentIds
+     * @param  list<array{MediaCollection, VariantName}>  $sources  in order of preference
+     * @return array<int, MediaVariantData> keyed by parent id
+     */
+    public function firstReadyVariants(Model $type, array $parentIds, array $sources): array
+    {
+        if ($parentIds === [] || $sources === []) {
+            return [];
+        }
+
+        $rows = MediaVariant::query()
+            ->join('media', 'media.id', '=', 'media_variants.media_id')
+            ->where('media.attachable_type', $type->getMorphClass())
+            ->whereIn('media.attachable_id', $parentIds)
+            ->where('media.status', MediaStatus::Ready)
+            ->whereNull('media.deleted_at')
+            ->where(function ($query) use ($sources): void {
+                foreach ($sources as [$collection, $variant]) {
+                    $query->orWhere(fn ($q) => $q->where('media.collection', $collection)->where('media_variants.variant', $variant));
+                }
+            })
+            ->orderBy('media.position')->orderBy('media.id')
+            ->get(['media.attachable_id', 'media.collection', 'media.visibility', 'media_variants.variant', 'media_variants.path', 'media_variants.width', 'media_variants.height']);
+
+        $rank = [];
+        foreach ($sources as $i => [$collection, $variant]) {
+            $rank[$collection->value.'/'.$variant->value] = $i;
+        }
+
+        $best = [];
+        foreach ($rows as $row) {
+            $parent = (int) $row->getAttribute('attachable_id');
+            $order = $rank[$row->getAttribute('collection').'/'.$row->variant->value];
+
+            if (! isset($best[$parent]) || $order < $best[$parent][0]) {
+                $best[$parent] = [$order, $row];
+            }
+        }
+
+        return array_map(fn (array $pick): MediaVariantData => new MediaVariantData(
+            name: $pick[1]->variant,
+            url: $this->urls->url($pick[1]->path, MediaVisibility::from((string) $pick[1]->getAttribute('visibility'))),
+            width: $pick[1]->width,
+            height: $pick[1]->height,
+        ), $best);
+    }
+
+    /**
      * The renditions of `ready` media, keyed by variant name; empty for anything else.
      *
      * @return array<string, MediaVariantData>

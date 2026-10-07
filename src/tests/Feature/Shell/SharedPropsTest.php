@@ -21,8 +21,10 @@ it('shares flash messages from the session', function () {
 
 it('never exposes private keys in shared props', function () {
     $props = $this->get('/')->viewData('page')['props'];
+    // The home feed's own props (P3-03), not shared ones.
+    $home = ['filters', 'thFromAccount', 'options', 'cards', 'nextCursor'];
 
-    expect(array_keys($props))->toEqualCanonicalizing(['errors', 'auth', 'flash', 'unreadCount', 'features', 'cocApi', 'meta'])
+    expect(array_values(array_diff(array_keys($props), $home)))->toEqualCanonicalizing(['errors', 'auth', 'flash', 'unreadCount', 'features', 'cocApi', 'meta'])
         ->and(json_encode($props))->not->toContain('email', 'password', 'ip', 'role', 'token');
 });
 

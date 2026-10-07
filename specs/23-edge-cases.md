@@ -43,12 +43,12 @@ Primary set in [13 §9](13-claiming-workflow.md). Additional:
 |---|---|
 | Base link points to a different TH than the selected one | We cannot parse the layout contents from the link, so we cannot validate this. A community report reason (`wrong_category`) handles it, and repeat offenders lose publishing rights |
 | Base link expires or is revoked in game | Nothing we can detect. Users can report a dead link; three reports auto-flag the base with a "link may be broken" notice |
-| Two users publish the same layout hash | Both published; the later one is flagged for a Low-priority review; trending ranking penalises duplicate clusters so the feed does not fill with the same base |
+| Two users publish the same layout hash | Both published; the later one is flagged for a Low-priority review; trending ranking penalises duplicate clusters so the feed does not fill with the same base: only the earliest published base of a layout keeps its full score, later ones are multiplied by `bases.trending.duplicate_penalty` (P3-03) |
 | A user republishes their own base to game the feed | Blocked by `UNIQUE (user_id, layout_hash)`. Deleting and republishing is detected by the same hash and rate-limited |
 | Video finishes processing after the base was deleted | The processing job checks the parent's existence on completion and discards the output |
 | Screenshot uploaded but the user never publishes | Media expires in 24 h and is swept |
 | Base published, then the author detaches the credited CoC account | Base stays; the credit chip disappears; authorship is unchanged |
-| Author is banned | Bases hidden, not deleted (so an overturned appeal restores them); likes and comments preserved |
+| Author is banned | Bases hidden, not deleted (so an overturned appeal restores them); likes and comments preserved. Hidden at read time (also while suspended or after a deletion request; not when restricted), so lifting the sanction restores them untouched (P3-03) |
 | A base goes viral and gets 50k views in an hour | View events dedupe per visitor per day; aggregation is hourly; the counter is a column. No hot-row contention because the counter update is one row per hour, not per view |
 | Comment thread on a deleted base | Cascade-deleted with the base |
 | Author deletes a comment that has replies | Body replaced with a tombstone; replies remain readable |

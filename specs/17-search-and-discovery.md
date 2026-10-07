@@ -77,7 +77,7 @@ Facet counts come from a second aggregate query over the same filtered set, capp
 
 | Rule | Reason |
 |---|---|
-| Keyset pagination (`WHERE (score, id) < (?, ?)`) for feeds, offset pagination only for admin tables | `OFFSET 10000` is a table scan |
+| Keyset pagination (`WHERE (score, id) < (?, ?)`) for feeds, offset pagination only for admin tables. A feed cursor is encrypted with the app key and carries the position, the page number and its feed's filter signature, so it cannot be read, forged, moved to another feed or reset to dodge the page cap; a bad one is a field error (P3-03) | `OFFSET 10000` is a table scan |
 | Max 50 results per page, max page 100 for anonymous users | Bounds the worst case and the scraping cost |
 | A minimum term length of 2 characters; 1-character terms are rejected | Prevents whole-index scans |
 | Every filter combination in the UI must be index-covered; a test asserts `EXPLAIN` shows no seq scan on tables > 10k rows | Catches regressions |
@@ -97,11 +97,17 @@ final = 0.5 * normalized(ts_rank_cd)
       - penalties(duplicate_layout_cluster, reported_and_dismissed_recently)
 ```
 
-`trending_score` is precomputed in `base_metrics` every 15 minutes:
+`trending_score` is precomputed in `base_metrics` every 15 minutes for bases published in the last
+`bases.trending.active_days` (7), and nightly for every published base (P3-03):
 
 ```
 trending = (2*likes + 3*copies + 1.5*comments + 0.1*views) / (hours_since_publish + 2)^1.5
 ```
+
+Weights, offset and exponent are `bases.trending.*`. Within one layout hash only the earliest
+published base keeps its full score; later copies are multiplied by
+`bases.trending.duplicate_penalty` (0.25), so one popular layout does not fill the feed
+([23 §3](23-edge-cases.md), P3-03).
 
 Copies weigh more than likes because copying a base is the action that proves value. Views weigh
 least because they are the easiest to inflate. The exponent damps old-but-popular content so the
@@ -109,14 +115,16 @@ feed stays fresh.
 
 Anti-gaming: likes and copies from accounts younger than 7 days or without a verified CoC account
 contribute at 25% weight; self-interactions and interactions from the same IP hash cluster are
-excluded from the score (but still shown as counts, to avoid tipping off manipulators).
+excluded from the score (but still shown as counts, to avoid tipping off manipulators). These need
+the interaction rows and join with P3-04; until then the score reads the counter columns.
 
 ## 6. Discovery surfaces beyond search
 
 | Surface | Content | Refresh |
 |---|---|---|
-| Home feed (anonymous) | Trending bases, mixed TH levels, with a TH filter bar | cached 5 min |
-| Home feed (logged in) | Trending, filtered to the user's TH ±1 by default, plus followed authors (P2) | cached 60 s per TH bucket |
+| Home feed (anonymous) | Trending bases, mixed TH levels, with a TH filter bar and the Trending / New / Most copied tabs | cached 5 min (New 60 s) |
+| Home feed (logged in) | The same, starting at the featured account's TH ±1 (`bases.feed.default_th_spread`), shown as a removable chip with "All" one tap away (`th=all`); plus followed authors (P2) | the viewer-independent list shares the anonymous cache, per TH range; the viewer's likes and bookmarks join per request (P3-04) |
+| `/bases` | Every FR-BASE-13 filter and sort (P3-03) | trending and new by TH and category cached as above; tag, likes and video filters live |
 | "New bases" | Reverse-chronological, published only | cached 60 s |
 | Category pages | `/bases/war`, `/bases/farming`, ... | cached 5 min |
 | TH pages | `/bases/th17`, high-intent SEO landing pages | cached 5 min |

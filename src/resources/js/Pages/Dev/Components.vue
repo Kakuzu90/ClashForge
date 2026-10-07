@@ -12,7 +12,10 @@ import AccountImageGallery from '@/Components/accounts/AccountImageGallery.vue';
 import GameAccountProfile from '@/Components/game/GameAccountProfile.vue';
 import GameAsset, { type GameAssetSize } from '@/Components/game/GameAsset.vue';
 import GameClanChip from '@/Components/game/GameClanChip.vue';
+import GameBaseCard from '@/Components/game/GameBaseCard.vue';
 import GamePlayerCard, { type PlayerCardVariant } from '@/Components/game/GamePlayerCard.vue';
+import GamePlayerMini from '@/Components/game/GamePlayerMini.vue';
+import UiResourceCounter from '@/Components/ui/UiResourceCounter.vue';
 import GameProgressionGrid from '@/Components/game/GameProgressionGrid.vue';
 import GameThBadge, { type ThBadgeSize } from '@/Components/game/GameThBadge.vue';
 import GameFeaturedBadge from '@/Components/game/GameFeaturedBadge.vue';
@@ -318,11 +321,36 @@ const sections = [
     'Game assets',
     'Town Hall badges',
     'Player cards',
+    'Base cards',
     'Progression grid',
     'Account images',
     'Empty state',
     'Notifications',
     'Admin',
+];
+// Base cards (P3-03): with a cover, the no-image fallback per tier, no credit, a video.
+const baseAuthor: App.Domain.Users.Data.AuthorData = { username: 'ringmaster', displayName: 'Ring Master', avatarUrl: null };
+const baseCredit: App.Domain.PlayerAccounts.Data.CreditedAccountData = { ulid: '01jabcdefghjkmnpqrstvwxyz0', name: 'Chief Ana', thLevel: 16 };
+const baseCard = (overrides: Partial<App.Domain.Bases.Data.BaseCardData>): App.Domain.Bases.Data.BaseCardData => ({
+    ulid: '01jbase000000000000000000a',
+    slug: '01jbase000000000000000000a-anti-root-ring',
+    title: 'Anti-root ring with a compact core and a very long title that clamps after two lines',
+    thLevel: 16,
+    category: 'war',
+    hasVideo: false,
+    cover: null,
+    likes: 1240,
+    copies: 318,
+    views: 20450,
+    author: baseAuthor,
+    credit: baseCredit,
+    ...overrides,
+});
+const baseCards: { label: string; card: App.Domain.Bases.Data.BaseCardData | null }[] = [
+    { label: 'No image, TH 16', card: baseCard({}) },
+    { label: 'No image, TH 9, video, no credit', card: baseCard({ ulid: '01jbase000000000000000000b', thLevel: 9, hasVideo: true, credit: null, title: 'Farming box' }) },
+    { label: 'No image, TH 4, nothing yet', card: baseCard({ ulid: '01jbase000000000000000000c', thLevel: 4, likes: 0, copies: 0, views: 1, title: 'First base' }) },
+    { label: 'Loading', card: null },
 ];
 const notificationSamples: App.Domain.Notifications.Data.NotificationItemData[] = [
     {
@@ -728,6 +756,28 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                         <GameClanChip :clan="sampleClan" />
                         <GameClanChip :clan="{ ...sampleClan, roleLabel: null, level: null }" />
                     </div>
+                </div>
+            </section>
+
+            <section :id="anchor('Base cards')" aria-labelledby="h-base-cards">
+                <h2 id="h-base-cards" class="font-display text-h1">Base cards</h2>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div v-for="sample in baseCards" :key="sample.label" class="flex flex-col gap-1">
+                        <span class="text-xs text-fg-muted uppercase">{{ sample.label }}</span>
+                        <GameBaseCard :card="sample.card" category-label="War" />
+                    </div>
+                </div>
+                <h3 class="mt-6 text-h3 text-fg">Mini player card</h3>
+                <div class="mt-2 flex flex-col gap-3">
+                    <GamePlayerMini :author="baseAuthor" :credit="baseCredit" />
+                    <GamePlayerMini :author="{ ...baseAuthor, displayName: null }" :credit="null" />
+                </div>
+                <h3 class="mt-6 text-h3 text-fg">Resource counters</h3>
+                <div class="mt-2 flex flex-wrap gap-4">
+                    <UiResourceCounter kind="likes" :count="1" />
+                    <UiResourceCounter kind="copies" :count="318" />
+                    <UiResourceCounter kind="views" :count="20450" />
+                    <UiResourceCounter kind="comments" :count="12" />
                 </div>
             </section>
 

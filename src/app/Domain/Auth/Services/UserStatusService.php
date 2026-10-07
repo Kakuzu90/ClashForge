@@ -6,6 +6,8 @@ use App\Domain\Auth\Data\AccountStatusData;
 use App\Domain\Auth\Enums\UserStatus;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -60,6 +62,23 @@ class UserStatusService
     public function syncVerifiedAccounts(int $userId, int $count): void
     {
         User::query()->withTrashed()->whereKey($userId)->update(['verified_accounts_count' => max(0, $count)]);
+    }
+
+    /**
+     * Ids of accounts whose public content is hidden (specs/12 §7, specs/04 §1): suspended while
+     * the suspension runs, banned (anonymised accounts included), or deletion requested. A subquery for another
+     * module's `whereNotIn`, so a feed drops them in its own query and shows them again when the
+     * status lifts, with nothing to keep in sync (P3-03).
+     */
+    public function hiddenAuthorIds(): Builder
+    {
+        $now = Date::now();
+
+        return User::query()->withTrashed()->toBase()->select('id')
+            ->where(fn (Builder $query) => $query
+                ->whereIn('status', [UserStatus::Banned->value, UserStatus::PendingDeletion->value])
+                ->orWhere(fn (Builder $q) => $q->where('status', UserStatus::Suspended->value)
+                    ->where(fn (Builder $q) => $q->whereNull('status_expires_at')->orWhere('status_expires_at', '>', $now))));
     }
 
     public function effectiveStatus(User $user): UserStatus
