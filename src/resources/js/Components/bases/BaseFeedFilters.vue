@@ -4,7 +4,7 @@ import UiInput from '@/Components/ui/UiInput.vue';
 import UiPill from '@/Components/ui/UiPill.vue';
 import UiSelect from '@/Components/ui/UiSelect.vue';
 import UiToggle from '@/Components/ui/UiToggle.vue';
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 
 type Filters = App.Domain.Bases.Data.FeedFiltersData;
 
@@ -12,9 +12,22 @@ type Filters = App.Domain.Bases.Data.FeedFiltersData;
 // desktop panel (`instant`) each change applies at once, text fields when they lose focus or on
 // Enter, so the panel needs no button at its foot; in the phone sheet they apply together. The page
 // decides where it sits (specs/18 §5).
-const props = defineProps<{ filters: Filters; options: App.Domain.Bases.Data.FeedOptionsData; instant?: boolean }>();
+const props = defineProps<{
+    filters: Filters;
+    options: App.Domain.Bases.Data.FeedOptionsData;
+    instant?: boolean;
+    /** Search facets: hits per category, shown in the category labels. */
+    categoryCounts?: Record<string, number>;
+}>();
 
 const emit = defineEmits<{ apply: [patch: Partial<Filters>]; reset: [] }>();
+
+const categories = computed(() =>
+    props.options.categories.map((option) => {
+        const count = props.categoryCounts?.[option.value];
+        return count ? { ...option, label: `${option.label} (${count})` } : option;
+    }),
+);
 
 const category = ref<string | null>(null);
 const tag = ref('');
@@ -45,7 +58,7 @@ function apply() {
         tag: tag.value.trim() || null,
         minLikes: Number.isFinite(likes) && likes > 0 ? likes : null,
         hasVideo: video.value,
-        sort: (sort.value as Filters['sort']) ?? 'trending',
+        sort: (sort.value as Filters['sort']) ?? props.filters.sort,
     });
 }
 </script>
@@ -62,7 +75,7 @@ function apply() {
             label="Category"
             searchable
             placeholder="Any category"
-            :options="[{ value: '', label: 'Any category' }, ...options.categories]"
+            :options="[{ value: '', label: 'Any category' }, ...categories]"
             @update:model-value="changed"
         />
         <div class="flex flex-col gap-2" @change="changed">

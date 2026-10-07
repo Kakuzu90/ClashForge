@@ -1,4 +1,4 @@
-import { isActive, visibleNavItems, type NavItem } from '@/navigation';
+import { isActive, primaryNav, visibleNavItems, type NavItem } from '@/navigation';
 import { describe, expect, it } from 'vitest';
 
 const items: NavItem[] = [
@@ -15,6 +15,13 @@ describe('navigation', () => {
     it('requires the shared ability when the item declares one', () => {
         expect(visibleNavItems(items, { 'access-admin': true }).map((i) => i.key)).toEqual(['home', 'admin']);
         expect(visibleNavItems(items, { 'access-admin': false }).map((i) => i.key)).toEqual(['home']);
+    });
+
+    it('puts Search in the bottom tabs only: the top bar has its own search link (P3-05)', () => {
+        const search = visibleNavItems(primaryNav, {}).find((item) => item.key === 'search');
+
+        expect(search?.url).toBe('/search');
+        expect(search?.tabOnly).toBe(true);
     });
 
     it('matches home exactly and sections by prefix', () => {

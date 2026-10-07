@@ -119,7 +119,7 @@ class BaseFeedRequest extends FormRequest
      */
     public function sorts(): array
     {
-        return FeedSort::cases();
+        return FeedSort::feed();
     }
 
     /**

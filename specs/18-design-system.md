@@ -361,10 +361,10 @@ titled plain box for the dashboard panels, numbers in the body font at `--text-h
 ## 5. Layout
 
 ### Mobile (< 768px) — the primary target
-- Sticky top bar: logo, search icon, notification bell (signed in: a link to `/notifications`, a gold
+- Sticky top bar: logo, search icon (a link to `/search` at every width, P3-05), notification bell (signed in: a link to `/notifications`, a gold
   count badge capped at "99+", the count in its `aria-label` and a polite live region).
 - **Bottom tab navigation** (5 items, 56px + safe-area inset): Home · Bases · Recruit · Market ·
-  Profile. Market is hidden until Phase 6; the slot is Search until then. An item appears only once
+  Profile. Market is hidden until Phase 6; the slot is Search until then (a bottom tab only: on desktop the top bar's search link stands for it, P3-05). An item appears only once
   its page exists (owner decision, P0-04), so early phases show fewer tabs.
 - Single-column content, 16px gutters.
 - Filters open as a bottom sheet, not an inline panel.
@@ -521,6 +521,26 @@ the account up" (a modal with the current password) or "Withdraw my claim" (a co
 "An image was removed by staff because it showed an identity document.", P2-25). The account page's "Ownership is under
 review" alert gains "See the dispute" for the holder, and the verify page reads "Someone claims …"
 for a `disputed` row instead of showing the attach steps.
+
+### Search (`/search`, P3-05)
+Never indexed. Title, then a search form (one text field, "Search" button). Below it, the filters
+read from the text as removable brand chips ("Searching for: Town Hall 17 ×"); removing one removes
+its words. Tabs All · Bases · Players · Accounts; each tab keeps only the text, so the text's
+filters apply again.
+- **All:** grouped sections, Bases (up to 6 BaseCards in the feed grid), Players (5 rows: avatar,
+  name, @username, two lines of bio) and Accounts (5 standard PlayerCards, as on the profile: XP
+  level, name, tag, sync line, league; owner feedback 2026-10-07), each with "See all …" when there
+  are more.
+- **Bases:** the `/bases` layout (sticky filter panel on desktop, bottom sheet on phones, the TH chip
+  row, the grid with "Load more"), plus "Best match" as the default sort and facet counts beside
+  each Town Hall chip (`TH 16 · 12`) and category ("War (3)"). Changing a filter writes the parsed
+  ones out explicitly and drops their words from the text.
+- **Players / Accounts:** one column of rows or PlayerCards (two from md) with "Load more".
+- **States:** no text: "Find bases, players and accounts" with example searches; a tag with no
+  account to show: "No player with #TAG on Clash Commons yet" (+ "Attach your account" signed in);
+  nothing found: "Nothing found for “…”"; a tab that needs words when only filters were typed:
+  "Add a name to search players"; skeletons while a search loads; an inline error card with
+  "Try again" (a 429 asks to wait).
 
 ### Base composer (`/bases/create`)
 Step-less single form: media dropzone first (upload begins immediately, progress per file) →

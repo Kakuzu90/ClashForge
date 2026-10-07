@@ -166,6 +166,50 @@ logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Search\SearchController::__invoke
+* @see app/Http/Controllers/Search/SearchController.php:28
+* @route '/search'
+*/
+export const search = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: search.url(options),
+    method: 'get',
+})
+
+search.definition = {
+    methods: ["get","head"],
+    url: '/search',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Search\SearchController::__invoke
+* @see app/Http/Controllers/Search/SearchController.php:28
+* @route '/search'
+*/
+search.url = (options?: RouteQueryOptions) => {
+    return search.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Search\SearchController::__invoke
+* @see app/Http/Controllers/Search/SearchController.php:28
+* @route '/search'
+*/
+search.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: search.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Search\SearchController::__invoke
+* @see app/Http/Controllers/Search/SearchController.php:28
+* @route '/search'
+*/
+search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: search.url(options),
+    method: 'head',
+})
+
+/**
 * @see \App\Http\Controllers\Web\HealthController::__invoke
 * @see app/Http/Controllers/Web/HealthController.php:16
 * @route '/health'

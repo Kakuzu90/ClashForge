@@ -198,7 +198,7 @@ config/
 ├── moderation.php # reason codes, priority weights, auto-action rules, SLA targets
 ├── bases.php      # categories, TH range, publish quotas, feed (page size, caps, cache TTLs, limiter), trending weights
 ├── recruitment.php# activity levels, war preferences, expiry and bump windows
-├── platform.php   # feature flags defaults, trust-ramp thresholds, reserved usernames, auth limiters, IP-hash key, profile limits + cache TTLs
+├── platform.php   # feature flags defaults, trust-ramp thresholds, reserved usernames, auth limiters, IP-hash key, profile limits + cache TTLs, search (page sizes, term length, caches, limiter, ranking weights, P3-05)
 ├── assets.php     # pack_version, manifest path, CDN base, enabled flag, placeholder + fallback rules, max_bytes per packed file, catalogue display order
 ```
 

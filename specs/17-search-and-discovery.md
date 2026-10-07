@@ -11,9 +11,14 @@ Vue search page ─▶ SearchController ─▶ SearchService (interface)
   reloads)                                └── MeilisearchDriver      (Phase 7, if triggered)
 ```
 
-`SearchService::search(SearchQuery $q): SearchResults` — `SearchQuery` is a typed object
-(term, types[], filters, sort, page), `SearchResults` carries typed result DTOs plus facet counts.
-No caller ever writes SQL or an engine query.
+`SearchService::search(SearchQuery $q, ?User $viewer): SearchResultsData` — `SearchQuery` is a
+typed object (term as typed, result type: all / bases / players / accounts, the base filters and
+sort, cursor); the viewer decides whether `members` profiles are listed. `SearchResultsData` carries
+the parsed filters and one section per kind (typed hits, "has more", next cursor, base facet
+counts). `hasSearchableText()` and `acceptsCursor()` let the Form Request turn bad text or a bad
+cursor into field errors; `reindex()` backs `search:reindex`. Each kind is a `SearchSource`
+implemented by the module that owns its table and container-tagged, so Search never reads another
+module's tables (P3-05). No caller ever writes SQL or an engine query.
 
 ## 2. What is searchable
 
@@ -33,13 +38,19 @@ and processing bases. **Enforced in the query builder**, never as a post-filter 
 ## 3. Postgres implementation
 
 ### Text search
-- A `search_vector tsvector` column per searchable table, maintained as a **generated column** where
-  the source is a single table (`profiles`, `base_layouts`), or by a trigger where it aggregates
-  child rows (base tags).
+- A `search_vector tsvector` column on `profiles` and `base_layouts`, kept by **triggers**: the
+  profile vector reads `users.username`, and the base vector aggregates its tags, so neither can be
+  a generated column. A write and its vector change in the same transaction ([23 §9](23-edge-cases.md)).
+  CoC accounts use the expression index `to_tsvector('simple', ign)` (P3-05).
 - Weights: `A` = title/name/ign, `B` = tags, `C` = description/bio, `D` = secondary.
+- Configurations: names and tags use `simple` (no stemming, so IGNs and usernames match as typed),
+  titles, descriptions and bios use `english`.
 - `GIN` index on each `search_vector`.
-- Query: `websearch_to_tsquery('english', :term)` — it handles quoted phrases and `-exclusions`
-  from user input safely, unlike `to_tsquery`.
+- Query: `websearch_to_tsquery('simple', :term) || websearch_to_tsquery('english', :term)` (names:
+  `simple` only). It handles quoted phrases and `-exclusions` from user input safely, unlike
+  `to_tsquery`. Text with nothing indexable left (only exclusions, an exclusion ORed in, or
+  punctuation; Postgres's `querytree` says `T` or nothing) would scan every row, so it is a field
+  error, or dropped when the text also named a filter (P3-05).
 - Ranking: `ts_rank_cd(search_vector, query)` combined with a popularity term (see §5).
 
 ### Fuzzy matching
@@ -49,9 +60,12 @@ and processing bases. **Enforced in the query builder**, never as a post-filter 
 - `similarity()` threshold 0.3, tuned against real queries.
 
 ### Tag lookup short-circuit
-Input matching `^#?[0289PYLQGRJCUV]{3,12}$` is treated as a player or clan tag: exact lookup first,
-then the API if it is unknown locally. This is the highest-intent query on the platform and must
-never go through ranking.
+Input matching `^#?[0289PYLQGRJCUV]{3,12}$` is treated as a player tag: exact lookup, never ranked.
+The pattern is case-sensitive without the `#` (so "pug" stays a word); with a `#` any case is read
+as a tag. An account search may list (§2) redirects to its page. Anything else, unknown or hidden
+alike, stays on `/search` with "No player with #TAG on Clash Commons yet", so a hidden account's tag
+is not confirmed. The CoC API fallback for unknown tags and clan tags wait for Phase 4, when
+unattached players and clans get pages (P3-05).
 
 ### Structured queries
 The example queries in the brief are handled by parsing, not by embedding:
@@ -67,11 +81,17 @@ A small, explicit `QueryParser` extracts known patterns (`TH\d+`, category names
 country names and codes, league names, "looking for clan"/"lfc", "recruiting") into filters, and
 passes the remainder as the text term. Parsed filters are shown as removable chips so the user can
 see and correct what was inferred — an inferred filter the user cannot see is a bug factory.
+Removing a chip removes its words from the text. In v1 (P3-05) it reads one Town Hall (`TH17`,
+`th 17`, `Town Hall 17`, within `bases.th_min`–`th_max`) and one base category by name or synonym,
+longest phrase first; once a filter is read, the words base(s), layout(s) and link(s) are dropped. A
+filter set explicitly in the URL beats the parsed one (and shows no chip). A parsed Town Hall also
+filters accounts. Text that leaves no words searches bases only.
 
 ### Facets
-Facet counts come from a second aggregate query over the same filtered set, capped and cached for
-60 seconds per filter signature. Above ~50k matching rows, facet counts switch to estimates
-(`reltuples`-based) rather than exact counts.
+Facet counts come from a second aggregate query over the same filtered set, cached for 60 seconds
+per search signature (`search:facets:*`). Base search counts by Town Hall and by category, each
+ignoring its own filter. v1 counts exactly; above ~50k matching rows, facet counts switch to
+estimates (`reltuples`-based), a Phase 7 change alongside the engine trigger (§7).
 
 ## 4. Performance rules
 
@@ -81,13 +101,14 @@ Facet counts come from a second aggregate query over the same filtered set, capp
 | Max 50 results per page, max page 100 for anonymous users | Bounds the worst case and the scraping cost |
 | A minimum term length of 2 characters; 1-character terms are rejected | Prevents whole-index scans |
 | Every filter combination in the UI must be index-covered; a test asserts `EXPLAIN` shows no seq scan on tables > 10k rows | Catches regressions |
-| Search results cached 60 s keyed by the full normalised query signature for anonymous users | Absorbs bursts and bots |
-| Autocomplete is a separate, narrower query (prefix match on name fields only, limit 8, 150 ms budget), debounced 250 ms client-side | Autocomplete must never run the full ranking |
-| Search is rate-limited: 60/min per IP, 120/min per user | Abuse control |
+| Search results cached 60 s keyed by the full normalised query signature for anonymous users (first page only; [21 §3](21-caching-strategy.md)) | Absorbs bursts and bots |
+| Autocomplete is a separate, narrower query (prefix match on name fields only, limit 8, 150 ms budget), debounced 250 ms client-side (P3-12) | Autocomplete must never run the full ranking |
+| Search is rate-limited: 60/min per IP, 120/min per user (`platform.search.rate_limits`) | Abuse control |
 
 ## 5. Ranking
 
-Relevance alone produces a boring, gameable feed. Base search blends:
+Relevance alone produces a boring, gameable feed. Base search ("Best match", the default sort on
+`/search`; the other sorts are the feed's) blends:
 
 ```
 final = 0.5 * normalized(ts_rank_cd)
@@ -96,6 +117,13 @@ final = 0.5 * normalized(ts_rank_cd)
       + 0.1 * author_quality(verified_account, prior_base_performance)
       - penalties(duplicate_layout_cluster, reported_and_dismissed_recently)
 ```
+
+v1 (P3-05, weights in `platform.search.ranking`): `normalized(x)` is `x / (x + pivot)`, so
+`ts_rank_cd` uses normalisation 32 and trending uses `trending_pivot` (1.0); `recency_decay` is
+`0.5^(age in days / 14)`, measured from the time the result list was ranked (kept in the cursor, so
+pages do not drift). `author_quality` reads 0 until P3-04 keeps the interaction counters; the
+duplicate-cluster penalty is already inside `trending_score`, and the reported-and-dismissed
+penalty arrives with P3-06.
 
 `trending_score` is precomputed in `base_metrics` every 15 minutes for bases published in the last
 `bases.trending.active_days` (7), and nightly for every published base (P3-03):

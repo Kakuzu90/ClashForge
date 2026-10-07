@@ -289,7 +289,7 @@ After 30 days, the nightly pipeline anonymises the retained account and its Phas
 | `upload-intent` | 30 / hour | user |
 | `upload-video` | 10 replay-video intents per 24 h window from the first (`media.rate_limits.video_intents_per_day`), on top of `upload-intent`, taken before the row exists and given back when presigning fails; one video in flight (completed, not yet processed) per user, checked at intent and at complete; a breach is a `collection` field error (P3-02) | user |
 | `feed` | 120 / min (`bases.feed.requests_per_minute`) on `/` and `/bases`; a breach is a 429 (P3-03) | user, else ip |
-| `search` | 60 / min | ip |
+| `search` | 120 / min signed in, 60 / min otherwise (`platform.search.rate_limits`); a breach is a 429 (P3-05) | user, else ip |
 | `global-write` | 120 / min (`platform.rate_limits.global_write_per_minute`) | user |
 | `password-confirm` | 5 / min, 20 / hour (`platform.auth.password_confirm_per_*`); confirm page, password form, email form, username form, account-deletion form, CoC-account detach and a dispute release share it | user |
 | `admin-search` | 60 / min (`platform.rate_limits.admin_search_per_minute`); admin user list, audit log, dispute queue and System Health share it (its on-demand failed-job list included, P2-19), deferred rows count; a breach is a bare 429 shown inline | user |

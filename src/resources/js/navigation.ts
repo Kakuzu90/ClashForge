@@ -1,4 +1,4 @@
-import { home } from '@/routes';
+import { home, search } from '@/routes';
 import { index as bases } from '@/routes/bases';
 import { audit as adminAudit, dashboard as adminDashboard, system as adminSystem } from '@/routes/admin';
 import { index as adminDisputes } from '@/routes/admin/disputes';
@@ -20,6 +20,8 @@ export interface NavItem {
     href?: () => string;
     /** Shared `auth.can` ability required to see the item (specs/04: never `role`). */
     can?: string;
+    /** Only a bottom tab: the desktop top bar has its own entry for it (specs/18 §5). */
+    tabOnly?: boolean;
 }
 
 // specs/18 §5: Home · Bases · Recruit · Market · Profile. Market's slot is Search until Phase 6.
@@ -28,7 +30,7 @@ export const primaryNav: NavItem[] = [
     { key: 'home', label: 'Home', icon: 'home', href: () => home().url },
     { key: 'bases', label: 'Bases', icon: 'bases', href: () => bases().url },
     { key: 'recruit', label: 'Recruit', icon: 'recruit' },
-    { key: 'search', label: 'Search', icon: 'search' },
+    { key: 'search', label: 'Search', icon: 'search', href: () => search().url, tabOnly: true },
     { key: 'profile', label: 'Profile', icon: 'profile' },
 ];
 

@@ -124,6 +124,28 @@ class AccountReadModel
     }
 
     /**
+     * List PlayerCards for search hits (P3-05), in the order given, like the profile's cards. The
+     * list card shows no clan, so none is read. Visibility is the caller's query.
+     *
+     * @param  list<int>  $ids
+     * @return list<PlayerCardData>
+     */
+    public function cards(array $ids): array
+    {
+        $accounts = CocAccount::query()->whereKey($ids)->get()->keyBy('id');
+        $cards = [];
+
+        foreach ($ids as $id) {
+            $account = $accounts->get($id);
+            if ($account !== null) {
+                $cards[] = $this->card($account, clanHidden: true);
+            }
+        }
+
+        return $cards;
+    }
+
+    /**
      * The account page without its grids, or null when this viewer may not see it.
      */
     public function detail(?User $viewer, string $ulid): ?AccountDetailData

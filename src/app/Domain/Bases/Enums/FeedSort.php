@@ -6,7 +6,8 @@ use App\Support\Enums\Concerns\EnumHelpers;
 use App\Support\Enums\Contracts\HasLabelAndColor;
 
 /**
- * Feed orders (FR-BASE-13). Each is keyset-paged on its column, then the base id.
+ * Feed orders (FR-BASE-13). Each is keyset-paged on its column, then the base id. `relevance` is
+ * search only (specs/17 §5): the feeds offer the other four.
  */
 enum FeedSort: string implements HasLabelAndColor
 {
@@ -16,6 +17,7 @@ enum FeedSort: string implements HasLabelAndColor
     case Newest = 'new';
     case MostLiked = 'liked';
     case MostCopied = 'copied';
+    case Relevance = 'relevance';
 
     public function label(): string
     {
@@ -24,6 +26,7 @@ enum FeedSort: string implements HasLabelAndColor
             self::Newest => 'New',
             self::MostLiked => 'Most liked',
             self::MostCopied => 'Most copied',
+            self::Relevance => 'Best match',
         };
     }
 
@@ -33,7 +36,17 @@ enum FeedSort: string implements HasLabelAndColor
     }
 
     /**
-     * The qualified column the sort orders by.
+     * The sorts a feed offers.
+     *
+     * @return list<self>
+     */
+    public static function feed(): array
+    {
+        return [self::Trending, self::Newest, self::MostLiked, self::MostCopied];
+    }
+
+    /**
+     * The qualified column the sort orders by; relevance orders by the search score.
      */
     public function column(): string
     {
@@ -42,6 +55,7 @@ enum FeedSort: string implements HasLabelAndColor
             self::Newest => 'base_layouts.published_at',
             self::MostLiked => 'base_metrics.likes_count',
             self::MostCopied => 'base_metrics.copies_count',
+            self::Relevance => 'search_score',
         };
     }
 }

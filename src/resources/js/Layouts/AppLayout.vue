@@ -16,6 +16,7 @@ import { computed } from 'vue';
 // links inside the top bar, right after the wordmark. No sidebar, no second nav row.
 const { can, url } = usePageProps();
 const items = computed(() => visibleNavItems(primaryNav, can.value));
+const headerItems = computed(() => items.value.filter((item) => !item.tabOnly));
 </script>
 
 <template>
@@ -24,7 +25,7 @@ const items = computed(() => visibleNavItems(primaryNav, can.value));
     <div class="flex min-h-dvh flex-col">
         <SiteHeader>
             <template #actions><slot name="header-actions" /></template>
-            <template #nav><HeaderNav :items="items" :current-url="url" /></template>
+            <template #nav><HeaderNav :items="headerItems" :current-url="url" /></template>
         </SiteHeader>
         <main id="main" tabindex="-1" class="gutter-x mx-auto w-full max-w-[1200px] flex-1 scroll-mt-16 pt-6 md:pt-8">
             <CocApiBanner class="mb-6" />

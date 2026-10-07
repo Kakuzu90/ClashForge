@@ -19,6 +19,8 @@ const props = defineProps<{
     loading: boolean;
     error: VisitError | null;
     filtered: boolean;
+    /** The merge prop "Load more" reloads: `cards` on the feeds, `bases` on search. */
+    prop?: string;
 }>();
 
 const emit = defineEmits<{ reset: []; retry: [] }>();
@@ -30,7 +32,7 @@ function loadMore() {
     if (!props.nextCursor) return;
     loadingMore.value = true;
     router.reload({
-        only: ['cards', 'nextCursor'],
+        only: [props.prop ?? 'cards', 'nextCursor'],
         data: { ...props.query, cursor: props.nextCursor },
         preserveUrl: true,
         onFinish: () => (loadingMore.value = false),

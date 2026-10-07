@@ -71,7 +71,7 @@ for a full temp volume does not.
 | `AggregateBaseCopiesJob` | Hourly schedule | Same for copy events |
 | `bases:recompute-trending` (command, runs inline) | Every 15 min; `--all` nightly | Bases published in the last `bases.trending.active_days` (7), every published base with `--all`; chunked, one upsert per chunk; bumps the feed cache version (P3-03). "Activity in the last 7 days" replaces the publish window with P3-04 |
 | `DetectDuplicateLayoutJob` | `BasePublished` | Cross-author hash match → Low-priority moderation case |
-| `IndexSearchDocumentJob` | `BasePublished`, profile/account updates, moderation actions | No-op on the Postgres driver (generated columns handle it); real work once a search engine exists |
+| `IndexSearchDocumentJob` | `BasePublished`, profile/account updates, moderation actions | Not built on the Postgres driver: triggers keep the vectors in the same transaction (P3-05); arrives with a search engine ([17 §7](17-search-and-discovery.md)) |
 
 ### Auth (`high`)
 

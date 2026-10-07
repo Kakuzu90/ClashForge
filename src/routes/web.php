@@ -16,6 +16,7 @@ Route::get('/dev/media', MediaPreviewController::class)->name('dev.media');
 
 require __DIR__.'/web/auth.php';
 require __DIR__.'/web/bases.php';
+require __DIR__.'/web/search.php';
 require __DIR__.'/web/account.php';
 require __DIR__.'/web/profile.php';
 require __DIR__.'/web/accounts.php';

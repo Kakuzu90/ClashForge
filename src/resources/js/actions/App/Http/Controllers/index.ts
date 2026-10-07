@@ -2,6 +2,7 @@ import Home from './Home'
 import Dev from './Dev'
 import Auth from './Auth'
 import Bases from './Bases'
+import Search from './Search'
 import Account from './Account'
 import Profile from './Profile'
 import Accounts from './Accounts'
@@ -18,6 +19,7 @@ const Controllers = {
     Dev: Object.assign(Dev, Dev),
     Auth: Object.assign(Auth, Auth),
     Bases: Object.assign(Bases, Bases),
+    Search: Object.assign(Search, Search),
     Account: Object.assign(Account, Account),
     Profile: Object.assign(Profile, Profile),
     Accounts: Object.assign(Accounts, Accounts),

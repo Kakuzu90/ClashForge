@@ -27,6 +27,9 @@
         </include>
     </source>
     <php>
+        <!-- The serial Postgres run keeps every test file in one process; the architecture tests
+             parse all of app/ at the end and need more than the CLI default (P3-05). -->
+        <ini name="memory_limit" value="1G"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

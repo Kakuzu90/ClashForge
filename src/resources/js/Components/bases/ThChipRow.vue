@@ -11,6 +11,8 @@ const props = defineProps<{
     selectedMin: number | null;
     selectedMax: number | null;
     fromAccount: boolean;
+    /** Search facets: how many hits each level would leave, shown beside it. */
+    counts?: Record<string, number>;
 }>();
 
 const emit = defineEmits<{ select: [range: [number, number] | null] }>();
@@ -35,7 +37,7 @@ const range = computed(() => props.selectedMin !== null && props.selectedMax !==
             <UiPill
                 v-for="level in levels"
                 :key="level"
-                :label="`TH ${level}`"
+                :label="counts?.[level] ? `TH ${level} · ${counts[level]}` : `TH ${level}`"
                 selectable
                 :selected="!range && selectedMin === level"
                 @toggle="emit('select', [level, level])"

@@ -13,6 +13,9 @@ use App\Domain\PlayerAccounts\Models\CocAccountDispute;
 use App\Domain\PlayerAccounts\Policies\CocAccountDisputePolicy;
 use App\Domain\PlayerAccounts\Policies\CocAccountPolicy;
 use App\Domain\PlayerAccounts\Services\AccountDeletionHooks;
+use App\Domain\PlayerAccounts\Services\AccountSearchSource;
+use App\Domain\Search\Contracts\SearchSource;
+use App\Domain\Search\Contracts\TagLookup;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -23,6 +26,10 @@ class PlayerAccountsServiceProvider extends ServiceProvider
     {
         // Auth's deletion pipeline reaches this module only through its contracts (specs/05 §2).
         $this->app->tag([AccountDeletionHooks::class], [DeletionHold::HOLD_TAG, DeletionStep::STEP_TAG]);
+
+        // Search reaches accounts only through its contracts (P3-05).
+        $this->app->tag([AccountSearchSource::class], [SearchSource::TAG]);
+        $this->app->bind(TagLookup::class, AccountSearchSource::class);
     }
 
     public function boot(): void

@@ -207,6 +207,36 @@ return [
         'skip_routes' => ['health'],
     ],
 
+    // Search v1 on Postgres full text (specs/17, P3-05).
+    'search' => [
+        // Hits per page on a single kind's tab ("Load more").
+        'per_page' => 20,
+        // Hits per kind on the grouped "All" tab, each with "See all" when there are more.
+        'group_size' => ['bases' => 6, 'players' => 5, 'accounts' => 5],
+        // Search text length; shorter text would scan the whole index (specs/17 §4).
+        'min_term' => 2,
+        'max_term' => 100,
+        // The last page an anonymous visitor may load.
+        'max_pages' => 100,
+        // Anonymous first pages, and facet counts for everyone, per search signature.
+        'cache_ttl' => 60,
+        'facet_cache_ttl' => 60,
+        // Characters of a player's bio shown in a hit.
+        'snippet_length' => 140,
+        // The `search` limiter (specs/17 §4): per user when signed in, per IP otherwise.
+        'rate_limits' => ['per_ip' => 60, 'per_user' => 120],
+        // "Best match" for bases (specs/17 §5): text * rank/(rank+1) + trending * t/(t+pivot)
+        // + recency * 0.5^(age days/half life) + author_quality * 0 until P3-04 keeps the counters.
+        'ranking' => [
+            'text' => 0.5,
+            'trending' => 0.3,
+            'recency' => 0.1,
+            'author_quality' => 0.1,
+            'trending_pivot' => 1.0,
+            'recency_half_life_days' => 14,
+        ],
+    ],
+
     'seo' => [
         // Same line as the Home page: honest about what exists today (antislop R-38).
         'default_description' => 'Base layouts, verified player cards and clan recruitment for Clash of Clans players. The first features are on the way.',

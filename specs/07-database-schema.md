@@ -114,7 +114,7 @@ Public presentation of a user. 1:1 with `users`; split so profile writes never t
 | languages | varchar(5)[] | ISO-639-1, max 3, `CHECK (array_length <= 3)`; JSON on SQLite (tests), both through `AsStringList` |
 | timezone | varchar(64) null | |
 | socials | jsonb default '{}' | `{youtube, twitch, discord, x}` as handles, never URLs (YouTube `@handle`, Twitch login, Discord username, X handle), each validated on write; links are built on render from fixed `https://` hosts, Discord shows as text |
-| search_vector | tsvector | from username + display_name + bio; a trigger or reindex job, not a generated column, since `username` is on `users` (P3-05) |
+| search_vector | tsvector | username (A, `simple`) + display_name (A, `simple`) + bio (C, `english`), kept by triggers on `profiles` and on `users.username`, not a generated column, since `username` is on `users` (P3-05). Postgres only |
 | created_at / updated_at | timestamptz | |
 
 **Indexes:** GIN on `search_vector`; `(country_code)`; GIN on `languages`.
@@ -349,7 +349,8 @@ legitimately share the same popular base).
 - `(user_id, published_at DESC)`.
 - `(layout_hash)` — duplicate detection.
 - `(coc_account_id)`.
-- GIN on `search_vector` (generated from title + description + tags snapshot), with the column, in Search v1 (P3-05).
+- GIN on `search_vector`: title (A, `english`) + tag names (B, `simple`) + description (C, `english`), kept by triggers on `base_layouts`, `base_layout_tag` and a renamed `base_tags.name` (P3-05). Postgres only.
+- CoC accounts are searched through the existing `to_tsvector('simple', ign)` GIN index; no column (P3-05).
 
 Postgres adds the `category`, `visibility`, `status` and `moderation_state` CHECKs and
 `th_level BETWEEN 1 AND 30`; the range users may pick is `bases.th_min`–`th_max` (P3-01).

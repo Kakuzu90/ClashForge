@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import UiButton from '@/Components/ui/UiButton.vue';
+import { search } from '@/routes';
 import { usePageProps } from '@/Composables/usePageProps';
 import { headerLinks, visibleHeaderLinks } from '@/navigation';
 import { computed } from 'vue';
 import AccountControls from './AccountControls.vue';
+import NavIcon from './NavIcon.vue';
 import NotificationBell from './NotificationBell.vue';
 import Wordmark from './Wordmark.vue';
 
-// Sticky top bar (specs/18 §5). Search slots into `actions` once it exists; signed in, the order is
-// staff link (Admin or Reports) → bell → account controls, which always come last.
+// Sticky top bar (specs/18 §5): page actions, then the search link, then signed in the staff link
+// (Admin or Reports) → bell → account controls, which always come last.
 
 // Signed in, the account controls need the room below 640px, so the wordmark shortens to CC there.
 const { auth, can } = usePageProps();
@@ -29,6 +31,7 @@ const staffLinks = computed(() => (signedIn.value ? visibleHeaderLinks(headerLin
             <div class="hidden self-stretch md:flex"><slot name="nav" /></div>
             <div class="ml-auto flex items-center gap-2">
                 <slot name="actions" />
+                <UiButton variant="ghost" size="sm" icon-only :href="search().url" aria-label="Search"><NavIcon name="search" /></UiButton>
                 <UiButton v-for="link in staffLinks" :key="link.key" variant="ghost" size="sm" :href="link.url">{{ link.label }}</UiButton>
                 <NotificationBell v-if="signedIn" />
                 <AccountControls />

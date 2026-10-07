@@ -119,7 +119,7 @@ export type BaseCategory = 'war' | 'cwl' | 'farming' | 'trophy' | 'legend' | 'an
 export type BaseModerationState = 'clean' | 'flagged' | 'under_review' | 'actioned';
 export type BaseStatus = 'draft' | 'processing' | 'published' | 'hidden' | 'removed';
 export type BaseVisibility = 'public' | 'unlisted' | 'private';
-export type FeedSort = 'trending' | 'new' | 'liked' | 'copied';
+export type FeedSort = 'trending' | 'new' | 'liked' | 'copied' | 'relevance';
 }
 }
 namespace Clans {
@@ -684,6 +684,43 @@ export type VerificationMethod = 'api_token' | 'admin';
 export type VerifyOutcome = 'verified' | 'invalid_token' | 'not_found' | 'unavailable' | 'rate_limited' | 'tag_suspended';
 }
 }
+namespace Search {
+namespace Data {
+export type FacetCountData = {
+value: string,
+count: number,
+};
+export type ParsedFilterData = {
+key: string,
+value: string,
+label: string,
+match: string,
+};
+export type SearchFacetsData = {
+thLevels: App.Domain.Search.Data.FacetCountData[],
+categories: App.Domain.Search.Data.FacetCountData[],
+};
+export type SearchResultsData = {
+term: string,
+type: App.Domain.Search.Enums.SearchType,
+filters: App.Domain.Bases.Data.FeedFiltersData,
+parsed: App.Domain.Search.Data.ParsedFilterData[],
+sections: Record<string, App.Domain.Search.Data.SearchSectionData>,
+tag: string | null,
+accountUlid: string | null,
+};
+export type SearchSectionData = {
+type: App.Domain.Search.Enums.SearchType,
+items: App.Domain.Bases.Data.BaseCardData[] | App.Domain.Users.Data.PlayerHitData[] | App.Domain.PlayerAccounts.Data.PlayerCardData[],
+hasMore: boolean,
+nextCursor: string | null,
+facets: App.Domain.Search.Data.SearchFacetsData | null,
+};
+}
+namespace Enums {
+export type SearchType = 'all' | 'bases' | 'players' | 'accounts';
+}
+}
 namespace Users {
 namespace Data {
 export type AuthorData = {
@@ -700,6 +737,12 @@ url48: string | null,
 export type CodeLabelData = {
 code: string,
 label: string,
+};
+export type PlayerHitData = {
+username: string,
+displayName: string | null,
+avatarUrl: string | null,
+bio: string | null,
 };
 export type PrivacyFormData = {
 visibility: App.Domain.Users.Enums.ProfileVisibility,

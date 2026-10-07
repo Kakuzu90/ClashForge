@@ -15,6 +15,8 @@ import GameClanChip from '@/Components/game/GameClanChip.vue';
 import GameBaseCard from '@/Components/game/GameBaseCard.vue';
 import GamePlayerCard, { type PlayerCardVariant } from '@/Components/game/GamePlayerCard.vue';
 import GamePlayerMini from '@/Components/game/GamePlayerMini.vue';
+import ThChipRow from '@/Components/bases/ThChipRow.vue';
+import SearchPlayerRow from '@/Components/search/SearchPlayerRow.vue';
 import UiResourceCounter from '@/Components/ui/UiResourceCounter.vue';
 import GameProgressionGrid from '@/Components/game/GameProgressionGrid.vue';
 import GameThBadge, { type ThBadgeSize } from '@/Components/game/GameThBadge.vue';
@@ -322,6 +324,7 @@ const sections = [
     'Town Hall badges',
     'Player cards',
     'Base cards',
+    'Search results',
     'Progression grid',
     'Account images',
     'Empty state',
@@ -352,6 +355,13 @@ const baseCards: { label: string; card: App.Domain.Bases.Data.BaseCardData | nul
     { label: 'No image, TH 4, nothing yet', card: baseCard({ ulid: '01jbase000000000000000000c', thLevel: 4, likes: 0, copies: 0, views: 1, title: 'First base' }) },
     { label: 'Loading', card: null },
 ];
+// Search results (P3-05): players with and without a display name or bio, and the Town Hall chips
+// with facet counts. Accounts are the standard PlayerCard (Player cards above).
+const searchPlayers: App.Domain.Users.Data.PlayerHitData[] = [
+    { username: 'ringmaster', displayName: 'Ring Master', avatarUrl: null, bio: 'Builds anti-root rings for war and CWL. Ask me about compact cores, I answer every comment.' },
+    { username: 'quiet_chief', displayName: null, avatarUrl: null, bio: null },
+];
+
 const notificationSamples: App.Domain.Notifications.Data.NotificationItemData[] = [
     {
         id: '0199a8f0-0000-7000-8000-000000000001',
@@ -779,6 +789,16 @@ const anchor = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
                     <UiResourceCounter kind="views" :count="20450" />
                     <UiResourceCounter kind="comments" :count="12" />
                 </div>
+            </section>
+
+            <section :id="anchor('Search results')" aria-labelledby="h-search-results">
+                <h2 id="h-search-results" class="font-display text-h1">Search results</h2>
+                <h3 class="mt-4 text-h3 text-fg">Players</h3>
+                <ul class="mt-2 grid gap-2 md:grid-cols-2">
+                    <li v-for="player in searchPlayers" :key="player.username"><SearchPlayerRow :player="player" /></li>
+                </ul>
+                <h3 class="mt-6 text-h3 text-fg">Town Hall chips with counts</h3>
+                <ThChipRow :th-min="14" :th-max="17" :selected-min="16" :selected-max="16" :from-account="false" :counts="{ 17: 4, 16: 12, 15: 1 }" />
             </section>
 
             <section :id="anchor('Player cards')" aria-labelledby="h-player-cards">

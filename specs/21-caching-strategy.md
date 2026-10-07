@@ -53,7 +53,8 @@ of defence, not the first.
 | `user:{id}:privacy` | Privacy settings row, as scalars. A missing row reads as `private` (fail closed) | 1 h (`platform.profile.privacy_cache_ttl`) | Settings update writes the new row through (readers only add on a miss) |
 | `user:{id}:permissions` | Derived capability flags (can publish, can recruit) | 10 min | Role/status change, verification, sanction |
 | `notif:unread:{id}` | Unread count (the shared `unreadCount`) | 60 s (`platform.notifications.unread_cache_ttl`) | Notification create, mark read, mark all read. The nightly prune does not clear it; the TTL catches up |
-| `search:{signature}` | Result ids + facet counts (anonymous only) | 60 s | — (short TTL is the invalidation) |
+| `search:{sha256(signature)}` | The first page of an anonymous search, every kind it covers. The signature is the result type, the text left after parsing, the parsed Town Hall and the base filters and sort (P3-05) | 60 s (`platform.search.cache_ttl`) | — (short TTL is the invalidation) |
+| `search:facets:{sha256(signature)}` | Base facet counts by Town Hall and category, for every viewer (public data only) | 60 s (`platform.search.facet_cache_ttl`) | — |
 | `tags:popular` | Top tags | 1 h | Nightly tag reconcile |
 | `stats:homepage` | Site-wide counters for the landing page | 15 min | — |
 | `sitemap:chunk:{n}` | Sitemap XML | 24 h | Nightly regeneration |

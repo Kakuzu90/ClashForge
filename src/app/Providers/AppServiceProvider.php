@@ -66,6 +66,11 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('feed', fn (Request $request): Limit => Limit::perMinute((int) config('bases.feed.requests_per_minute'))
             ->by($request->user() === null ? 'ip:'.$request->ip() : 'user:'.$request->user()->getAuthIdentifier()));
 
+        // Search (specs/17 §4, P3-05): every search runs live past the first anonymous page.
+        RateLimiter::for('search', fn (Request $request): Limit => $request->user() === null
+            ? Limit::perMinute((int) config('platform.search.rate_limits.per_ip'))->by('ip:'.$request->ip())
+            : Limit::perMinute((int) config('platform.search.rate_limits.per_user'))->by('user:'.$request->user()->getAuthIdentifier()));
+
         RateLimiter::for('upload-intent', fn (Request $request): Limit => Limit::perHour((int) config('media.rate_limits.intents_per_hour'))
             ->by('user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
 
