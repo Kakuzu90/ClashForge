@@ -224,9 +224,12 @@ against `platform.health.queue_max_wait`, and depth against `platform.health.que
 Failures are every row kept in `failed_jobs` (`platform.prune.failed_jobs_days`), grouped by the
 payload's `displayName` with the queues each failed on, job class and queue only. The scheduler
 row reads the `platform:heartbeat` beat (`platform.health.heartbeat_max_age`); no beat is
-"unknown", not stopped. Two rows are not on the page (owner decision, 2026-10-02): media
-processing p95 needs a processing-start time that `media` does not record (with P3-02), and
-worker liveness is a container restart count the app cannot see (container monitoring, P0-09).
+"unknown", not stopped. Media processing p95 (P3-02) sits under the queue table in the same
+deferred group: the latest run of each upload processed in the last
+`media.health.processing_window_hours` (24), from `media.processing_started_at` to `processed_at`,
+nearest rank, flagged over `media.health.processing_p95_alert_seconds` (180). Worker liveness is not
+on the page (owner decision, 2026-10-02): it is a container restart count the app cannot see
+(container monitoring, P0-09).
 The CoC sync success rate (P2-09) is on the API panel. Retry and delete of failed jobs (P2-19,
 §5) sit on the failures panel, with each class's newest `platform.admin.failed_jobs_list_max` (50)
 jobs listed on demand (uuid, queue and time only). The

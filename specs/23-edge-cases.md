@@ -62,7 +62,9 @@ Primary set in [13 §9](13-claiming-workflow.md). Additional:
 | The same file is uploaded twice | Allowed; `checksum_sha256` lets us detect it, but deduplicating across users would create a shared-object deletion problem for no real benefit at this scale |
 | A 100 MB video that is 59 seconds of black frames | Passes validation. Not our problem to judge content quality; reports handle abuse |
 | Video with no audio stream | Accepted; transcode outputs video-only |
-| Video with 10 audio tracks or subtitles | First audio track kept, everything else dropped by the re-mux |
+| Video with 10 audio tracks or subtitles | First audio track kept (≤2 channels), everything else dropped by the re-encode; a track in a codec outside the allowlist is dropped without being decoded, and cover art is never taken as the video |
+| A container claims 30 s but its streams run longer | The transcode stops at 61 s and the output probe refuses it as too long; never published cut |
+| An iPhone `.mov` renamed `.mp4` | Benign: processed as its real type (`video/quicktime`); a playlist, image or matroska file behind `.mp4` is quarantined |
 | Image with an enormous canvas (30000×30000, small file) | Rejected by the dimension check **before** decode — this is the decompression-bomb defence |
 | Animated WebP or APNG in an image collection | Rejected; animation belongs in the video slot |
 | R2 returns success but the object is not readable | Post-upload `HEAD` check catches it; the job fails and the user is asked to retry |

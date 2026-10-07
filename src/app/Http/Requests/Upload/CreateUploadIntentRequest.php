@@ -60,7 +60,7 @@ class CreateUploadIntentRequest extends FormRequest
                 $extension = strtolower(pathinfo($this->string('filename')->toString(), PATHINFO_EXTENSION));
 
                 if (! array_key_exists($this->string('mime')->toString(), $mimes) || ! in_array($extension, $extensions, true)) {
-                    $validator->errors()->add('mime', 'This file type is not supported. Use a '.config("media.{$kind}.types_label").' image.');
+                    $validator->errors()->add('mime', (string) config("media.{$kind}.unsupported_message"));
                 }
 
                 if ($this->integer('size') > $collection->maxBytes()) {

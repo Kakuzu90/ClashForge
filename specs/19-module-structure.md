@@ -192,7 +192,7 @@ rate-limited and idempotent within its window).
 ```
 config/
 ├── coc.php        # API: base url, tokens, timeouts, cache TTLs, rate budget, sync tiers
-├── media.php      # collections, size/dimension/duration limits, variants, quotas, sweep windows
+├── media.php      # collections, size/dimension/duration limits, video, variants, quotas, sweep windows, health
 ├── moderation.php # reason codes, priority weights, auto-action rules, SLA targets
 ├── bases.php      # categories, TH range, trending weights, publish quotas
 ├── recruitment.php# activity levels, war preferences, expiry and bump windows

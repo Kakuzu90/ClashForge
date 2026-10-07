@@ -11,8 +11,10 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 /**
  * Uploading needs a verified email (FR-AUTH-4) and an account whose status allows the write: an
  * avatar and dispute evidence are account writes, open to restricted accounts, as a dispute is
- * (P2-16); every other collection is content, active accounts only (specs/04 §1, §3). An upload is only ever visible to its uploader until
- * something attaches it.
+ * (P2-16); every other collection is content, active accounts only (specs/04 §1, §3). A replay
+ * video also needs a verified CoC account, as publishing does, so no transcode runs for a video
+ * that could never be attached (P3-02, specs/24 R6). An upload is only ever visible to its
+ * uploader until something attaches it.
  */
 class MediaPolicy
 {
@@ -34,6 +36,10 @@ class MediaPolicy
     private function mayUpload(Authenticatable $user, ?MediaCollection $collection): bool
     {
         if (! $user instanceof HasAccountStanding) {
+            return false;
+        }
+
+        if ($collection === MediaCollection::BaseVideo && ! $user->hasVerifiedCocAccount()) {
             return false;
         }
 

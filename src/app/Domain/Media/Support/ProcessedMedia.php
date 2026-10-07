@@ -16,5 +16,6 @@ final readonly class ProcessedMedia
         public int $width,
         public int $height,
         public array $variants,
+        public ?float $durationSeconds = null,
     ) {}
 }

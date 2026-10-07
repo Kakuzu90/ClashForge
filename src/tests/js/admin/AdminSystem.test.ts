@@ -56,6 +56,16 @@ const failedJobs = (overrides: Partial<App.Domain.Operations.Data.FailedJobsByCl
     ...overrides,
 });
 
+// Sent in the queues group, so loaded whenever the queues are.
+const mediaStats = (overrides: Partial<App.Domain.Media.Data.MediaProcessingStatsData> = {}): App.Domain.Media.Data.MediaProcessingStatsData => ({
+    windowHours: 24,
+    processed: 0,
+    p95Seconds: null,
+    alertSeconds: 180,
+    overAlert: false,
+    ...overrides,
+});
+
 const cocApiHealth: App.Domain.CocIntegration.Data.CocApiHealthData = {
     state: 'closed',
     reason: null,
@@ -114,6 +124,18 @@ describe('Admin/System', () => {
         expect(text).toContain('No heartbeat recorded');
         expect(text).toContain('None yet.');
         expect(text).toContain('No API keys configured.');
+    });
+
+    it('shows media processing time under the queues, and flags it over the alert (P3-02)', () => {
+        expect(render({ queues: [queue()], mediaProcessing: mediaStats() }, ['queues']).text()).toContain('No uploads processed in the last 24 hours.');
+
+        const calm = render({ queues: [queue()], mediaProcessing: mediaStats({ processed: 1, p95Seconds: 42 }) }, ['queues']).text();
+        expect(calm).toContain('42 s at the 95th percentile, over 1 upload');
+        expect(calm).not.toContain('Over 3 min');
+
+        const slow = render({ queues: [queue()], mediaProcessing: mediaStats({ processed: 30, p95Seconds: 240, overAlert: true }) }, ['queues']).text();
+        expect(slow).toContain('over 30 uploads');
+        expect(slow).toContain('Over 3 min');
     });
 
     it('flags a long wait and a deep queue in words', () => {
@@ -189,7 +211,7 @@ describe('Admin/System', () => {
     });
 
     it('shows the error with its request id in the panels that did not load, and retries every missing one', async () => {
-        const wrapper = render({ queues: [queue()] }, ['queues']);
+        const wrapper = render({ queues: [queue()], mediaProcessing: mediaStats() }, ['queues']);
 
         fail('req-sys-1');
         await nextTick();

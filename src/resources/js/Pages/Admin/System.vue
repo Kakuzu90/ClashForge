@@ -25,6 +25,7 @@ type FailedJobRow = App.Domain.Operations.Data.FailedJobRowData;
 // specs/20 §6. Each panel is its own deferred request; the API panel's two props share one.
 const props = defineProps<{
     queues?: Queue[];
+    mediaProcessing?: App.Domain.Media.Data.MediaProcessingStatsData;
     failedJobs?: App.Domain.Operations.Data.FailedJobsByClassData;
     scheduler?: App.Domain.Operations.Data.SchedulerStatusData;
     cocApiHealth?: App.Domain.CocIntegration.Data.CocApiHealthData;
@@ -34,7 +35,7 @@ const props = defineProps<{
     failedJobList?: App.Domain.Operations.Data.FailedJobListData;
 }>();
 
-const PANELS = ['queues', 'failedJobs', 'scheduler', 'cocApiHealth', 'cocKeys'] as const;
+const PANELS = ['queues', 'mediaProcessing', 'failedJobs', 'scheduler', 'cocApiHealth', 'cocKeys'] as const;
 
 const SCHEDULER: Record<App.Domain.Operations.Enums.SchedulerState, { label: string; tone: 'success' | 'warning' | 'danger' }> = {
     running: { label: 'Running', tone: 'success' },
@@ -179,6 +180,18 @@ const keyColumns: AdminColumn[] = [
                             </span>
                         </template>
                     </AdminTable>
+                    <p v-if="mediaProcessing" class="flex flex-wrap items-center gap-2 text-sm text-fg-secondary">
+                        <template v-if="mediaProcessing.p95Seconds === null">No uploads processed in the last {{ mediaProcessing.windowHours }} hours.</template>
+                        <template v-else>
+                            <span>
+                                Media processing, {{ mediaProcessing.windowHours }} h:
+                                <span class="text-fg">{{ formatDuration(mediaProcessing.p95Seconds) }}</span>
+                                at the 95th percentile, over {{ formatCount(mediaProcessing.processed) }}
+                                {{ mediaProcessing.processed === 1 ? 'upload' : 'uploads' }}
+                            </span>
+                            <UiPill v-if="mediaProcessing.overAlert" tone="danger" :label="`Over ${formatDuration(mediaProcessing.alertSeconds)}`" />
+                        </template>
+                    </p>
                 </div>
             </Deferred>
         </AdminPanel>

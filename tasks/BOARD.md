@@ -74,7 +74,7 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
 | P3-01 | Publishing backend: `base_layouts`, `base_metrics`, tags, `BaseLink`/`LayoutHash`/`ThLevel`/`TagName`, `PublishBaseService` (duplicate rules, `base-publish` limit, media attach), publish-on-media-ready, `BaseLayoutPolicy::create` (composer split to P3-08, edit/delete to P3-09) | done | P2-02, P0-05 | tasks/phase-3/P3-01-publishing-backend.md |
-| P3-02 | Video processing | todo | P0-05 | |
+| P3-02 | Video processing | done | P0-05 | tasks/phase-3/P3-02-video-processing.md |
 | P3-03 | Feed, trending, landing pages | todo | P3-01 | |
 | P3-04 | Likes, bookmarks, comments, counters (+ `user_stats` listeners and nightly recompute calling `CacheInvalidator::profile()`, StatBlock count-up, from P1-04) | todo | P3-01 | |
 | P3-05 | Search v1 | todo | P3-01 | |

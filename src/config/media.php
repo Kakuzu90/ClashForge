@@ -83,6 +83,7 @@ return [
         'extensions' => ['jpg', 'jpeg', 'png', 'webp'],
         // How the allowed types are named in messages to uploaders.
         'types_label' => 'JPEG, PNG or WebP',
+        'unsupported_message' => 'This file type is not supported. Use a JPEG, PNG or WebP image.',
         'max_width' => 6000,
         'max_height' => 6000,
         'min_width' => 200,
@@ -90,13 +91,69 @@ return [
         'webp_quality' => 82,
     ],
 
+    // Replay videos (specs/10 §4, §6): probed before any transcode, rewritten as one progressive
+    // h264/aac mp4 plus a WebP poster.
+    'video' => [
+        // Declared type and extension at intent time.
+        'mimes' => [
+            'video/mp4' => 'mp4',
+        ],
+        'extensions' => ['mp4'],
+        'types_label' => 'MP4',
+        'unsupported_message' => 'This file type is not supported. Use an MP4 video.',
+        // Real types (from magic bytes) the worker accepts: the ISO media family that one demuxer
+        // reads. Anything else behind an .mp4 name is quarantined.
+        'real_mimes' => [
+            'video/mp4' => 'mp4',
+            'video/x-m4v' => 'm4v',
+            'video/quicktime' => 'mov',
+        ],
+        'video_codecs' => ['h264', 'hevc'],
+        'audio_codecs' => ['aac', 'mp3'],
+        // The only decoders ffmpeg may open on an upload (ffmpeg names mp3 `mp3float`), and on our
+        // own output for the poster. Probes read headers only and decode nothing.
+        'decoders' => ['h264', 'hevc', 'aac', 'mp3', 'mp3float'],
+        'output_decoders' => ['h264', 'aac'],
+        // Frames per second: input above this is refused; output is capped at `output_max_fps`.
+        'max_frame_rate' => 120,
+        'output_max_fps' => 60,
+        'max_duration' => 60,
+        // Input bound, either orientation, checked before transcoding.
+        'max_long_side' => 3840,
+        'max_short_side' => 2160,
+        // Output: short side at most this, scaled down only.
+        'output_short_side' => 720,
+        'preset' => 'veryfast',
+        'crf' => 26,
+        // Second pass when the first output is over `max_output_bytes`; still over fails.
+        'crf_retry' => 30,
+        'max_output_bytes' => 40 * $mb,
+        'audio_bitrate' => '96k',
+        'audio_channels_max' => 2,
+        // Poster frame position as a share of the duration.
+        'poster_at' => 0.1,
+        'poster_quality' => 82,
+        // Wall-clock limit per process. The worst run (two probes of the input and output, two
+        // transcodes, a poster) stays inside the job's `processing.timeout`, so the job is never
+        // killed with ffmpeg still running; `ffmpeg_timelimit` (CPU seconds) bounds a child that
+        // outlives its worker anyway.
+        'probe_timeout' => 30,
+        'transcode_timeout' => 360,
+        'poster_timeout' => 60,
+        'ffmpeg_timelimit' => 300,
+        'nice' => 10,
+        'ffmpeg' => 'ffmpeg',
+        'ffprobe' => 'ffprobe',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Collections
     |--------------------------------------------------------------------------
     |
-    | `accepts_uploads` is false for collections whose processor has not shipped yet:
-    | base_video (P3-02). Square variants are centre-cropped.
+    | `accepts_uploads` is false for collections whose processor has not shipped yet. Square
+    | variants are centre-cropped. Video renditions are fixed (`video_720p` and `poster`) and
+    | configured under `video`.
     |
     */
 
@@ -140,7 +197,7 @@ return [
             'kind' => 'video',
             'visibility' => 'public',
             'max_bytes' => 100 * $mb,
-            'accepts_uploads' => false,
+            'accepts_uploads' => true,
             'variants' => [],
         ],
         'evidence' => [
@@ -183,6 +240,16 @@ return [
 
     'rate_limits' => [
         'intents_per_hour' => 30,
+        // Replay video intents per user per 24 h window (from the first in it), on top of the
+        // hourly limit (specs/24 R6).
+        'video_intents_per_day' => 10,
+    ],
+
+    // System Health's media processing row (specs/20 §6): the p95 of the latest run's duration
+    // for rows processed in the window, against the alert.
+    'health' => [
+        'processing_window_hours' => 24,
+        'processing_p95_alert_seconds' => 180,
     ],
 
 ];

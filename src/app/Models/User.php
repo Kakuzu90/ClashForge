@@ -144,6 +144,11 @@ class User extends Authenticatable implements HasAccountStanding, MustVerifyEmai
         return $this->effectiveStatus()->allowsContentWrites();
     }
 
+    public function hasVerifiedCocAccount(): bool
+    {
+        return $this->verified_accounts_count > 0;
+    }
+
     /**
      * Queued on `high`, with our copy (specs/16 §1, specs/20 §1).
      *

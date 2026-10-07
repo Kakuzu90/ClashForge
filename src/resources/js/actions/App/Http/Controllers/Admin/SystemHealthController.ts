@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:28
+* @see app/Http/Controllers/Admin/SystemHealthController.php:29
 * @route '/admin/system'
 */
 const SystemHealthController = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ SystemHealthController.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:28
+* @see app/Http/Controllers/Admin/SystemHealthController.php:29
 * @route '/admin/system'
 */
 SystemHealthController.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ SystemHealthController.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:28
+* @see app/Http/Controllers/Admin/SystemHealthController.php:29
 * @route '/admin/system'
 */
 SystemHealthController.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ SystemHealthController.get = (options?: RouteQueryOptions): RouteDefinition<'get
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:28
+* @see app/Http/Controllers/Admin/SystemHealthController.php:29
 * @route '/admin/system'
 */
 SystemHealthController.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({

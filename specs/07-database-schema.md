@@ -546,17 +546,18 @@ one job.
 | disk | varchar(20) | Laravel disk name (`media`), never the provider name |
 | path | text | storage key |
 | original_filename | varchar(255) | sanitised, never used as the storage key |
-| mime_type | varchar(100) null | detected from the file signature, not declared; null until processed |
+| mime_type | varchar(100) null | detected from the file signature, not declared; null until processed. For a video, the original's type (`video/mp4`, `video/x-m4v` or `video/quicktime`); its renditions are mp4 and WebP |
 | extension | varchar(10) null | derived from detected MIME; null until processed |
 | size_bytes | bigint | |
-| width / height | int null | |
-| duration_seconds | numeric(6,2) null | video |
+| width / height | int null | a video's are the transcoded output's |
+| duration_seconds | numeric(6,2) null | video, the output's length |
 | checksum_sha256 | char(64) null | dedupe + integrity |
 | status | varchar(20) | `pending`\|`uploaded`\|`processing`\|`ready`\|`failed`\|`quarantined`\|`deleting` |
 | failure_reason | varchar(100) null | |
 | visibility | varchar(10) | `public`\|`private` |
 | position | smallint default 0 | ordering within a collection |
 | processing_attempts | smallint default 0 | processing runs so far, the job's own retries included; `media:retry-failed` stops at 3 ([10 §9](10-media-storage.md)) |
+| processing_started_at | timestamptz null | when the latest processing run claimed the row; with `processed_at`, the media processing p95 on System Health ([20 §6](20-jobs-and-scheduling.md), P3-02) |
 | processed_at | timestamptz null | |
 | expires_at | timestamptz null | set on `pending`; drives the orphan sweeper |
 | created_at / updated_at / deleted_at | timestamptz | |
@@ -566,7 +567,8 @@ Media may be `ready` before it is attached (processing finishes before the paren
 so there is no attachment constraint; unattached rows expire and are swept.
 **Indexes:** `(attachable_type, attachable_id, collection, position)`;
 `(expires_at) WHERE attachable_id IS NULL` — the sweeper's index;
-`(user_id, created_at DESC)`; `(checksum_sha256)`.
+`(user_id, created_at DESC)`; `(checksum_sha256)`; `(processed_at) WHERE processing_started_at IS NOT NULL`
+(the p95 window).
 
 ### `media_variants` [M]
 Derived renditions (thumb, card, full, poster, transcoded mp4).

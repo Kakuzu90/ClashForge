@@ -114,7 +114,7 @@ Priority: **M** = MVP, **P2** = phase 4–5, **P3** = phase 6–7.
 | FR-MEDIA-1 | M | Uploads go directly to object storage using short-lived presigned URLs; the app server never proxies file bytes. |
 | FR-MEDIA-2 | M | Every upload is validated for extension, declared MIME, real MIME from the file signature, dimensions, and size. |
 | FR-MEDIA-3 | M | Images: jpeg, png, webp. Account images ≤5 MB, ≤5 per account. Base screenshots ≤5 MB, ≤2 per base. |
-| FR-MEDIA-4 | M | Videos: mp4 (h264/aac) only, ≤100 MB, ≤60 s, ≤1080p after processing. |
+| FR-MEDIA-4 | M | Videos: mp4 only (h264 or hevc video; aac, mp3 or no audio), ≤100 MB, ≤60 s, ≤3840 × 2160 and ≤120 fps in; one h264/aac mp4 out, short side ≤720 (scaled down only). |
 | FR-MEDIA-5 | M | All images are re-encoded server-side, stripping EXIF (including GPS). |
 | FR-MEDIA-6 | M | Thumbnails are generated for every image and a poster frame for every video. |
 | FR-MEDIA-7 | M | Media states: `pending → uploaded → processing → ready / failed / quarantined`. |

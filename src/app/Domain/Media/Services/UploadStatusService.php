@@ -37,7 +37,7 @@ class UploadStatusService
             mediaUlid: $media->ulid,
             status: $media->status,
             finished: $media->status->isTerminal(),
-            failureMessage: $media->failure_reason?->label(),
+            failureMessage: $media->failure_reason?->message($media->kind),
             width: $media->width,
             height: $media->height,
             variants: array_values($variants

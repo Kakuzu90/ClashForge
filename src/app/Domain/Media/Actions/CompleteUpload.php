@@ -3,12 +3,15 @@
 namespace App\Domain\Media\Actions;
 
 use App\Domain\Media\Data\UploadStatusData;
+use App\Domain\Media\Enums\MediaCollection;
 use App\Domain\Media\Enums\MediaStatus;
 use App\Domain\Media\Jobs\ProcessMediaJob;
 use App\Domain\Media\Models\Media;
+use App\Domain\Media\Services\UploadIntentService;
 use App\Domain\Media\Services\UploadStatusService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
@@ -27,6 +30,12 @@ class CompleteUpload
             ->firstOrFail();
 
         Gate::forUser($user)->authorize('complete', $media);
+
+        // Two intents taken before either was completed: the second waits (UploadIntentService).
+        if ($media->status === MediaStatus::Pending && $media->collection === MediaCollection::BaseVideo
+            && Media::query()->videoInFlightFor($media->user_id)->whereKeyNot($media->id)->exists()) {
+            throw ValidationException::withMessages(['collection' => UploadIntentService::VIDEO_IN_FLIGHT]);
+        }
 
         $claimed = Media::query()
             ->whereKey($media->id)

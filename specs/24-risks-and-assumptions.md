@@ -19,7 +19,7 @@ phase that exposes it ships.
 | # | Risk | I | L | Score | Mitigation |
 |---|---|---|---|---|---|
 | R5 | API egress IP changes break all keys | 4 | 3 | 12 | Health check every 5 min, automated key rotation, manual runbook, graceful degradation |
-| R6 | Media costs or abuse spiral (video uploads) | 3 | 3 | 9 | Hard caps, per-user quota, verified-only video if needed, transcode offload path |
+| R6 | Media costs or abuse spiral (video uploads) | 3 | 3 | 9 | Hard caps, per-user quota, verified-only video (a verified CoC account, 10 a day, one in flight; P3-02), transcode offload path |
 | R7 | Legal exposure from marketplace payments | 5 | 2 | 10 | Stage 1 has no payments; Stage 2 gated on legal review ([15 §4](15-marketplace-workflow.md)) |
 | R8 | Ownership dispute decisions are wrong and users lose their identity | 4 | 3 | 12 | Token verification is decisive and self-service; bias toward the current holder; full audit trail; appeals |
 | R9 | Database-driver queue/cache hits limits earlier than expected | 3 | 3 | 9 | Documented triggers and a one-hour migration path ([21 §7](21-caching-strategy.md)) |

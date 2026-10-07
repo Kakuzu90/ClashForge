@@ -149,8 +149,8 @@ Redis exists in CI, with `redis`.
 ## 5. Supporting choices
 
 **Media processing.** Intervention Image v3 (GD, already in the Dockerfile) for resizing and EXIF
-stripping. ffmpeg on the `media` queue worker for video validation, transcode to h264/aac ≤1080p and
-poster-frame extraction. Runs in-house until: median transcode > 90 s, or the media queue backs up
+stripping. ffmpeg on the `media` queue worker for video validation, transcode to h264/aac with the short
+side ≤720 and poster-frame extraction. Runs in-house until: median transcode > 90 s, or the media queue backs up
 > 15 min during peak, or CPU steal on the worker box exceeds 20%. Then move to Cloudflare Stream or
 a transcoding service — the `MediaProcessor` interface exists for that swap.
 

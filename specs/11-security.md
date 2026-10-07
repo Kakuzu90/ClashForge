@@ -32,7 +32,9 @@ mechanism and the test that proves it.
 - Sort/filter parameters map through an allowlist array to column names; user input is never
   concatenated into `ORDER BY`.
 - ffmpeg/ffprobe are invoked with `Process` and an argument array, never a shell string. Paths are
-  app-generated ULIDs, never user input.
+  app-generated ULIDs, never user input. Inputs are read with the mov demuxer only, from local
+  files only, with external references off and only allowlisted decoders, so a disguised playlist
+  or reference cannot fetch anything ([10 §6](10-media-storage.md)).
 - **Test:** feature tests assert that `?sort=id;DROP` yields a validation error, not a query.
 
 ### XSS

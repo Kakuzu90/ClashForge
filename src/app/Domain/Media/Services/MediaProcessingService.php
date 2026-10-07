@@ -15,12 +15,14 @@ use App\Domain\Media\Jobs\PurgeQuarantineObjectJob;
 use App\Domain\Media\Models\Media;
 use App\Domain\Media\Support\MediaPaths;
 use App\Domain\Media\Support\ProcessedMedia;
+use App\Domain\Media\Support\ProcessedVariant;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -49,7 +51,12 @@ class MediaProcessingService
         // Every run counts toward media:retry-failed's cap, the job's own retries included.
         $claimed = Media::query()->whereKey($media->id)
             ->whereIn('status', [MediaStatus::Uploaded, MediaStatus::Processing])
-            ->update(['status' => MediaStatus::Processing, 'processing_attempts' => DB::raw('processing_attempts + 1')]);
+            ->update([
+                'status' => MediaStatus::Processing,
+                // Bound column arithmetic, no input (specs/11 Injection).
+                'processing_attempts' => DB::raw('processing_attempts + 1'),
+                'processing_started_at' => Date::now(),
+            ]);
 
         if ($claimed === 0) {
             return;
@@ -182,7 +189,7 @@ class MediaProcessingService
             $written = [];
             foreach ($result->variants as $variant) {
                 $path = MediaPaths::variant($current->collection, $current->ulid, $variant->name, $variant->extension);
-                $disk->put($path, $variant->contents, [
+                $this->write($disk, $path, $variant, [
                     'ContentType' => $variant->mimeType,
                     'CacheControl' => (string) config("media.{$current->visibility->value}_cache_control"),
                 ]);
@@ -191,7 +198,7 @@ class MediaProcessingService
                     'path' => $path,
                     'width' => $variant->width,
                     'height' => $variant->height,
-                    'size_bytes' => strlen($variant->contents),
+                    'size_bytes' => $variant->sizeBytes(),
                     'mime_type' => $variant->mimeType,
                 ];
             }
@@ -204,6 +211,7 @@ class MediaProcessingService
                 'extension' => $result->extension,
                 'width' => $result->width,
                 'height' => $result->height,
+                'duration_seconds' => $result->durationSeconds,
                 'checksum_sha256' => $checksum,
                 'processed_at' => Date::now(),
             ])->save();
@@ -219,6 +227,32 @@ class MediaProcessingService
         $this->recheckQuarantineKey($media);
 
         MediaReady::dispatch($media->ulid, $media->user_id, $media->collection);
+    }
+
+    /**
+     * @param  array<string, string>  $options
+     */
+    private function write(Filesystem $disk, string $path, ProcessedVariant $variant, array $options): void
+    {
+        if ($variant->localPath === null) {
+            $disk->put($path, $variant->contents, $options);
+
+            return;
+        }
+
+        $stream = fopen($variant->localPath, 'rb');
+
+        if ($stream === false) {
+            throw new RuntimeException("Unreadable rendition {$variant->name->value}");
+        }
+
+        try {
+            $disk->writeStream($path, $stream, $options);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
     }
 
     /**

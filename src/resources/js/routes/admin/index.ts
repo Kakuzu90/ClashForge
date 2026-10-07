@@ -92,7 +92,7 @@ audit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:28
+* @see app/Http/Controllers/Admin/SystemHealthController.php:29
 * @route '/admin/system'
 */
 export const system = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -107,7 +107,7 @@ system.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:28
+* @see app/Http/Controllers/Admin/SystemHealthController.php:29
 * @route '/admin/system'
 */
 system.url = (options?: RouteQueryOptions) => {
@@ -116,7 +116,7 @@ system.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:28
+* @see app/Http/Controllers/Admin/SystemHealthController.php:29
 * @route '/admin/system'
 */
 system.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -126,7 +126,7 @@ system.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\SystemHealthController::__invoke
-* @see app/Http/Controllers/Admin/SystemHealthController.php:28
+* @see app/Http/Controllers/Admin/SystemHealthController.php:29
 * @route '/admin/system'
 */
 system.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({

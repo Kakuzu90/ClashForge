@@ -13,6 +13,6 @@ class BaseLayoutPolicy
 {
     public function create(User $user): bool
     {
-        return $user->hasVerifiedEmail() && $user->allowsContentWrites() && $user->verified_accounts_count > 0;
+        return $user->hasVerifiedEmail() && $user->allowsContentWrites() && $user->hasVerifiedCocAccount();
     }
 }

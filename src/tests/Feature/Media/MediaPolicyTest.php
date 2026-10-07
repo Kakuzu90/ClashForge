@@ -66,3 +66,25 @@ it('treats an avatar as a profile write that restricted accounts may make', func
         ->and(Gate::forUser($user)->allows('complete', $avatar))->toBeTrue()
         ->and(Gate::forUser($user)->allows('complete', $screenshot))->toBeFalse();
 });
+
+// P3-02: a replay video needs what publishing needs (specs/04 §1, specs/24 R6).
+it('lets only holders of a verified CoC account with content writes upload a video', function () {
+    $holder = function (User $user): User {
+        $user->forceFill(['verified_accounts_count' => 1])->save();
+
+        return $user;
+    };
+    $video = Media::factory()->collection(MediaCollection::BaseVideo)->create(['user_id' => $holder(User::factory()->create())->id]);
+    $owner = User::query()->findOrFail($video->user_id);
+
+    expect(Gate::forUser($owner)->allows('create', [Media::class, MediaCollection::BaseVideo]))->toBeTrue()
+        ->and(Gate::forUser($owner)->allows('complete', $video))->toBeTrue()
+        ->and(Gate::forUser(User::factory()->create())->allows('create', [Media::class, MediaCollection::BaseVideo]))->toBeFalse()
+        ->and(Gate::forUser(User::factory()->create())->allows('create', [Media::class, MediaCollection::BaseScreenshot]))->toBeTrue()
+        ->and(Gate::forUser($holder(User::factory()->restricted()->create()))->allows('create', [Media::class, MediaCollection::BaseVideo]))->toBeFalse()
+        ->and(Gate::forUser($holder(User::factory()->unverified()->create()))->allows('create', [Media::class, MediaCollection::BaseVideo]))->toBeFalse();
+
+    // Lost the last verified account between intent and complete.
+    $owner->forceFill(['verified_accounts_count' => 0])->save();
+    expect(Gate::forUser($owner)->allows('complete', $video))->toBeFalse();
+});

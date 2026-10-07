@@ -102,14 +102,14 @@ named `media` in `config/filesystems.php`; `media.disk` is the disk name, not th
    │ a. HEAD object: exists? size matches the declared size?         │
    │ b. Download to a temp file (worker-local, size-capped)          │
    │ c. Magic-byte signature check → real MIME                       │
-   │ d. Allowlist check: real MIME ∈ {jpeg,png,webp} | {mp4}         │
+   │ d. Allowlist check: real MIME ∈ {jpeg,png,webp} | {mp4,m4v,mov} │
    │ e. Image: decode with GD, reject on decode failure              │
-   │    Video: ffprobe — container, codecs, duration, resolution     │
+   │    Video: ffprobe headers — codecs, duration, size, frame rate  │
    │ f. Dimension / duration / bitrate limits                        │
    │ g. Re-encode:                                                   │
    │      images → WebP variants, EXIF stripped, ICC normalised      │
    │      video  → h264/aac mp4 ≤720p + poster frame                 │
-   │ h. Upload derived files to public/ (or private/)                │
+   │ h. Upload derived files to public/ (or private/), streamed      │
    │ i. Write media_variants rows; media.status = ready              │
    │ j. Delete the quarantine original                               │
    │ k. Dispatch MediaReady                                          │
@@ -128,18 +128,22 @@ named `media` in `config/filesystems.php`; `media.disk` is the disk name, not th
   (step a) and a download capped at the declared size + 1 byte; type by the magic-byte check.
   Bytes PUT but never completed are removed by the orphan sweeper and, failing that, the
   lifecycle rule (§2).
-- Rate limited: 30 intents/hour/user.
+- Rate limited: 30 intents/hour/user. A replay video (`base_video`) also needs a verified CoC
+  account (as publishing does), waits while the user's previous video is still processing, and
+  counts against 10 video intents per 24 h (P3-02, [04 §4](04-roles-and-permissions.md)).
 
 ### Complete endpoint rules
 - Verifies the media row belongs to the caller and is `pending`.
 - Marks it `uploaded`, dispatches `ProcessMediaJob`; if the dispatch fails the row goes back to
   `pending` so the client's retry can queue it again.
 - Idempotent — a duplicate call while `processing` is a no-op.
+- A replay video needs a verified CoC account here too, and waits while another of the user's
+  videos is `uploaded` or `processing`.
 
 ### Status endpoint and responses
 - `GET /uploads/{media_ulid}` lets the uploader poll: `{mediaUlid, status, finished,
   failureMessage, width, height, variants: [{name, url, width, height}]}`. `complete` returns the
-  same shape. Neither exposes storage keys or user ids.
+  same shape. `failureMessage` is worded for the media kind ("this video", "this image"). Neither exposes storage keys or user ids.
 - Lookups are scoped to the caller first, so another user's ULID is a 404 (message
   `Not found.`, no model names) before `MediaPolicy` runs.
 
@@ -175,16 +179,17 @@ automatically by the `MediaReady` listener when the last item finishes.
 |---|---|---|
 | Extension allowlist | jpg, jpeg, png, webp | mp4 |
 | Declared MIME allowlist | image/jpeg, image/png, image/webp | video/mp4 |
-| **Real MIME from magic bytes** | must match the allowlist | must match |
+| **Real MIME from magic bytes** | must match the allowlist | the ISO media family one demuxer reads: mp4, m4v, mov (`media.video.real_mimes`) |
 | Max size | 5 MB (avatar 2 MB) | 100 MB |
-| Max dimensions | 6000 × 6000 | 1920 × 1080 after transcode |
+| Max dimensions | 6000 × 6000 | 3840 × 2160 in (either orientation); short side ≤720 out, scaled down only |
 | Min dimensions | 200 × 200 | — |
-| Max duration | — | 60 s (reject over; do not truncate silently) |
-| Codec | — | video h264/hevc in, h264 out; audio aac/mp3 in, aac out |
+| Max duration | — | 60 s (reject over; do not truncate silently), checked on the input and again on the output |
+| Max frame rate | — | 120 fps in; ≤60 fps out |
+| Codec | — | video h264/hevc in, h264 out; audio aac/mp3 (or none) in, aac out; only these decoders may run |
 | Decode test | GD must decode it | ffprobe must parse it |
 | Re-encode | always | always |
 | EXIF / metadata | stripped (GPS removal is the point) | all metadata stripped |
-| Polyglot defence | re-encode discards non-image trailing data | re-mux discards everything outside the container |
+| Polyglot defence | re-encode discards non-image trailing data | re-encode keeps the chosen streams only and discards everything outside them |
 | Filename | never used as a storage key; original kept for display, sanitised and length-capped | same |
 | SVG | **rejected outright** — SVG is script-capable | n/a |
 | Animated formats | animated webp/gif rejected in image collections | n/a |
@@ -203,11 +208,14 @@ the primary control** — it destroys embedded payloads by construction. On top 
   (arbitrary formats) ship with the report system, where re-encoding cannot be applied. Dispute
   evidence (P2-16) is images only and re-encoded like any image, so it does not need it.
 - Any file failing validation in a way that suggests intent (a real MIME outside the allowlist,
-  embedded script markers, a zip appended to the image) is set to `quarantined`, retained 30 days
+  embedded script markers, a zip appended to the image; videos skip the marker and zip scan, where
+  100 MB of compressed bytes would match by chance and the re-encode is the control) is set to
+  `quarantined`, retained 30 days
   for review, and its uploader is flagged for moderation (logged as `media.quarantined` until the
   moderation system ships). A real MIME **inside** the allowlist that differs from the declared one
-  (a PNG named `.jpg`) is benign and processed as its real type.
-- Deterministic rejections (too small, animated, undecodable, size mismatch) delete the quarantine
+  (a PNG named `.jpg`, an iPhone `.mov` renamed `.mp4`) is benign and processed as its real type.
+- Deterministic rejections (too small, animated, undecodable, size mismatch; for video, too long,
+  unsupported codec, too large, frame rate too high, output too large) delete the quarantine
   original at once. `failed` after retries are exhausted (`processing_error`) keeps it for
   `media:retry-failed`.
 
@@ -235,13 +243,14 @@ the primary control** — it destroys embedded payloads by construction. On top 
 
 | Step | Detail |
 |---|---|
-| Probe | `ffprobe` for container, streams, duration, resolution, bitrate. Reject early — no transcode of a 10-minute file |
-| Transcode | h264 `veryfast`, CRF 26, ≤720p (scale down only), audio aac 96 kbps mono/stereo, `+faststart` for progressive playback |
-| Poster | Frame at 10% of duration, WebP |
+| Probe | `ffprobe` on the container headers only (`-nofind_stream_info`, so no decoder runs before the codec check): first video stream that is not cover art, first audio stream, duration, size with rotation applied, frame rate. Reject early — no transcode of a 10-minute file |
+| Transcode | h264 `veryfast`, CRF 26, short side ≤720 (scale down only, even sides, `yuv420p`, rotation applied), ≤60 fps, first audio track only as aac 96 kbps with ≤2 channels, subtitles, data, chapters and all metadata dropped, `+faststart` for progressive playback. Stops at 61 s (`-t`) and at the size cap (`-fs`); the output is probed and refused when over 60 s |
+| Inputs | `-f mov -protocol_whitelist file -enable_drefs 0 -use_absolute_path 0`, and `-codec_whitelist` of the allowed decoders (`media.video.decoders`); a track in another codec is dropped, not decoded |
+| Poster | Frame at 10% of the output's duration, WebP, the video's size |
 | Output cap | If the transcode exceeds 40 MB, re-run at CRF 30; if still over, fail with a user-facing message |
-| Timeout | Job timeout 900 s; hard `-timelimit` on the ffmpeg process |
+| Timeout | Job timeout 900 s; per process 30 s (probe), 360 s (transcode), 60 s (poster), so the worst run (840 s) ends inside the job; hard `-timelimit` (300 CPU s) on ffmpeg bounds a process that outlives its worker. A failed ffmpeg run or unreadable output is retried like any job failure; only an unreadable input probe is a deterministic `undecodable` |
 | Concurrency | The `media` queue runs with exactly 1 worker process at MVP so transcodes never starve the box |
-| Resource guard | `nice`/`cpulimit` on the ffmpeg invocation; the media worker is a separate container with a CPU cap |
+| Resource guard | `nice -n 10` on ffmpeg (no `cpulimit`: the media worker is a separate container with a CPU cap); one replay video in flight per user and 10 video intents per 24 h ([04 §4](04-roles-and-permissions.md)) |
 
 **Migration trigger (NFR-COST-3):** move to Cloudflare Stream or a hosted transcoder when any of —
 median transcode > 90 s, media queue depth > 50 for over 15 min, worker CPU sustained > 80%, or
@@ -281,7 +290,7 @@ correct for ≤60 s clips), multiple resolutions, subtitles, GIF output.
 | Dispute evidence | 3 per party over the whole dispute, ≤5 MB each (`coc.disputes.evidence_max`) | `DisputeService`, in the attach transaction (P2-03, uploads open with P2-16) |
 | Marketplace portfolio | 5 per listing | attach transaction |
 | Per-user total storage | 500 MB soft cap, warn at 80%, block new uploads at 100% | nightly recompute into `user_stats` |
-| Upload intents | 30/hour/user | rate limiter |
+| Upload intents | 30/hour/user; replay videos 10 per 24 h and one in flight | rate limiter; video in flight checked at intent and complete |
 
 Quota changes are config values, not code.
 

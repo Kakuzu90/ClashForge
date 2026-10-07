@@ -1,9 +1,11 @@
 <?php
 
 use App\Domain\CocIntegration\Services\CocKeyPool;
+use App\Domain\Media\Models\Media;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use App\Support\Health\HealthChecker;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -36,13 +38,14 @@ it('renders the page with every panel deferred in its own group', function () {
             ->where('meta.title', 'System health')
             ->where('auth.can.viewPlatformStats', true)
             ->missing('queues')
+            ->missing('mediaProcessing')
             ->missing('failedJobs')
             ->missing('scheduler')
             ->missing('cocApiHealth')
             ->missing('cocKeys'));
 
     expect($this->actingAs($this->admin)->get('/admin/system')->viewData('page')['deferredProps'])->toBe([
-        'queues' => ['queues'],
+        'queues' => ['queues', 'mediaProcessing'],
         'failedJobs' => ['failedJobs'],
         'scheduler' => ['scheduler'],
         'cocApi' => ['cocApiHealth', 'cocKeys'],
@@ -93,9 +96,41 @@ it('stays within the query budget', function () {
     $this->actingAs($this->admin);
     DB::enableQueryLog();
 
-    systemPanel($this->admin, 'queues,failedJobs,scheduler,cocApiHealth,cocKeys')->assertOk();
+    systemPanel($this->admin, 'queues,mediaProcessing,failedJobs,scheduler,cocApiHealth,cocKeys')->assertOk();
 
     expect(count(DB::getQueryLog()))->toBeLessThanOrEqual(25);
+});
+
+// P3-02: the media processing p95 that specs/20 §6 waited on a start time for.
+it('reports the media processing p95 over the window against the alert', function () {
+    $window = (int) config('media.health.processing_window_hours');
+    $alert = (int) config('media.health.processing_p95_alert_seconds');
+    $processed = fn (int $seconds, ?CarbonInterface $at = null) => Media::factory()->ready()->create([
+        'processed_at' => $at ?? Date::now()->subHour(),
+        'processing_started_at' => ($at ?? Date::now()->subHour())->subSeconds($seconds),
+    ]);
+
+    expect(systemPanel($this->admin, 'mediaProcessing')->json('props.mediaProcessing'))->toBe([
+        'windowHours' => $window, 'processed' => 0, 'p95Seconds' => null, 'alertSeconds' => $alert, 'overAlert' => false,
+    ]);
+
+    // Nearest rank over 20 runs: the 19th, so one slow outlier does not set off the alert.
+    foreach (range(1, 19) as $seconds) {
+        $processed($seconds);
+    }
+    $processed($alert * 10);
+    // Outside the window, and a row processed before start times were recorded.
+    $processed($alert * 10, Date::now()->subHours($window + 1));
+    Media::factory()->ready()->create(['processed_at' => Date::now()->subHour()]);
+
+    expect(systemPanel($this->admin, 'mediaProcessing')->json('props.mediaProcessing'))
+        ->toMatchArray(['processed' => 20, 'p95Seconds' => 19, 'overAlert' => false]);
+
+    $processed($alert + 1);
+    $processed($alert + 1);
+
+    expect(systemPanel($this->admin, 'mediaProcessing')->json('props.mediaProcessing'))
+        ->toMatchArray(['processed' => 22, 'p95Seconds' => $alert + 1, 'overAlert' => true]);
 });
 
 it('shows the System item in the admin nav to admins only', function () {

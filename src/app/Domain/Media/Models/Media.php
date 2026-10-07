@@ -35,12 +35,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $size_bytes
  * @property int|null $width
  * @property int|null $height
+ * @property float|null $duration_seconds
  * @property string|null $checksum_sha256
  * @property MediaStatus $status
  * @property MediaFailureReason|null $failure_reason
  * @property MediaVisibility $visibility
  * @property int $position
  * @property int $processing_attempts
+ * @property CarbonImmutable|null $processing_started_at
  * @property CarbonImmutable|null $processed_at
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable $created_at
@@ -98,6 +100,19 @@ class Media extends Model
         $query->where('user_id', $userId);
     }
 
+    /**
+     * The user's replay videos completed and not yet processed: one at a time per user, so a single
+     * uploader cannot fill the media worker's queue (P3-02).
+     *
+     * @param  Builder<Media>  $query
+     */
+    public function scopeVideoInFlightFor(Builder $query, int|string $userId): void
+    {
+        $query->where('user_id', $userId)
+            ->where('collection', MediaCollection::BaseVideo)
+            ->whereIn('status', [MediaStatus::Uploaded, MediaStatus::Processing]);
+    }
+
     protected function casts(): array
     {
         return [
@@ -109,8 +124,10 @@ class Media extends Model
             'size_bytes' => 'integer',
             'width' => 'integer',
             'height' => 'integer',
+            'duration_seconds' => 'float',
             'position' => 'integer',
             'processing_attempts' => 'integer',
+            'processing_started_at' => 'immutable_datetime',
             'processed_at' => 'immutable_datetime',
             'expires_at' => 'immutable_datetime',
         ];

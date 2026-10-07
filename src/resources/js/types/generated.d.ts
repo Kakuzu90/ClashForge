@@ -158,6 +158,13 @@ label: string,
 bytes: number,
 objects: number,
 };
+export type MediaProcessingStatsData = {
+windowHours: number,
+processed: number,
+p95Seconds: number | null,
+alertSeconds: number,
+overAlert: boolean,
+};
 export type MediaStorageData = {
 totalBytes: number,
 totalObjects: number,
@@ -200,7 +207,7 @@ maxSize: number,
 }
 namespace Enums {
 export type MediaCollection = 'avatar' | 'account_image' | 'base_screenshot' | 'base_video' | 'evidence' | 'portfolio';
-export type MediaFailureReason = 'object_missing' | 'size_mismatch' | 'undecodable' | 'dimensions_too_large' | 'dimensions_too_small' | 'animated' | 'suspicious_content' | 'processing_error';
+export type MediaFailureReason = 'object_missing' | 'size_mismatch' | 'undecodable' | 'dimensions_too_large' | 'dimensions_too_small' | 'animated' | 'duration_too_long' | 'frame_rate_too_high' | 'unsupported_codec' | 'output_too_large' | 'suspicious_content' | 'processing_error';
 export type MediaKind = 'image' | 'video';
 export type MediaStatus = 'pending' | 'uploaded' | 'processing' | 'ready' | 'failed' | 'quarantined' | 'deleting';
 export type MediaVisibility = 'public' | 'private';
