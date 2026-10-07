@@ -72,6 +72,14 @@ export type StaffAbility = 'access-admin' | 'view-users' | 'view-platform-stats'
 export type UserStatus = 'active' | 'restricted' | 'suspended' | 'banned' | 'pending_deletion';
 }
 }
+namespace Bases {
+namespace Enums {
+export type BaseCategory = 'war' | 'cwl' | 'farming' | 'trophy' | 'legend' | 'anti_3_star' | 'anti_2_star' | 'hybrid' | 'progress' | 'troll';
+export type BaseModerationState = 'clean' | 'flagged' | 'under_review' | 'actioned';
+export type BaseStatus = 'draft' | 'processing' | 'published' | 'hidden' | 'removed';
+export type BaseVisibility = 'public' | 'unlisted' | 'private';
+}
+}
 namespace Clans {
 namespace Data {
 export type ClanSummaryData = {

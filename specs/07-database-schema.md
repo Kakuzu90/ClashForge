@@ -325,13 +325,13 @@ recruitment posts and to show history.
 | ulid | char(26) | used in URLs with a slug |
 | slug | varchar(90) | `{ulid}-{title-slug}`, **unique** |
 | user_id | bigint FK → users | `ON DELETE CASCADE` (author deletion removes bases) |
-| coc_account_id | bigint null FK → coc_accounts | credited account; `ON DELETE SET NULL` |
+| coc_account_id | bigint null FK → coc_accounts | credited account, required at publish: one of the author's `verified` or `disputed` rows, the featured one by default (P3-01); `ON DELETE SET NULL` |
 | title | varchar(80) | |
 | description | text null | ≤2000 |
 | th_level | smallint | |
 | category | varchar(20) | `war`\|`cwl`\|`farming`\|`trophy`\|`legend`\|`anti_3_star`\|`anti_2_star`\|`hybrid`\|`progress`\|`troll` |
-| base_link | text | validated `link.clashofclans.com` URL |
-| layout_hash | varchar(64) | extracted from the link; duplicate detection |
+| base_link | text | validated `link.clashofclans.com` URL, stored canonical: https, the game's host, the language path (`en` when missing), only `action` and `id` (P3-01) |
+| layout_hash | varchar(64) | sha256 (hex) of the link's layout `id`, so two links to one layout match; duplicate detection |
 | visibility | varchar(10) | `public`\|`unlisted`\|`private` |
 | status | varchar(20) | `draft`\|`processing`\|`published`\|`hidden`\|`removed` |
 | has_video | bool default false | filter support |
@@ -349,7 +349,10 @@ legitimately share the same popular base).
 - `(user_id, published_at DESC)`.
 - `(layout_hash)` — duplicate detection.
 - `(coc_account_id)`.
-- GIN on `search_vector` (generated from title + description + tags snapshot).
+- GIN on `search_vector` (generated from title + description + tags snapshot), with the column, in Search v1 (P3-05).
+
+Postgres adds the `category`, `visibility`, `status` and `moderation_state` CHECKs and
+`th_level BETWEEN 1 AND 30`; the range users may pick is `bases.th_min`–`th_max` (P3-01).
 
 ### `base_metrics` [M]
 Counters split from `base_layouts` so that high-frequency counter updates do not bloat/lock the row
@@ -362,7 +365,9 @@ that every feed query reads.
 
 ### `base_tags` [M]
 `id`, `name (citext, unique)`, `slug (unique)`, `usage_count`, `is_suggested (bool)`,
-`is_blocked (bool)`, `created_by null`.
+`is_blocked (bool)`, `created_by null`. A tag is created on first use, lowercase-kebab ≤24
+(`TagName`, FR-BASE-4), suggested when it is on `bases.suggested_tags`; a blocked tag refuses the
+publish; `usage_count` counts each base using it (P3-01).
 **Index:** `(usage_count DESC) WHERE NOT is_blocked`.
 
 ### `base_layout_tag` [M]

@@ -114,7 +114,10 @@
   set-null on account release.
 - Consequence to enforce in the service layer: when a base's credited account is transferred to
   another user in a dispute, **the base stays with the original author** and the credit link is
-  nulled. Base authorship is not evidence of tag ownership, and transferring content would let a
+  nulled. Bases' `DropLostCredits` does it on `CocAccountReleased` and
+  `CocAccountOwnershipTransferred`: every credit its author no longer holds (a detach, a deletion
+  or ban release, a token supersede, a dispute transfer) is nulled, without touching `updated_at`
+  (P3-01). Base authorship is not evidence of tag ownership, and transferring content would let a
   fraudulent dispute steal a creator's library.
 
 ### 3.3 `media` ↔ everything — the polymorphic lifecycle

@@ -282,7 +282,7 @@ After 30 days, the nightly pipeline anonymises the retained account and its Phas
 | `coc-dispute-open` | 3 accepted disputes per rolling 24 h (`coc.disputes.open_per_day`), counted from the disputes themselves under the claimant's lock, so refusals and typos are free; a breach is the `too_many_today` refusal (P2-16) | user |
 | `coc-dispute-write` | 10 / hour (`coc.disputes.write_per_hour`), every attempt at opening, answering and withdrawing; a breach is a field error on the open and answer forms and a flash error on withdraw (P2-16) | user |
 | `coc-refresh` | 1 / 10 min per account (`coc.sync.manual_cooldown`) and 20 / hour per user across all accounts (`coc.sync.manual_per_hour`), counted before the call so parallel clicks reach the API once, and given back when nothing was stored (P2-20); a breach is a flash error with the minutes left | user + account; user |
-| `base-publish` | 5 / day, 20 / week | user |
+| `base-publish` | 5 / rolling day, 20 / rolling week (`bases.publish_per_*`), counted from the bases the user created, deleted ones included, under the author's lock: a refused publish is free, deleting and republishing still counts; a breach is the `base` field error (P3-01) | user |
 | `comment` | 10 / hour, 60 / day | user |
 | `report` | 20 / day | user |
 | `upload-intent` | 30 / hour | user |

@@ -275,8 +275,8 @@ correct for ≤60 s clips), multiple resolutions, subtitles, GIF output.
 |---|---|---|
 | Avatar | 1, ≤2 MB | On attach (replaces the previous, which is deleted after commit, §3 "Attachment") |
 | CoC account images | 5 per account (`coc.images.max`), ≤5 MB each | `coc_accounts.images_count` checked under the account's row lock in the attach transaction; adds and removals share the `coc-account-images` limiter (`coc.images.writes_per_hour`) (P2-23) |
-| Base screenshots | 2 per base, ≤5 MB each | attach transaction |
-| Base video | 1 per base, ≤100 MB, ≤60 s | attach transaction |
+| Base screenshots | 2 per base (`bases.screenshots_max`), ≤5 MB each | attach transaction (`PublishBaseService`, P3-01) |
+| Base video | 1 per base (`bases.videos_max`), ≤100 MB, ≤60 s | attach transaction (`PublishBaseService`, P3-01) |
 | Report evidence | 3 per report, ≤5 MB each | attach transaction |
 | Dispute evidence | 3 per party over the whole dispute, ≤5 MB each (`coc.disputes.evidence_max`) | `DisputeService`, in the attach transaction (P2-03, uploads open with P2-16) |
 | Marketplace portfolio | 5 per listing | attach transaction |

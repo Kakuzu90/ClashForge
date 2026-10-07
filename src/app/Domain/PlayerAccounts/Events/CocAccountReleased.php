@@ -9,7 +9,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 /**
  * A tag left its owner and is claimable again (specs/13 §6). The row's `user_id` is already null,
  * so the event carries who held it. Consumers: the owner's "Tag released" notice (specs/16 §2);
- * base credits are nulled with P3-01.
+ * Bases' `DropLostCredits`, which drops the credit on the holder's bases (P3-01).
  */
 final class CocAccountReleased implements ShouldDispatchAfterCommit
 {

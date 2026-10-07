@@ -73,13 +73,15 @@ Phase end (before the next phase starts): accessibility pass + antislop R-35 cli
 
 | Id | Task | Status | Depends on | File |
 |---|---|---|---|---|
-| P3-01 | Publishing + composer (+ the publish CTA in the own profile's Bases empty state, from P1-04) | todo | P2-02, P0-05 | |
+| P3-01 | Publishing backend: `base_layouts`, `base_metrics`, tags, `BaseLink`/`LayoutHash`/`ThLevel`/`TagName`, `PublishBaseService` (duplicate rules, `base-publish` limit, media attach), publish-on-media-ready, `BaseLayoutPolicy::create` (composer split to P3-08, edit/delete to P3-09) | done | P2-02, P0-05 | tasks/phase-3/P3-01-publishing-backend.md |
 | P3-02 | Video processing | todo | P0-05 | |
 | P3-03 | Feed, trending, landing pages | todo | P3-01 | |
 | P3-04 | Likes, bookmarks, comments, counters (+ `user_stats` listeners and nightly recompute calling `CacheInvalidator::profile()`, StatBlock count-up, from P1-04) | todo | P3-01 | |
 | P3-05 | Search v1 | todo | P3-01 | |
-| P3-06 | Moderation v1 (incl. 30-day quarantine purge with `audit_logs` entry, specs/10 §9; from P0-08) (+ the dashboard's open reports panel, from P1-13; the queue fills `/moderation/reports`, the moderators' page outside /admin, owner decision 2026-10-02) | todo | P3-01, P1-06 | |
+| P3-06 | Moderation v1 (incl. 30-day quarantine purge with `audit_logs` entry, specs/10 §9; from P0-08) (+ the dashboard's open reports panel, from P1-13; the queue fills `/moderation/reports`, the moderators' page outside /admin, owner decision 2026-10-02) (+ bases flagged `duplicate_layout` by publishing become Low review cases, from P3-01) | todo | P3-01, P1-06 | |
 | P3-07 | SEO surfaces | todo | P3-03 | |
+| P3-08 | Base composer (`/bases/create`, `POST /bases`, specs/18 §6: media dropzone, TH and category tiles, live base-link check, tags with suggestions, visibility, draft kept in `localStorage`) + the publish CTA in the own profile's Bases empty state (from P1-04) (split from P3-01) | todo | P3-01, P3-03 | |
+| P3-09 | Edit and delete own base (FR-BASE-15: metadata edits at any time, edits after 24 h flag a reported base for re-review; delete with tag `usage_count`) (split from P3-01) (+ a base left in `processing` because one of its items failed: replace or remove it, from P3-01) | todo | P3-08, P3-06 | |
 
 ## Phases 4–6
 

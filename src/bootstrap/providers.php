@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Auth\AuthServiceProvider;
+use App\Domain\Bases\BasesServiceProvider;
 use App\Domain\CocIntegration\CocIntegrationServiceProvider;
 use App\Domain\GameAssets\GameAssetsServiceProvider;
 use App\Domain\Media\MediaServiceProvider;
@@ -26,4 +27,5 @@ return [
     GameAssetsServiceProvider::class,
     CocIntegrationServiceProvider::class,
     PlayerAccountsServiceProvider::class,
+    BasesServiceProvider::class,
 ];

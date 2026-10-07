@@ -66,18 +66,19 @@ app/Domain/Bases/
 ├── Actions/          PublishBase.php, ToggleLike.php, RecordView.php
 ├── Contracts/        BaseRepository.php, TrendingScorer.php     ← what others may depend on
 ├── Data/             PublishBaseData.php, BaseCardData.php      ← readonly DTOs (plus, where Http must
-│                     validate against Support value objects, a static `*FieldRules` facade, e.g. Users `ProfileFieldRules`)
-├── Enums/            BaseCategory.php, BaseStatus.php, Visibility.php
+│                     validate against Support value objects, a static `*FieldRules` facade, e.g. Users `ProfileFieldRules`;
+│                     Bases' `BaseLink`/`LayoutHash`/`TagName`/`ThLevel` get theirs with the composer, P3-08)
+├── Enums/            BaseCategory.php, BaseStatus.php, BaseVisibility.php, BaseModerationState.php
 ├── Events/           BasePublished.php, BaseLiked.php
-├── Exceptions/       DuplicateLayoutException.php
+├── Exceptions/       (none yet: publish refusals are field errors, P3-01)
 ├── Jobs/             AggregateBaseMetrics.php, RecomputeTrending.php
-├── Listeners/        PublishWhenMediaReady.php
+├── Listeners/        PublishWhenMediaReady.php, DropLostCredits.php
 ├── Models/           BaseLayout.php, BaseComment.php, BaseMetric.php   ← INTERNAL
 ├── Notifications/    NewCommentNotification.php
 ├── Policies/         BaseLayoutPolicy.php, BaseCommentPolicy.php
 ├── Queries/          BaseFeedQuery.php, RelatedBasesQuery.php   ← cross-table reads → DTOs
 ├── Services/         PublishBaseService.php, BaseInteractionService.php
-├── Support/          BaseLink.php, LayoutHash.php
+├── Support/          BaseLink.php, LayoutHash.php, TagName.php, ThLevel.php
 └── BasesServiceProvider.php    (optional: bindings, policy registration, event wiring)
 ```
 
