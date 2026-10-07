@@ -2,7 +2,7 @@
 id: P2-25
 title: Let admins release a suspended tag and remove an identity-document image from dispute evidence
 phase: 2
-status: in-progress
+status: done
 depends_on: [P2-17]
 ---
 
